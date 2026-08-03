@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Invitation de mariage — 31 octobre 2026
 
-## Getting Started
+Site d’invitation numérique chic (automne / soirée) avec galerie photo, RSVP et espace admin pour uploader vos images.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) + TypeScript
+- **Tailwind CSS 4**
+- Motion : **Framer Motion** + **GSAP** + **Lenis** (scroll fluide, reveals, parallax)
+- Stockage local JSON + fichiers (`data/`, `public/uploads/`) — prêt à migrer vers Supabase plus tard
+- Déploiement recommandé : **Vercel** + domaine custom
+
+## Démarrer
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrir [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Admin : [http://localhost:3000/admin](http://localhost:3000/admin)  
+Mot de passe local par défaut : `wedding2026`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Langues (FR / EN)
 
-## Learn More
+- Français : `/fr`
+- English : `/en`
+- `/` redirige selon `Accept-Language` (défaut : `fr`)
+- Sélecteur **FR / EN** dans la navigation
 
-To learn more about Next.js, take a look at the following resources:
+Textes traduits : `src/i18n/dictionaries/fr.ts` et `src/i18n/dictionaries/en.ts`  
+Données partagées (prénoms, date ISO, email) : `src/lib/site.ts`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Personnaliser
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Éditez `src/lib/site.ts` (prénoms, date, email)
+2. Éditez les dictionnaires FR/EN (textes, lieux, dress code, deadline RSVP)
+3. Uploadez vos photos via `/admin` :
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Hero** : image plein écran d’accueil
+- **Notre histoire** : 2–3 photos
+- **Galerie** : le reste
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Variables d’environnement
+
+Copiez `.env.example` vers `.env.local` :
+
+```env
+ADMIN_PASSWORD=votre-mot-de-passe
+ADMIN_SECRET=une-longue-chaine-secrete
+NEXT_PUBLIC_SITE_URL=https://votre-domaine.fr
+```
+
+## SEO / PWA / QR
+
+- **SEO** : Open Graph + Twitter cards (`public/og.jpg`), favicon, `hreflang` FR/EN  
+  Remplacez `public/og.jpg` par une photo duo 1200×630 pour WhatsApp.
+- **PWA légère** : `public/manifest.webmanifest` + icônes (écran d’accueil mobile, sans service worker).
+- **QR** : générez un QR vers `https://votre-domaine.fr/fr` (outil externe) une fois le domaine prêt.
+- Régénérer les icônes monogramme : `npm run icons`
+
+## Déploiement Vercel
+
+1. Pousser le repo sur GitHub
+2. Importer le projet dans Vercel
+3. Ajouter `ADMIN_PASSWORD`, `ADMIN_SECRET`, `NEXT_PUBLIC_SITE_URL`
+4. Déployer
+
+> Note : le stockage fichier local ne persiste pas sur Vercel (filesystem éphémère). Pour la prod, branchez ensuite **Supabase Storage + Postgres** (ou Cloudinary) — la couche `src/lib/storage.ts` est faite pour être remplacée proprement.
+
+## Scripts
+
+- `npm run dev` — développement
+- `npm run build` — build production
+- `npm run start` — serveur production
+- `npm run lint` — lint
+- `npm run icons` — régénérer favicon / PWA / og.jpg

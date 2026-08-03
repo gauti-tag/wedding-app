@@ -1,0 +1,114 @@
+{
+  "subtitle": {
+    "fr": "Un voyage gourmand entre la Côte d’Ivoire et le Bénin — saveurs de chez nous, partagées avec vous.",
+    "en": "A flavorful journey between Côte d’Ivoire and Benin — tastes from home, shared with you."
+  },
+  "note": {
+    "fr": "Le menu pourra légèrement évoluer selon la saison et les arrivages.",
+    "en": "The menu may evolve slightly with the season and market availability."
+  },
+  "cuisines": [
+    {
+      "id": "ci",
+      "region": { "fr": "Côte d’Ivoire", "en": "Côte d’Ivoire" },
+      "origin": { "fr": "Saveurs ivoiriennes", "en": "Ivorian flavors" },
+      "dishes": [
+        {
+          "id": "ci-1",
+          "name": {
+            "fr": "Kedjenou de poulet",
+            "en": "Chicken kedjenou"
+          },
+          "description": {
+            "fr": "Poulet mijoté en cocotte avec légumes et épices douces.",
+            "en": "Slow-cooked chicken with vegetables and gentle spices."
+          }
+        },
+        {
+          "id": "ci-2",
+          "name": {
+            "fr": "Poisson braisé & attiéké",
+            "en": "Grilled fish & attiéké"
+          },
+          "description": {
+            "fr": "Poisson grillé, attiéké et oignons vinaigrés.",
+            "en": "Grilled fish with attiéké and pickled onions."
+          }
+        },
+        {
+          "id": "ci-3",
+          "name": {
+            "fr": "Sauce graine",
+            "en": "Palm nut sauce"
+          },
+          "description": {
+            "fr": "Sauce traditionnelle à base de noix de palme, accompagnée de foutou.",
+            "en": "Traditional palm-nut sauce served with foutou."
+          }
+        },
+        {
+          "id": "ci-4",
+          "name": {
+            "fr": "Alloco",
+            "en": "Alloco"
+          },
+          "description": {
+            "fr": "Bananes plantains frites, croustillantes et dorées.",
+            "en": "Crispy golden fried plantains."
+          }
+        }
+      ]
+    },
+    {
+      "id": "bj",
+      "region": { "fr": "Bénin", "en": "Benin" },
+      "origin": { "fr": "Saveurs béninoises", "en": "Beninese flavors" },
+      "dishes": [
+        {
+          "id": "bj-1",
+          "name": {
+            "fr": "Amiwo",
+            "en": "Amiwo"
+          },
+          "description": {
+            "fr": "Pâte de maïs rouge parfumée à la tomate et aux épices.",
+            "en": "Red corn pâté seasoned with tomato and spices."
+          }
+        },
+        {
+          "id": "bj-2",
+          "name": {
+            "fr": "Poisson braisé sauce tomate",
+            "en": "Grilled fish, tomato sauce"
+          },
+          "description": {
+            "fr": "Poisson grillé servi avec une sauce tomate maison.",
+            "en": "Grilled fish served with a homemade tomato sauce."
+          }
+        },
+        {
+          "id": "bj-3",
+          "name": {
+            "fr": "Pâte & sauce arachide",
+            "en": "Corn pâté & peanut sauce"
+          },
+          "description": {
+            "fr": "Pâte de maïs accompagnée d’une sauce d’arachide onctueuse.",
+            "en": "Corn pâté with a smooth peanut sauce."
+          }
+        },
+        {
+          "id": "bj-4",
+          "name": {
+            "fr": "Ignames pilées",
+            "en": "Pounded yam"
+          },
+          "description": {
+            "fr": "Ignames écrasées, classiques de la table béninoise.",
+            "en": "Classic pounded yam from the Beninese table."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "id": "f41fbafb-e2e2-45a4-a99d-ddf6577047c7",
+    "name": "Couple",
+    "email": "admin@couple.local",
+    "role": "admin",
+    "passwordHash": "scrypt$a5ebc1800c617b232b09798638838b0d$954e38b35dd1b3abe663e3b5f295a7acdc0229cf3fbcd220ba7c50e8fa516dd4ab0946aa20194dcc75cecd3c36afcddafc8663acdf3e7a6b3ef280df251c41de",
+    "active": true,
+    "createdAt": "2026-08-02T21:32:12.338Z",
+    "updatedAt": "2026-08-02T21:32:12.338Z",
+    "lastLoginAt": "2026-08-02T21:42:08.582Z"
+  },
+  {
+    "id": "0b8ce6b5-13cd-4bb3-8e5e-b6f4213feada",
+    "name": "Editeur",
+    "email": "editeur@couple.local",
+    "role": "editor",
+    "passwordHash": "scrypt$b8cde5f2bb826450e98c59604d4ede76$27b621ea82c911cf2b8c148bf3b3921d6c0de6b012103ac63c7738571bff23ed62e7b0bb81ffa316c60f6eb889750489dfad3dbef37febd4a1ef17a3e5b0443c",
+    "active": true,
+    "createdAt": "2026-08-02T21:36:09.716Z",
+    "updatedAt": "2026-08-02T21:36:09.716Z",
+    "lastLoginAt": "2026-08-02T21:37:40.765Z"
+  },
+  {
+    "id": "0886c2df-90de-4004-9b04-692e21737491",
+    "name": "scanner",
+    "email": "scanner@couple.local",
+    "role": "scanner",
+    "passwordHash": "scrypt$3abbe99ed9e8a07f05cd29c37121b5a3$63a4e3e06f6caf6f62d0d4d91c966b3b471d78ddb239fe09033f47606babbec3ecb7b5654872b26461cbbf548d8366ae96ccf5075ffa1d1c4a4ffc91bf5b1970",
+    "active": true,
+    "createdAt": "2026-08-02T21:42:52.999Z",
+    "updatedAt": "2026-08-02T21:42:52.999Z",
+    "lastLoginAt": "2026-08-02T21:43:26.107Z"
+  }
+]

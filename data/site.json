@@ -1,0 +1,23 @@
+{
+  "partnerOne": "Aubin",
+  "partnerTwo": "Francybel",
+  "weddingDate": "2026-10-31T14:00:00",
+  "hero": {
+    "weddingDateLabel": {
+      "fr": "Samedi 31 octobre 2026",
+      "en": "Saturday, October 31, 2026"
+    },
+    "tagline": {
+      "fr": "Une soirée d’automne pour célébrer l’amour, entourés de ceux qui comptent.",
+      "en": "An autumn evening to celebrate love, surrounded by those who matter most."
+    },
+    "ctaRsvp": {
+      "fr": "Confirmer ma présence",
+      "en": "Confirm your attendance"
+    },
+    "ctaSchedule": {
+      "fr": "Voir le programme",
+      "en": "View the schedule"
+    }
+  }
+}

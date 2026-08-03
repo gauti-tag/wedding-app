@@ -1,0 +1,52 @@
+{
+  "items": [
+    {
+      "id": "wine",
+      "name": { "fr": "Vin", "en": "Wine" },
+      "description": {
+        "fr": "Sélection de vins rouges et blancs pour accompagner le repas.",
+        "en": "A selection of red and white wines to accompany the meal."
+      }
+    },
+    {
+      "id": "champagne",
+      "name": { "fr": "Champagne", "en": "Champagne" },
+      "description": {
+        "fr": "Pour le toast et les moments de célébration.",
+        "en": "For the toast and celebratory moments."
+      }
+    },
+    {
+      "id": "beer",
+      "name": { "fr": "Bière", "en": "Beer" },
+      "description": {
+        "fr": "Bières locales et internationales.",
+        "en": "Local and international beers."
+      }
+    },
+    {
+      "id": "bissap",
+      "name": { "fr": "Bissap", "en": "Bissap" },
+      "description": {
+        "fr": "Infusion d’hibiscus, fraîche et légèrement acidulée.",
+        "en": "Hibiscus infusion, fresh and lightly tart."
+      }
+    },
+    {
+      "id": "ginger",
+      "name": { "fr": "Gingembre", "en": "Ginger drink" },
+      "description": {
+        "fr": "Boisson au gingembre, vive et parfumée.",
+        "en": "Bright, fragrant ginger drink."
+      }
+    },
+    {
+      "id": "softs",
+      "name": { "fr": "Softs & eau", "en": "Soft drinks & water" },
+      "description": {
+        "fr": "Eaux plates / gazeuses et boissons sans alcool.",
+        "en": "Still / sparkling water and soft drinks."
+      }
+    }
+  ]
+}

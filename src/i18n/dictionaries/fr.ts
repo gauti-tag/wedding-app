@@ -1,0 +1,89 @@
+import type { Dictionary } from "../types";
+
+const fr: Dictionary = {
+  meta: {
+    titleSuffix: "Invitation de mariage",
+    description: "Nous nous marions. Samedi 31 octobre 2026.",
+  },
+  nav: {
+    story: "Histoire",
+    schedule: "Programme",
+    menu: "Menu",
+    gallery: "Galerie",
+    rsvp: "RSVP",
+    confirm: "Confirmer",
+  },
+  story: {
+    placeholders: ["Photo duo", "Souvenir", "Ensemble"],
+    uploadHint: "à uploader",
+    photoAlt: "Souvenir",
+  },
+  countdown: {
+    days: "Jours",
+    hours: "Heures",
+    minutes: "Minutes",
+    seconds: "Secondes",
+  },
+  menu: {
+    eyebrow: "À table",
+    title: "Menu de réception",
+    empty: "Le menu de réception sera bientôt dévoilé.",
+  },
+  desserts: {
+    eyebrow: "Pour finir",
+    title: "Desserts",
+    subtitle: "Douceurs pour toute la table — yaourt, fruits, gâteau…",
+    empty: "La carte des desserts sera bientôt dévoilée.",
+  },
+  drinks: {
+    eyebrow: "À boire",
+    title: "Boissons",
+    subtitle: "Une sélection pour toute la salle — vin, bière, softs et saveurs d’ici.",
+    empty: "La carte des boissons sera bientôt dévoilée.",
+  },
+  gallery: {
+    eyebrow: "Souvenirs",
+    title: "Galerie",
+    subtitle: "Uploadez vos photos depuis l’espace admin pour animer cette galerie.",
+    placeholder: "Emplacement photo",
+    photoAlt: "Photo du couple",
+  },
+  rsvp: {
+    eyebrow: "Réponse souhaitée",
+    title: "RSVP",
+    deadlinePrefix: "Merci de confirmer votre présence avant le",
+    deadline: "1er septembre 2026",
+    contact: "Contact",
+    name: "Nom complet",
+    namePlaceholder: "Votre nom",
+    email: "Email",
+    emailPlaceholder: "vous@email.com",
+    phone: "Téléphone",
+    phonePlaceholder: "+225 07 00 00 00 00",
+    status: "Présence",
+    statusYes: "Avec joie — oui",
+    statusMaybe: "Peut-être",
+    statusNo: "Malheureusement non",
+    guestOf: "Invité(e) de",
+    guestOfFrancybel: "Francybel",
+    guestOfGautier: "Gautier",
+    guestOfBoth: "Gautier & Francybel",
+    message: "Message",
+    messagePlaceholder: "Un mot pour les mariés…",
+    submit: "Envoyer ma réponse",
+    submitting: "Envoi…",
+    success: "Merci — votre réponse a bien été enregistrée.",
+    error: "Une erreur est survenue.",
+    errorEmailTaken: "Cet email a déjà été utiliséé pour une réponse.",
+    errorPhoneTaken: "Ce numéro de téléphone a déjà été utilisé pour une réponse.",
+    errorEmailInvalid: "Veuillez saisir une adresse email valide.",
+    errorPhoneInvalid:
+      "Veuillez saisir un numéro ivoirien valide (ex. +225 07 00 00 00 00).",
+  },
+  footer: {
+    coupleSpace: "Espace couple",
+    installApp: "Installer l’app",
+  },
+};
+
+export default fr;

@@ -1,0 +1,36 @@
+{
+  "items": [
+    {
+      "id": "yogurt",
+      "name": { "fr": "Yaourt", "en": "Yogurt" },
+      "description": {
+        "fr": "Yaourts nature et parfumés.",
+        "en": "Plain and flavored yogurts."
+      }
+    },
+    {
+      "id": "fruit-salad",
+      "name": { "fr": "Salade de fruits", "en": "Fruit salad" },
+      "description": {
+        "fr": "Fruits frais de saison.",
+        "en": "Fresh seasonal fruits."
+      }
+    },
+    {
+      "id": "cake",
+      "name": { "fr": "Gâteau", "en": "Cake" },
+      "description": {
+        "fr": "Pièce sucrée pour clôturer le repas.",
+        "en": "A sweet treat to close the meal."
+      }
+    },
+    {
+      "id": "ice-cream",
+      "name": { "fr": "Glace", "en": "Ice cream" },
+      "description": {
+        "fr": "Sélection de glaces et sorbets.",
+        "en": "A selection of ice creams and sorbets."
+      }
+    }
+  ]
+}

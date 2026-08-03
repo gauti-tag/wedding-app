@@ -1,0 +1,101 @@
+[
+  {
+    "id": "2ba3a5b6-8a20-446b-9b8e-84b92e8f4ac3",
+    "at": "2026-08-02T21:43:26.122Z",
+    "userId": "0886c2df-90de-4004-9b04-692e21737491",
+    "userName": "scanner",
+    "userEmail": "scanner@couple.local",
+    "role": "scanner",
+    "action": "login",
+    "resource": "auth",
+    "details": "Connexion réussie"
+  },
+  {
+    "id": "c69b4de9-0d18-46fe-b158-d34a8be144d9",
+    "at": "2026-08-02T21:43:09.632Z",
+    "userId": "f41fbafb-e2e2-45a4-a99d-ddf6577047c7",
+    "userName": "Couple",
+    "userEmail": "admin@couple.local",
+    "role": "admin",
+    "action": "logout",
+    "resource": "auth",
+    "details": "Déconnexion"
+  },
+  {
+    "id": "435d06a2-5649-4b8a-83d1-13c34afce20c",
+    "at": "2026-08-02T21:42:53.123Z",
+    "userId": "f41fbafb-e2e2-45a4-a99d-ddf6577047c7",
+    "userName": "Couple",
+    "userEmail": "admin@couple.local",
+    "role": "admin",
+    "action": "create",
+    "resource": "user",
+    "details": "scanner@couple.local (scanner)"
+  },
+  {
+    "id": "ed030853-0725-4862-847c-958f9c975e4a",
+    "at": "2026-08-02T21:42:08.597Z",
+    "userId": "f41fbafb-e2e2-45a4-a99d-ddf6577047c7",
+    "userName": "Couple",
+    "userEmail": "admin@couple.local",
+    "role": "admin",
+    "action": "login",
+    "resource": "auth",
+    "details": "Connexion réussie"
+  },
+  {
+    "id": "daed1979-47d6-4c2e-9b35-d32d82b31245",
+    "at": "2026-08-02T21:42:03.669Z",
+    "userId": "0b8ce6b5-13cd-4bb3-8e5e-b6f4213feada",
+    "userName": "Editeur",
+    "userEmail": "editeur@couple.local",
+    "role": "editor",
+    "action": "logout",
+    "resource": "auth",
+    "details": "Déconnexion"
+  },
+  {
+    "id": "7d0c2900-0c6d-4a00-b477-4729ca4f29dd",
+    "at": "2026-08-02T21:37:40.823Z",
+    "userId": "0b8ce6b5-13cd-4bb3-8e5e-b6f4213feada",
+    "userName": "Editeur",
+    "userEmail": "editeur@couple.local",
+    "role": "editor",
+    "action": "login",
+    "resource": "auth",
+    "details": "Connexion réussie"
+  },
+  {
+    "id": "a2a75678-e0f0-4ee2-8732-cc7945736726",
+    "at": "2026-08-02T21:37:22.854Z",
+    "userId": "f41fbafb-e2e2-45a4-a99d-ddf6577047c7",
+    "userName": "Couple",
+    "userEmail": "admin@couple.local",
+    "role": "admin",
+    "action": "logout",
+    "resource": "auth",
+    "details": "Déconnexion"
+  },
+  {
+    "id": "e5e80369-fb36-4b73-9c76-a504e14d929e",
+    "at": "2026-08-02T21:36:09.819Z",
+    "userId": "f41fbafb-e2e2-45a4-a99d-ddf6577047c7",
+    "userName": "Couple",
+    "userEmail": "admin@couple.local",
+    "role": "admin",
+    "action": "create",
+    "resource": "user",
+    "details": "editeur@couple.local (editor)"
+  },
+  {
+    "id": "a5e38f5e-c151-436e-991d-c7df3168206e",
+    "at": "2026-08-02T21:33:40.428Z",
+    "userId": "f41fbafb-e2e2-45a4-a99d-ddf6577047c7",
+    "userName": "Couple",
+    "userEmail": "admin@couple.local",
+    "role": "admin",
+    "action": "login",
+    "resource": "auth",
+    "details": "Connexion réussie"
+  }
+]

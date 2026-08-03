@@ -1,0 +1,60 @@
+{
+  "eyebrow": {
+    "fr": "Le jour J",
+    "en": "The big day"
+  },
+  "title": {
+    "fr": "Programme",
+    "en": "Schedule"
+  },
+  "dressCode": {
+    "fr": "Tenue de soirée chic — notes champagne, forêt et or pâle bienvenues.",
+    "en": "Chic evening attire — champagne, forest, and pale gold notes welcome."
+  },
+  "directions": {
+    "fr": "Itinéraire →",
+    "en": "Directions →"
+  },
+  "venues": [
+    {
+      "id": "ceremony",
+      "title": {
+        "fr": "Cérémonie",
+        "en": "Ceremony"
+      },
+      "time": {
+        "fr": "16h00",
+        "en": "4:00 PM"
+      },
+      "place": {
+        "fr": "Lieu de cérémonie",
+        "en": "Ceremony venue"
+      },
+      "address": {
+        "fr": "À préciser",
+        "en": "To be confirmed"
+      },
+      "mapUrl": "https://maps.google.com"
+    },
+    {
+      "id": "reception",
+      "title": {
+        "fr": "Réception",
+        "en": "Reception"
+      },
+      "time": {
+        "fr": "19h00",
+        "en": "7:00 PM"
+      },
+      "place": {
+        "fr": "Lieu de réception",
+        "en": "Reception venue"
+      },
+      "address": {
+        "fr": "À préciser",
+        "en": "To be confirmed"
+      },
+      "mapUrl": "https://maps.google.com"
+    }
+  ]
+}

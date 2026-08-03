@@ -1,0 +1,78 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { SmoothScroll } from "@/components/motion/SmoothScroll";
+import { isLocale, locales, type Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/get-dictionary";
+import { coupleLabel } from "@/lib/site";
+import { getSiteContent } from "@/lib/storage";
+
+type Props = {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+};
+
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+
+  const dict = getDictionary(raw);
+  const siteContent = await getSiteContent();
+  const names = coupleLabel(siteContent);
+  const title = `${names} — ${dict.meta.titleSuffix}`;
+  const description = dict.meta.description;
+  const ogLocale = raw === "fr" ? "fr_FR" : "en_US";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/${raw}`,
+      languages: {
+        fr: "/fr",
+        en: "/en",
+        "x-default": "/fr",
+      },
+    },
+    openGraph: {
+      type: "website",
+      url: `/${raw}`,
+      title,
+      description,
+      siteName: names,
+      locale: ogLocale,
+      alternateLocale: raw === "fr" ? ["en_US"] : ["fr_FR"],
+      images: [
+        {
+          url: "/og.jpg",
+          width: 1200,
+          height: 630,
+          alt: names,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/og.jpg"],
+    },
+  };
+}
+
+export default async function LocaleLayout({ children, params }: Props) {
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) notFound();
+  const locale = raw as Locale;
+
+  return (
+    <SmoothScroll>
+      <div lang={locale} className="contents">
+        {children}
+      </div>
+    </SmoothScroll>
+  );
+}
