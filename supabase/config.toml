@@ -1,0 +1,13 @@
+# Configuration minimale Supabase CLI (optionnel)
+# https://supabase.com/docs/guides/cli/config
+
+project_id = "wedding-invite"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15
+
+[storage]
+enabled = true

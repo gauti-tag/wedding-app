@@ -7,8 +7,8 @@ Site d’invitation numérique chic (automne / soirée) avec galerie photo, RSVP
 - **Next.js 16** (App Router) + TypeScript
 - **Tailwind CSS 4**
 - Motion : **Framer Motion** + **GSAP** + **Lenis** (scroll fluide, reveals, parallax)
-- Stockage local JSON + fichiers (`data/`, `public/uploads/`) — prêt à migrer vers Supabase plus tard
-- Déploiement recommandé : **Vercel** + domaine custom
+- Stockage : **JSON local** en dev, **Supabase** (Postgres + Storage) en prod si les variables sont définies
+- Déploiement recommandé : **Vercel** + **Supabase**
 
 ## Démarrer
 
@@ -51,7 +51,29 @@ Copiez `.env.example` vers `.env.local` :
 ADMIN_PASSWORD=votre-mot-de-passe
 ADMIN_SECRET=une-longue-chaine-secrete
 NEXT_PUBLIC_SITE_URL=https://votre-domaine.fr
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
 ```
+
+Sans les variables Supabase, l’app continue d’utiliser `data/` et `public/uploads/`.
+
+## Supabase (production)
+
+1. Créer un projet sur [supabase.com](https://supabase.com)
+2. Dans **SQL Editor**, exécuter dans l’ordre les fichiers de `supabase/migrations/` :
+   - `20260803100000_init.sql`
+   - `20260803100001_storage.sql`
+   - `20260803100002_seed_content.sql`
+3. Copier l’URL + clés API (Settings → API) dans `.env.local` et dans Vercel
+4. Migrer les données locales :
+   ```bash
+   npm run db:migrate-json
+   ```
+   Options : `--dry-run`, `--skip-uploads`
+5. Redéployer sur Vercel avec les mêmes variables d’environnement
+
+Le backend Next.js utilise uniquement `SUPABASE_SERVICE_ROLE_KEY` (RLS activé, pas d’accès anon aux tables).
 
 ## SEO / PWA / QR
 
@@ -65,10 +87,9 @@ NEXT_PUBLIC_SITE_URL=https://votre-domaine.fr
 
 1. Pousser le repo sur GitHub
 2. Importer le projet dans Vercel
-3. Ajouter `ADMIN_PASSWORD`, `ADMIN_SECRET`, `NEXT_PUBLIC_SITE_URL`
-4. Déployer
-
-> Note : le stockage fichier local ne persiste pas sur Vercel (filesystem éphémère). Pour la prod, branchez ensuite **Supabase Storage + Postgres** (ou Cloudinary) — la couche `src/lib/storage.ts` est faite pour être remplacée proprement.
+3. Ajouter `ADMIN_PASSWORD`, `ADMIN_SECRET`, `NEXT_PUBLIC_SITE_URL`, et les 3 variables Supabase
+4. Appliquer les migrations SQL + `npm run db:migrate-json` (une fois)
+5. Déployer
 
 ## Scripts
 
@@ -77,3 +98,4 @@ NEXT_PUBLIC_SITE_URL=https://votre-domaine.fr
 - `npm run start` — serveur production
 - `npm run lint` — lint
 - `npm run icons` — régénérer favicon / PWA / og.jpg
+- `npm run db:migrate-json` — migrer `data/` + uploads vers Supabase
