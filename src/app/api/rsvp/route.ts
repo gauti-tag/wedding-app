@@ -10,7 +10,7 @@ import {
   normalizeCiPhone,
   normalizeEmail,
 } from "@/lib/validation";
-import { ticketWhatsAppForRsvp } from "@/lib/whatsapp";
+import { formatCiWhatsAppPhone, ticketWhatsAppForRsvp } from "@/lib/whatsapp";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -61,8 +61,9 @@ export async function POST(request: Request) {
     }
 
     const email = normalizeEmail(parsed.data.email);
-    const phone = normalizeCiPhone(parsed.data.phone);
-    if (!phone) {
+    const nationalPhone = normalizeCiPhone(parsed.data.phone);
+    const phone = nationalPhone ? formatCiWhatsAppPhone(nationalPhone) : null;
+    if (!nationalPhone || !phone) {
       return NextResponse.json(
         { error: "Numéro de téléphone ivoirien invalide.", code: "phone_invalid" },
         { status: 400 },
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (rsvps.some((r) => normalizeCiPhone(r.phone) === phone)) {
+    if (rsvps.some((r) => normalizeCiPhone(r.phone) === nationalPhone)) {
       return NextResponse.json(
         { error: "Ce numéro de téléphone a déjà été utilisé.", code: "phone_taken" },
         { status: 409 },

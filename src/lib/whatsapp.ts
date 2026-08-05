@@ -3,11 +3,18 @@ import { ticketPageUrl } from "@/lib/tickets";
 import type { Rsvp, SiteContent } from "@/lib/types";
 import { normalizeCiPhone } from "@/lib/validation";
 
-/** Digits internationaux sans + (ex. 2250700000000) pour wa.me */
+/** Digits internationaux sans + (ex. 2250708345891) pour wa.me — conserve le 0 national CI. */
 export function phoneToWhatsAppDigits(phone: string): string | null {
   const national = normalizeCiPhone(phone);
   if (!national) return null;
-  return `225${national.slice(1)}`;
+  return `225${national}`;
+}
+
+/** Affichage E.164 CI avec 0 national : +2250708345891 */
+export function formatCiWhatsAppPhone(phone: string): string | null {
+  const national = normalizeCiPhone(phone);
+  if (!national) return null;
+  return `+225${national}`;
 }
 
 export function buildTicketWhatsAppMessage(input: {
@@ -22,22 +29,46 @@ export function buildTicketWhatsAppMessage(input: {
 
   if (locale === "en") {
     return [
-      `Hello ${input.guestName}, thank you for your reply.`,
+      `Hello ${input.guestName}, 🌸`,
       "",
-      `Here is your invitation for ${input.coupleNames}:${dateLine}`,
+      "Our special day is almost here...",
+      "",
+      "We would be truly honored to have you join us as we celebrate one of the most meaningful moments of our lives.",
+      "",
+      `💍 ${input.coupleNames}`,
+      dateLine,
+      "",
+      "🎟️ Your official wedding invitation is available here:",
       input.ticketUrl,
       "",
-      "Please show the QR code at the entrance on the day.",
+      "📱 On the day of the ceremony, please present your QR code at the entrance to facilitate your check-in.",
+      "",
+      "Thank you for being part of this beautiful journey. ❤️",
+      "",
+      "With love and gratitude,",
+      input.coupleNames,
     ].join("\n");
   }
 
   return [
-    `Bonjour ${input.guestName}, merci pour votre réponse.`,
+    `Bonjour ${input.guestName}, 🌸`,
     "",
-    `Voici votre invitation ${input.coupleNames} :${dateLine}`,
+    "Le grand jour approche...",
+    "",
+    "Nous serions profondément honorés de vous compter parmi les personnes qui partageront ce moment unique de notre vie.",
+    "",
+    `💍 ${input.coupleNames}`,
+    dateLine,
+    "",
+    "🎟️ Votre invitation officielle est disponible ici :",
     input.ticketUrl,
     "",
-    "Présentez le QR code à l’entrée le jour de la cérémonie.",
+    "📱 Le jour de la cérémonie, il vous suffira de présenter votre QR Code à l'entrée pour faciliter votre accueil.",
+    "",
+    "Merci de faire partie de cette belle aventure. ❤️",
+    "",
+    "Avec toute notre affection,",
+    input.coupleNames,
   ].join("\n");
 }
 

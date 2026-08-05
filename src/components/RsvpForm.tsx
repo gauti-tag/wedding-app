@@ -1,10 +1,8 @@
-"use client";
+﻿"use client";
 
-import { useMemo, useState, type FormEvent } from "react";
-import { CiOperatorLogo } from "@/components/CiOperatorLogo";
+import { useState, type FormEvent } from "react";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
-import { detectCiOperator } from "@/lib/ci-operators";
 import { coupleLabel, site } from "@/lib/site";
 import type { SiteContent } from "@/lib/types";
 import {
@@ -33,9 +31,6 @@ export function RsvpForm({
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [whatsapp, setWhatsapp] = useState<WhatsAppPayload | null>(null);
-  const [phone, setPhone] = useState("");
-
-  const operator = useMemo(() => detectCiOperator(phone), [phone]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,7 +43,7 @@ export function RsvpForm({
     const payload = {
       name: String(form.get("name") || ""),
       email: String(form.get("email") || ""),
-      phone,
+      phone: String(form.get("phone") || ""),
       status: String(form.get("status") || "yes"),
       guestOf: String(form.get("guestOf") || "both"),
       message: String(form.get("message") || ""),
@@ -94,7 +89,6 @@ export function RsvpForm({
         });
       }
       setStatus("success");
-      setPhone("");
       formEl.reset();
     } catch (err) {
       setStatus("error");
@@ -157,33 +151,18 @@ export function RsvpForm({
               <label className="label" htmlFor="phone">
                 {dict.rsvp.phone}
               </label>
-              <div className="relative">
-                {operator ? (
-                  <span className="pointer-events-none absolute top-1/2 left-3 z-10 -translate-y-1/2">
-                    <CiOperatorLogo operatorId={operator.id} name={operator.name} />
-                  </span>
-                ) : null}
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  pattern={CI_PHONE_PATTERN}
-                  title={dict.rsvp.errorPhoneInvalid}
-                  inputMode="tel"
-                  className={`field ${operator ? "pl-12" : ""}`}
-                  placeholder={dict.rsvp.phonePlaceholder}
-                  autoComplete="tel"
-                  aria-describedby={operator ? "phone-operator" : undefined}
-                />
-              </div>
-              {operator ? (
-                <p id="phone-operator" className="mt-1.5 text-xs tracking-[0.08em] text-soft">
-                  {operator.name}
-                </p>
-              ) : null}
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                pattern={CI_PHONE_PATTERN}
+                title={dict.rsvp.errorPhoneInvalid}
+                inputMode="tel"
+                className="field"
+                placeholder={dict.rsvp.phonePlaceholder}
+                autoComplete="tel"
+              />
             </div>
           </div>
 
