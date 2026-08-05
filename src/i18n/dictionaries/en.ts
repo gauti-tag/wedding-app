@@ -58,8 +58,8 @@ const en: Dictionary = {
     namePlaceholder: "Your name",
     email: "Email",
     emailPlaceholder: "you@email.com",
-    phone: "Phone",
-    phonePlaceholder: "+225 07 00 00 00 00",
+    phone: "WhatsApp number",
+    phonePlaceholder: "+2250708345891",
     status: "Attendance",
     statusYes: "Joyfully — yes",
     statusMaybe: "Maybe",
@@ -82,7 +82,7 @@ const en: Dictionary = {
     errorPhoneTaken: "This phone number has already been used for a reply.",
     errorEmailInvalid: "Please enter a valid email address.",
     errorPhoneInvalid:
-      "Please enter a valid Ivory Coast phone number (e.g. +225 07 00 00 00 00).",
+      "Please enter a valid Ivorian WhatsApp number (e.g. +2250708345891).",
   },
   footer: {
     coupleSpace: "Couple space",
