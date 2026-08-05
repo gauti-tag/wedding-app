@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
-import { sendRsvpThankYouEmail } from "@/lib/mail";
 import { getRsvps, getSiteContent, saveRsvps } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
 import type { Rsvp } from "@/lib/types";
@@ -11,6 +10,7 @@ import {
   normalizeCiPhone,
   normalizeEmail,
 } from "@/lib/validation";
+import { ticketWhatsAppForRsvp } from "@/lib/whatsapp";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -25,6 +25,7 @@ const schema = z.object({
   status: z.enum(["yes", "no", "maybe"]),
   guestOf: z.enum(["francybel", "gautier", "both"]),
   message: z.string().trim().max(1000).optional().default(""),
+  locale: z.enum(["fr", "en"]).optional().default("fr"),
 });
 
 export async function GET() {
@@ -84,9 +85,10 @@ export async function POST(request: Request) {
       );
     }
 
-    let entry: Rsvp = {
+    const { locale, ...rsvpFields } = parsed.data;
+    const entry: Rsvp = {
       id: crypto.randomUUID(),
-      ...parsed.data,
+      ...rsvpFields,
       email,
       phone,
       createdAt: new Date().toISOString(),
@@ -95,18 +97,20 @@ export async function POST(request: Request) {
       emailSentAt: null,
     };
 
-    if (entry.status === "yes" || entry.status === "maybe") {
-      const siteContent = await getSiteContent();
-      const mailResult = await sendRsvpThankYouEmail(entry, siteContent);
-      if (mailResult.sent) {
-        entry = { ...entry, emailSentAt: new Date().toISOString() };
-      }
-    }
-
     rsvps.unshift(entry);
     await saveRsvps(rsvps);
 
-    return NextResponse.json({ ok: true, rsvp: entry });
+    let whatsapp: { ticketUrl: string; url: string } | null = null;
+    if (entry.status === "yes" || entry.status === "maybe") {
+      const siteContent = await getSiteContent();
+      const wa = ticketWhatsAppForRsvp(entry, siteContent, {
+        toGuest: false,
+        locale,
+      });
+      whatsapp = { ticketUrl: wa.ticketUrl, url: wa.url };
+    }
+
+    return NextResponse.json({ ok: true, rsvp: entry, whatsapp });
   } catch {
     return NextResponse.json(
       { error: "Impossible d'enregistrer le RSVP.", code: "server" },

@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
-import { sendRsvpThankYouEmail } from "@/lib/mail";
 import { getRsvps, getSiteContent, saveRsvps } from "@/lib/storage";
 import { ensureRsvpTicketFields } from "@/lib/tickets";
+import { ticketWhatsAppForRsvp } from "@/lib/whatsapp";
 
 const schema = z.object({
   id: z.string().min(1),
 });
 
+/** Prépare le lien WhatsApp et marque la carte comme envoyée. */
 export async function POST(request: Request) {
   const { user, error } = await requirePermission("manage_rsvp");
   if (error) return error;
@@ -26,30 +27,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "RSVP introuvable." }, { status: 404 });
     }
 
-    const siteContent = await getSiteContent();
-    const result = await sendRsvpThankYouEmail(rsvps[index], siteContent);
-
-    if (!result.sent) {
+    const rsvp = rsvps[index];
+    if (rsvp.status === "no") {
       return NextResponse.json(
-        {
-          error:
-            result.error === "missing_resend_api_key"
-              ? "Configurez RESEND_API_KEY pour envoyer les e-mails."
-              : result.error || "Envoi impossible.",
-        },
+        { error: "Pas de carte pour une réponse négative." },
+        { status: 400 },
+      );
+    }
+
+    const siteContent = await getSiteContent();
+    const wa = ticketWhatsAppForRsvp(rsvp, siteContent, { toGuest: true, locale: "fr" });
+    if (!wa.phoneDigits) {
+      return NextResponse.json(
+        { error: "Numéro WhatsApp invalide pour cet invité." },
         { status: 400 },
       );
     }
 
     rsvps[index] = {
-      ...rsvps[index],
+      ...rsvp,
       emailSentAt: new Date().toISOString(),
     };
     await saveRsvps(rsvps);
-    await auditAs(user, "resend", "ticket", rsvps[index].name);
+    await auditAs(user, "whatsapp", "ticket", rsvp.name);
 
-    return NextResponse.json({ ok: true, rsvp: rsvps[index] });
+    return NextResponse.json({
+      ok: true,
+      rsvp: rsvps[index],
+      whatsappUrl: wa.url,
+      ticketUrl: wa.ticketUrl,
+    });
   } catch {
-    return NextResponse.json({ error: "Renvoi impossible." }, { status: 500 });
+    return NextResponse.json({ error: "Préparation WhatsApp impossible." }, { status: 500 });
   }
 }

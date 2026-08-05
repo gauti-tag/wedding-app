@@ -73,6 +73,10 @@ const en: Dictionary = {
     submit: "Send my reply",
     submitting: "Sending…",
     success: "Thank you — your reply has been saved.",
+    successTicketHint:
+      "Keep your invitation card link. Show the QR code at the entrance on the day.",
+    viewTicket: "View my card",
+    whatsappCta: "Get it on WhatsApp",
     error: "Something went wrong.",
     errorEmailTaken: "This email has already been used for a reply.",
     errorPhoneTaken: "This phone number has already been used for a reply.",

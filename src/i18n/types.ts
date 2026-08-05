@@ -71,6 +71,9 @@ export type Dictionary = {
     submit: string;
     submitting: string;
     success: string;
+    successTicketHint: string;
+    viewTicket: string;
+    whatsappCta: string;
     error: string;
     errorEmailTaken: string;
     errorPhoneTaken: string;

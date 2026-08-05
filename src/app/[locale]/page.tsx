@@ -63,7 +63,7 @@ export default async function Home({ params }: Props) {
           desserts={desserts}
         />
         <GallerySection photos={photos} dict={dict} />
-        <RsvpForm dict={dict} siteContent={siteContent} />
+        <RsvpForm dict={dict} locale={raw} siteContent={siteContent} />
       </main>
       <SiteFooter dict={dict} siteContent={siteContent} locale={raw} />
     </>

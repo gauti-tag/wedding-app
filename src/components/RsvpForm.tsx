@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
 import { coupleLabel, site } from "@/lib/site";
 import type { SiteContent } from "@/lib/types";
@@ -13,20 +14,29 @@ import {
 
 type Status = "idle" | "loading" | "success" | "error";
 
+type WhatsAppPayload = {
+  ticketUrl: string;
+  url: string;
+};
+
 export function RsvpForm({
   dict,
+  locale,
   siteContent,
 }: {
   dict: Dictionary;
+  locale: Locale;
   siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo">;
 }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  const [whatsapp, setWhatsapp] = useState<WhatsAppPayload | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("loading");
     setError("");
+    setWhatsapp(null);
 
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
@@ -37,6 +47,7 @@ export function RsvpForm({
       status: String(form.get("status") || "yes"),
       guestOf: String(form.get("guestOf") || "both"),
       message: String(form.get("message") || ""),
+      locale,
     };
 
     if (!isValidEmail(payload.email)) {
@@ -70,6 +81,12 @@ export function RsvpForm({
                   ? dict.rsvp.errorPhoneInvalid
                   : data.error || dict.rsvp.error;
         throw new Error(message);
+      }
+      if (data.whatsapp?.ticketUrl && data.whatsapp?.url) {
+        setWhatsapp({
+          ticketUrl: data.whatsapp.ticketUrl,
+          url: data.whatsapp.url,
+        });
       }
       setStatus("success");
       formEl.reset();
@@ -196,13 +213,38 @@ export function RsvpForm({
           {status === "success" || status === "error" ? (
             <div
               role={status === "error" ? "alert" : "status"}
-              className={`meta-date px-4 py-3 text-center text-sm leading-relaxed ${
+              className={`space-y-4 px-4 py-4 text-sm leading-relaxed ${
                 status === "success"
                   ? "border border-line bg-forest text-champagne"
                   : "border border-red-200 bg-red-50 text-red-800"
               }`}
             >
-              {status === "success" ? dict.rsvp.success : error}
+              <p className="meta-date text-center">
+                {status === "success" ? dict.rsvp.success : error}
+              </p>
+              {status === "success" && whatsapp ? (
+                <>
+                  <p className="text-center text-soft">{dict.rsvp.successTicketHint}</p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                    <a
+                      href={whatsapp.ticketUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-ghost inline-flex justify-center no-underline"
+                    >
+                      {dict.rsvp.viewTicket}
+                    </a>
+                    <a
+                      href={whatsapp.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-primary inline-flex justify-center no-underline"
+                    >
+                      {dict.rsvp.whatsappCta}
+                    </a>
+                  </div>
+                </>
+              ) : null}
             </div>
           ) : null}
         </form>

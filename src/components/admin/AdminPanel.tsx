@@ -28,6 +28,18 @@ import type {
 
 const ADMIN_NAV_OFFSET = 96;
 
+function formatAdminDate(iso: string, withTime = false) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  if (!withTime) return `${dd}/${mm}/${yyyy}`;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+}
+
 function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
@@ -196,7 +208,7 @@ export function AdminPanel({
         r.message,
         r.ticketToken,
         r.checkedInAt ? "check-in" : "",
-        r.emailSentAt ? "mail" : "",
+        r.emailSentAt ? "whatsapp" : "",
       ]
         .join(" ")
         .toLowerCase();
@@ -272,7 +284,7 @@ export function AdminPanel({
     scrollToAdminSection(href);
   }
 
-  async function onResendTicket(id: string) {
+  async function onWhatsAppTicket(id: string) {
     setResendBusyId(id);
     setMessage("");
     try {
@@ -283,13 +295,16 @@ export function AdminPanel({
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data.error || "Renvoi du mail impossible.");
+        setMessage(data.error || "WhatsApp impossible.");
         return;
       }
       setRsvps((prev) => prev.map((r) => (r.id === id ? data.rsvp : r)));
-      setMessage("Carte / e-mail renvoyé.");
+      if (data.whatsappUrl) {
+        window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
+      }
+      setMessage("WhatsApp ouvert — envoyez le message à l’invité.");
     } catch {
-      setMessage("Renvoi du mail impossible.");
+      setMessage("WhatsApp impossible.");
     } finally {
       setResendBusyId(null);
     }
@@ -584,7 +599,7 @@ export function AdminPanel({
                 <th className="px-4 py-3 font-medium">Téléphone</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3 font-medium">Invité(e) de</th>
-                <th className="px-4 py-3 font-medium">Mail carte</th>
+                <th className="px-4 py-3 font-medium">WhatsApp</th>
                 <th className="px-4 py-3 font-medium">Check-in</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
@@ -614,15 +629,11 @@ export function AdminPanel({
                     <td className="px-4 py-3 text-mist">
                       {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
                     </td>
-                    <td className="px-4 py-3 text-soft">
-                      {rsvp.emailSentAt
-                        ? new Date(rsvp.emailSentAt).toLocaleDateString("fr-FR")
-                        : "—"}
+                    <td className="px-4 py-3 text-soft" suppressHydrationWarning>
+                      {rsvp.emailSentAt ? formatAdminDate(rsvp.emailSentAt) : "—"}
                     </td>
-                    <td className="px-4 py-3 text-soft">
-                      {rsvp.checkedInAt
-                        ? new Date(rsvp.checkedInAt).toLocaleString("fr-FR")
-                        : "—"}
+                    <td className="px-4 py-3 text-soft" suppressHydrationWarning>
+                      {rsvp.checkedInAt ? formatAdminDate(rsvp.checkedInAt, true) : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-2">
@@ -640,10 +651,10 @@ export function AdminPanel({
                               <button
                                 type="button"
                                 disabled={resendBusyId === rsvp.id}
-                                onClick={() => void onResendTicket(rsvp.id)}
+                                onClick={() => void onWhatsAppTicket(rsvp.id)}
                                 className="text-left text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
                               >
-                                {resendBusyId === rsvp.id ? "Envoi…" : "Renvoyer mail"}
+                                {resendBusyId === rsvp.id ? "Ouverture…" : "WhatsApp"}
                               </button>
                             ) : null}
                           </>

@@ -73,8 +73,12 @@ const fr: Dictionary = {
     submit: "Envoyer ma réponse",
     submitting: "Envoi…",
     success: "Merci — votre réponse a bien été enregistrée.",
+    successTicketHint:
+      "Conservez le lien de votre carte d’invitation. Présentez le QR à l’entrée le jour J.",
+    viewTicket: "Voir ma carte",
+    whatsappCta: "Recevoir sur WhatsApp",
     error: "Une erreur est survenue.",
-    errorEmailTaken: "Cet email a déjà été utiliséé pour une réponse.",
+    errorEmailTaken: "Cet email a déjà été utilisé pour une réponse.",
     errorPhoneTaken: "Ce numéro de téléphone a déjà été utilisé pour une réponse.",
     errorEmailInvalid: "Veuillez saisir une adresse email valide.",
     errorPhoneInvalid:
