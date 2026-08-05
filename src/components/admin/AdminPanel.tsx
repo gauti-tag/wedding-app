@@ -348,9 +348,11 @@ export function AdminPanel({
       "guestOf",
       "message",
       "ticketToken",
+      "submittedAt",
+      "whatsappSentAt",
+      "ticketViewedAt",
+      "ticketViewCount",
       "checkedInAt",
-      "emailSentAt",
-      "createdAt",
     ];
     const rows = rsvps.map((r) =>
       [
@@ -361,9 +363,11 @@ export function AdminPanel({
         guestOfLabels[r.guestOf] || r.guestOf,
         r.message,
         r.ticketToken,
-        r.checkedInAt || "",
-        r.emailSentAt || "",
         r.createdAt,
+        r.emailSentAt || "",
+        r.ticketViewedAt || "",
+        String(r.ticketViewCount ?? 0),
+        r.checkedInAt || "",
       ]
         .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
         .join(","),
@@ -599,7 +603,7 @@ export function AdminPanel({
                 <th className="px-4 py-3 font-medium">Téléphone</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3 font-medium">Invité(e) de</th>
-                <th className="px-4 py-3 font-medium">WhatsApp</th>
+                <th className="px-4 py-3 font-medium">Suivi</th>
                 <th className="px-4 py-3 font-medium">Check-in</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
               </tr>
@@ -629,8 +633,22 @@ export function AdminPanel({
                     <td className="px-4 py-3 text-mist">
                       {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
                     </td>
-                    <td className="px-4 py-3 text-soft" suppressHydrationWarning>
-                      {rsvp.emailSentAt ? formatAdminDate(rsvp.emailSentAt) : "—"}
+                    <td className="px-4 py-3 text-xs leading-5 text-soft" suppressHydrationWarning>
+                      <div>
+                        <span className="text-mist">Soumis</span> ·{" "}
+                        {formatAdminDate(rsvp.createdAt, true)}
+                      </div>
+                      <div>
+                        <span className="text-mist">WhatsApp</span> ·{" "}
+                        {rsvp.emailSentAt ? formatAdminDate(rsvp.emailSentAt, true) : "—"}
+                      </div>
+                      <div>
+                        <span className="text-mist">Carte</span> ·{" "}
+                        {rsvp.ticketViewedAt ? formatAdminDate(rsvp.ticketViewedAt, true) : "—"}
+                      </div>
+                      <div>
+                        <span className="text-mist">Vues</span> · {rsvp.ticketViewCount ?? 0}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-soft" suppressHydrationWarning>
                       {rsvp.checkedInAt ? formatAdminDate(rsvp.checkedInAt, true) : "—"}
@@ -640,7 +658,7 @@ export function AdminPanel({
                         {rsvp.status !== "no" ? (
                           <>
                             <a
-                              href={`/ticket/${rsvp.ticketToken}`}
+                              href={`/ticket/${rsvp.ticketToken}?preview=1`}
                               target="_blank"
                               rel="noreferrer"
                               className="text-xs tracking-[0.12em] text-champagne uppercase no-underline hover:text-mist"

@@ -35,5 +35,7 @@ export function ensureRsvpTicketFields(rsvp: Rsvp): Rsvp {
     ticketToken: rsvp.ticketToken || createTicketToken(),
     checkedInAt: rsvp.checkedInAt ?? null,
     emailSentAt: rsvp.emailSentAt ?? null,
+    ticketViewedAt: rsvp.ticketViewedAt ?? null,
+    ticketViewCount: typeof rsvp.ticketViewCount === "number" ? rsvp.ticketViewCount : 0,
   };
 }

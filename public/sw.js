@@ -1,5 +1,5 @@
 /* Wedding invitation PWA service worker */
-const CACHE_VERSION = "wedding-pwa-v1";
+const CACHE_VERSION = "wedding-pwa-v2";
 const PRECACHE = [
   "/",
   "/fr",
@@ -38,14 +38,18 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Never cache APIs or admin mutations surface
+  // Never cache Next.js bundles (évite hydratation avec un vieux chunk).
+  if (url.pathname.startsWith("/_next/")) {
+    return;
+  }
+
+  // Never cache APIs or admin
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin")) {
     return;
   }
 
-  // Static assets: cache-first
+  // Icons / uploads / images: cache-first
   if (
-    url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
     url.pathname.startsWith("/uploads/") ||
     url.pathname.endsWith(".png") ||

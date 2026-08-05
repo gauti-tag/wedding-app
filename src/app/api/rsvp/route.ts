@@ -96,6 +96,8 @@ export async function POST(request: Request) {
       ticketToken: createTicketToken(),
       checkedInAt: null,
       emailSentAt: null,
+      ticketViewedAt: null,
+      ticketViewCount: 0,
     };
 
     rsvps.unshift(entry);

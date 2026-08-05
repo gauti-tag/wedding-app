@@ -241,6 +241,8 @@ async function migrateRsvps() {
     ticket_token: r.ticketToken,
     checked_in_at: r.checkedInAt || null,
     email_sent_at: r.emailSentAt || null,
+    ticket_viewed_at: r.ticketViewedAt || null,
+    ticket_view_count: r.ticketViewCount || 0,
     created_at: r.createdAt || new Date().toISOString(),
   }));
 

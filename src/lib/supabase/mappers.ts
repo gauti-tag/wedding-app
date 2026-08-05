@@ -30,6 +30,8 @@ export type DbRsvp = {
   ticket_token: string;
   checked_in_at: string | null;
   email_sent_at: string | null;
+  ticket_viewed_at: string | null;
+  ticket_view_count: number;
   created_at: string;
 };
 
@@ -93,6 +95,8 @@ export function mapRsvp(row: DbRsvp): Rsvp {
     ticketToken: row.ticket_token,
     checkedInAt: row.checked_in_at,
     emailSentAt: row.email_sent_at,
+    ticketViewedAt: row.ticket_viewed_at ?? null,
+    ticketViewCount: row.ticket_view_count ?? 0,
     createdAt: row.created_at,
   };
 }
@@ -109,6 +113,8 @@ export function toDbRsvp(rsvp: Rsvp): DbRsvp {
     ticket_token: rsvp.ticketToken,
     checked_in_at: rsvp.checkedInAt,
     email_sent_at: rsvp.emailSentAt,
+    ticket_viewed_at: rsvp.ticketViewedAt,
+    ticket_view_count: rsvp.ticketViewCount ?? 0,
     created_at: rsvp.createdAt,
   };
 }

@@ -141,7 +141,12 @@ export async function getRsvps(): Promise<Rsvp[]> {
     const raw = await readJsonFile<Rsvp[]>(path.join(dataDir, "rsvps.json"), []);
     const rsvps = raw.map(ensureRsvpTicketFields);
     const needsPersist = raw.some(
-      (r) => !r.ticketToken || r.checkedInAt === undefined || r.emailSentAt === undefined,
+      (r) =>
+        !r.ticketToken ||
+        r.checkedInAt === undefined ||
+        r.emailSentAt === undefined ||
+        r.ticketViewedAt === undefined ||
+        r.ticketViewCount === undefined,
     );
     if (needsPersist && rsvps.length) {
       await writeJsonFile(path.join(dataDir, "rsvps.json"), rsvps);
@@ -181,6 +186,42 @@ export async function saveRsvps(rsvps: Rsvp[]) {
     const { error } = await supabase.from("rsvps").upsert(rows);
     if (error) throw error;
   }
+}
+
+/** Enregistre une consultation de carte (hors aperçu admin). */
+export async function recordTicketView(token: string): Promise<void> {
+  const now = new Date().toISOString();
+
+  if (!isSupabaseConfigured()) {
+    const rsvps = await getRsvps();
+    const index = rsvps.findIndex((r) => r.ticketToken === token);
+    if (index < 0 || rsvps[index].status === "no") return;
+    rsvps[index] = {
+      ...rsvps[index],
+      ticketViewedAt: now,
+      ticketViewCount: (rsvps[index].ticketViewCount || 0) + 1,
+    };
+    await writeJsonFile(path.join(dataDir, "rsvps.json"), rsvps);
+    return;
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("rsvps")
+    .select("id, ticket_view_count, status")
+    .eq("ticket_token", token)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || data.status === "no") return;
+
+  const { error: updateError } = await supabase
+    .from("rsvps")
+    .update({
+      ticket_viewed_at: now,
+      ticket_view_count: (data.ticket_view_count || 0) + 1,
+    })
+    .eq("id", data.id);
+  if (updateError) throw updateError;
 }
 
 export async function getMenu(): Promise<MenuContent> {

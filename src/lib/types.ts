@@ -27,8 +27,12 @@ export type Rsvp = {
   ticketToken: string;
   /** Date ISO du check-in physique, null si pas encore arrivé. */
   checkedInAt: string | null;
-  /** Date ISO d’envoi du mail de remerciement + carte. */
+  /** Date ISO d’envoi / ouverture WhatsApp (carte transmise). */
   emailSentAt: string | null;
+  /** Date ISO de la dernière consultation de la carte `/ticket/...`. */
+  ticketViewedAt: string | null;
+  /** Nombre de consultations de la carte via le lien. */
+  ticketViewCount: number;
 };
 
 export type LocalizedText = {
