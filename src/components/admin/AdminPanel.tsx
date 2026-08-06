@@ -10,6 +10,7 @@ import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
+import { maskEmail, maskName, maskPhone } from "@/lib/mask-pii";
 import { hasPermission, roleLabels, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
@@ -173,6 +174,8 @@ export function AdminPanel({
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [rsvpPage, setRsvpPage] = useState(1);
   const [rsvpQuery, setRsvpQuery] = useState("");
+  const [revealedRsvpIds, setRevealedRsvpIds] = useState<Record<string, true>>({});
+  const canRevealPii = currentUser.role === "admin";
 
   const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
   const RSVP_PAGE_SIZE = 10;
@@ -622,13 +625,37 @@ export function AdminPanel({
                   </td>
                 </tr>
               ) : (
-                pagedRsvps.map((rsvp) => (
+                pagedRsvps.map((rsvp) => {
+                  const revealed = canRevealPii && Boolean(revealedRsvpIds[rsvp.id]);
+                  const displayName = revealed ? rsvp.name : maskName(rsvp.name);
+                  const displayEmail = revealed ? rsvp.email : maskEmail(rsvp.email);
+                  const displayPhone = revealed
+                    ? rsvp.phone || "—"
+                    : maskPhone(rsvp.phone || "");
+
+                  return (
                   <tr key={rsvp.id} className="border-t border-line">
                     <td className="px-4 py-3">
-                      <div className="text-mist">{rsvp.name}</div>
-                      <div className="text-xs text-soft">{rsvp.email}</div>
+                      <div className="text-mist">{displayName}</div>
+                      <div className="text-xs text-soft">{displayEmail}</div>
+                      {canRevealPii ? (
+                        <button
+                          type="button"
+                          className="mt-1 text-left text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist"
+                          onClick={() =>
+                            setRevealedRsvpIds((prev) => {
+                              const next = { ...prev };
+                              if (next[rsvp.id]) delete next[rsvp.id];
+                              else next[rsvp.id] = true;
+                              return next;
+                            })
+                          }
+                        >
+                          {revealed ? "Masquer" : "Afficher"}
+                        </button>
+                      ) : null}
                     </td>
-                    <td className="px-4 py-3 text-soft">{rsvp.phone || "—"}</td>
+                    <td className="px-4 py-3 text-soft">{displayPhone}</td>
                     <td className="px-4 py-3 text-champagne">{rsvp.status}</td>
                     <td className="px-4 py-3 text-mist">
                       {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
@@ -690,7 +717,8 @@ export function AdminPanel({
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
