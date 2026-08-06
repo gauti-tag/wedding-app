@@ -6,6 +6,7 @@ import { AdminAuditLog } from "@/components/admin/AdminAuditLog";
 import { AdminCheckIn } from "@/components/admin/AdminCheckIn";
 import { AdminDessertsEditor } from "@/components/admin/AdminDessertsEditor";
 import { AdminDrinksEditor } from "@/components/admin/AdminDrinksEditor";
+import { AdminInviteQr } from "@/components/admin/AdminInviteQr";
 import { AdminMenuEditor } from "@/components/admin/AdminMenuEditor";
 import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
@@ -111,6 +112,7 @@ const albumLabels: Record<PhotoAlbum, string> = {
 };
 
 const adminNav: { href: string; label: string; permission: Permission }[] = [
+  { href: "#admin-invite-qr", label: "QR invitation", permission: "manage_content" },
   { href: "#admin-photos", label: "Photos", permission: "manage_photos" },
   { href: "#admin-site", label: "Couple & hero", permission: "manage_content" },
   { href: "#admin-story", label: "Histoire", permission: "manage_content" },
@@ -438,6 +440,14 @@ export function AdminPanel({
             </div>
           ))}
         </div>
+      ) : null}
+
+      {can("manage_content") ? (
+        <AdminInviteQr
+          partnerOne={site.partnerOne}
+          partnerTwo={site.partnerTwo}
+          weddingDateLabel={site.hero.weddingDateLabel}
+        />
       ) : null}
 
       {can("manage_photos") ? (
