@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type MouseEvent } from "react";
+import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { AdminAuditLog } from "@/components/admin/AdminAuditLog";
 import { AdminCheckIn } from "@/components/admin/AdminCheckIn";
 import { AdminDessertsEditor } from "@/components/admin/AdminDessertsEditor";
@@ -168,8 +169,8 @@ export function AdminPanel({
   const [album, setAlbum] = useState<PhotoAlbum>("gallery");
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const { showSuccess, showError, showInfo, AlertDialog } = useAdminAlert();
   const [resendBusyId, setResendBusyId] = useState<string | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [rsvpPage, setRsvpPage] = useState(1);
@@ -230,11 +231,10 @@ export function AdminPanel({
   async function onUpload(event: FormEvent) {
     event.preventDefault();
     if (!file) {
-      setMessage("Choisissez une image.");
+      showInfo("Choisissez une image.");
       return;
     }
     setBusy(true);
-    setMessage("");
     const form = new FormData();
     form.append("file", file);
     form.append("album", album);
@@ -245,7 +245,7 @@ export function AdminPanel({
     setBusy(false);
 
     if (!res.ok) {
-      setMessage(data.error || "Upload impossible.");
+      showError(data.error || "Upload impossible.");
       return;
     }
 
@@ -258,7 +258,7 @@ export function AdminPanel({
     });
     setFile(null);
     setCaption("");
-    setMessage("Photo ajoutée.");
+    showSuccess("Photo ajoutée.");
   }
 
   async function onDelete(id: string) {
@@ -270,7 +270,7 @@ export function AdminPanel({
     });
     if (!res.ok) {
       const data = await res.json();
-      setMessage(data.error || "Suppression impossible.");
+      showError(data.error || "Suppression impossible.");
       return;
     }
     setPhotos((prev) => prev.filter((photo) => photo.id !== id));
@@ -288,7 +288,6 @@ export function AdminPanel({
 
   async function onWhatsAppTicket(id: string) {
     setResendBusyId(id);
-    setMessage("");
     try {
       const res = await fetch("/api/rsvp/resend-ticket", {
         method: "POST",
@@ -297,16 +296,16 @@ export function AdminPanel({
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data.error || "WhatsApp impossible.");
+        showError(data.error || "WhatsApp impossible.");
         return;
       }
       setRsvps((prev) => prev.map((r) => (r.id === id ? data.rsvp : r)));
       if (data.whatsappUrl) {
         window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
       }
-      setMessage("WhatsApp ouvert — envoyez le message à l’invité.");
+      showSuccess("WhatsApp ouvert — envoyez le message à l’invité.");
     } catch {
-      setMessage("WhatsApp impossible.");
+      showError("WhatsApp impossible.");
     } finally {
       setResendBusyId(null);
     }
@@ -315,7 +314,6 @@ export function AdminPanel({
   async function onDeleteRsvp(id: string, name: string) {
     if (!confirm(`Supprimer la réponse de ${name} ?`)) return;
     setDeleteBusyId(id);
-    setMessage("");
     try {
       const res = await fetch("/api/rsvp", {
         method: "DELETE",
@@ -324,7 +322,7 @@ export function AdminPanel({
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data.error || "Suppression impossible.");
+        showError(data.error || "Suppression impossible.");
         return;
       }
       setRsvps((prev) => {
@@ -333,9 +331,9 @@ export function AdminPanel({
         setRsvpPage((page) => Math.min(page, nextPageCount));
         return next;
       });
-      setMessage("RSVP supprimé.");
+      showSuccess("RSVP supprimé.");
     } catch {
-      setMessage("Suppression impossible.");
+      showError("Suppression impossible.");
     } finally {
       setDeleteBusyId(null);
     }
@@ -385,6 +383,7 @@ export function AdminPanel({
 
   return (
     <div className="section-shell py-10 md:py-14">
+      {AlertDialog}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="eyebrow">Espace couple</p>
@@ -518,7 +517,6 @@ export function AdminPanel({
           <button type="submit" disabled={busy} className="btn-primary disabled:opacity-60">
             {busy ? "Upload…" : "Uploader"}
           </button>
-          {message ? <p className="text-sm text-champagne">{message}</p> : null}
         </form>
 
         <div className="space-y-4">

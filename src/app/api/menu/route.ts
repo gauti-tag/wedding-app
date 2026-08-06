@@ -49,7 +49,14 @@ export async function PUT(request: Request) {
     await saveMenu(parsed.data);
     await auditAs(user, "update", "menu", `${parsed.data.cuisines.length} cuisines`);
     return NextResponse.json({ ok: true, menu: parsed.data });
-  } catch {
-    return NextResponse.json({ error: "Impossible d’enregistrer le menu." }, { status: 500 });
+  } catch (err) {
+    console.error("[api/menu PUT]", err);
+    return NextResponse.json(
+      {
+        error:
+          err instanceof Error ? err.message : "Impossible d’enregistrer le menu.",
+      },
+      { status: 500 },
+    );
   }
 }

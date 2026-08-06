@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import type { LocalizedText, MenuContent, MenuCuisine, MenuDish } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -62,8 +63,32 @@ function LocalizedFields({
 
 export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
   const [menu, setMenu] = useState<MenuContent>(initialMenu);
-  const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const { showSuccess, showError, AlertDialog } = useAdminAlert();
+
+  async function persist(next: MenuContent, successMessage = "Menu enregistré.") {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/menu", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Enregistrement impossible.");
+        return false;
+      }
+      setMenu(data.menu);
+      showSuccess(successMessage);
+      return true;
+    } catch {
+      showError("Enregistrement impossible.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function updateCuisine(cuisineId: string, updater: (cuisine: MenuCuisine) => MenuCuisine) {
     setMenu((prev) => ({
@@ -89,12 +114,14 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
     }));
   }
 
-  function removeCuisine(cuisineId: string) {
+  async function removeCuisine(cuisineId: string) {
     if (!confirm("Supprimer cette cuisine et tous ses plats ?")) return;
-    setMenu((prev) => ({
-      ...prev,
-      cuisines: prev.cuisines.filter((cuisine) => cuisine.id !== cuisineId),
-    }));
+    const next = {
+      ...menu,
+      cuisines: menu.cuisines.filter((cuisine) => cuisine.id !== cuisineId),
+    };
+    setMenu(next);
+    await persist(next, "Cuisine supprimée.");
   }
 
   function addDish(cuisineId: string) {
@@ -109,33 +136,26 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
     }));
   }
 
-  function removeDish(cuisineId: string, dishId: string) {
-    updateCuisine(cuisineId, (cuisine) => ({
-      ...cuisine,
-      dishes: cuisine.dishes.filter((dish) => dish.id !== dishId),
-    }));
+  async function removeDish(cuisineId: string, dishId: string) {
+    const next: MenuContent = {
+      ...menu,
+      cuisines: menu.cuisines.map((cuisine) =>
+        cuisine.id === cuisineId
+          ? { ...cuisine, dishes: cuisine.dishes.filter((dish) => dish.id !== dishId) }
+          : cuisine,
+      ),
+    };
+    setMenu(next);
+    await persist(next, "Plat supprimé.");
   }
 
   async function onSave() {
-    setBusy(true);
-    setStatus("");
-    const res = await fetch("/api/menu", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(menu),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setStatus(data.error || "Enregistrement impossible.");
-      return;
-    }
-    setMenu(data.menu);
-    setStatus("Menu enregistré.");
+    await persist(menu);
   }
 
   return (
     <section id="admin-menu" className="mt-14 scroll-mt-28 space-y-6">
+      {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="section-title text-3xl text-mist">Menu de réception</h2>
@@ -152,8 +172,6 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
           </button>
         </div>
       </div>
-
-      {status ? <p className="text-sm text-champagne">{status}</p> : null}
 
       <div className="space-y-4 border border-line bg-white p-6">
         <LocalizedFields
@@ -183,8 +201,9 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
             </h3>
             <button
               type="button"
-              onClick={() => removeCuisine(cuisine.id)}
-              className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne"
+              disabled={busy}
+              onClick={() => void removeCuisine(cuisine.id)}
+              className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne disabled:opacity-50"
             >
               Supprimer la cuisine
             </button>
@@ -217,8 +236,9 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
                   <p className="text-sm text-champagne">Plat {dishIndex + 1}</p>
                   <button
                     type="button"
-                    onClick={() => removeDish(cuisine.id, dish.id)}
-                    className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne"
+                    disabled={busy}
+                    onClick={() => void removeDish(cuisine.id, dish.id)}
+                    className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne disabled:opacity-50"
                   >
                     Supprimer
                   </button>

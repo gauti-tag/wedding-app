@@ -2,6 +2,7 @@
 
 import { Html5Qrcode } from "html5-qrcode";
 import { useEffect, useRef, useState } from "react";
+import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import type { Rsvp } from "@/lib/types";
 
 type CheckInResult = {
@@ -16,8 +17,8 @@ export function AdminCheckIn() {
   const [manualToken, setManualToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
-  const [message, setMessage] = useState("");
   const [lastGuest, setLastGuest] = useState<Rsvp | null>(null);
+  const { showSuccess, showError, showInfo, AlertDialog } = useAdminAlert();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanRef = useRef("");
 
@@ -42,7 +43,6 @@ export function AdminCheckIn() {
   }
 
   async function startScanner() {
-    setMessage("");
     try {
       const scanner = new Html5Qrcode("admin-qr-reader");
       scannerRef.current = scanner;
@@ -59,7 +59,7 @@ export function AdminCheckIn() {
       );
     } catch {
       setScanning(false);
-      setMessage("Caméra indisponible. Saisissez le jeton manuellement.");
+      showInfo("Caméra indisponible. Saisissez le jeton manuellement.");
     }
   }
 
@@ -67,7 +67,6 @@ export function AdminCheckIn() {
     const token = rawToken.trim();
     if (!token) return;
     setBusy(true);
-    setMessage("");
     try {
       const res = await fetch("/api/check-in", {
         method: "POST",
@@ -77,18 +76,18 @@ export function AdminCheckIn() {
       const data = (await res.json()) as CheckInResult;
       if (!res.ok) {
         setLastGuest(data.rsvp || null);
-        setMessage(data.error || "Check-in refusé.");
+        showError(data.error || "Check-in refusé.");
         return;
       }
       setLastGuest(data.rsvp || null);
-      setMessage(
-        data.alreadyCheckedIn
-          ? `${data.rsvp?.name || "Invité"} est déjà enregistré(e).`
-          : `${data.rsvp?.name || "Invité"} — présence enregistrée.`,
-      );
+      if (data.alreadyCheckedIn) {
+        showInfo(`${data.rsvp?.name || "Invité"} est déjà enregistré(e).`);
+      } else {
+        showSuccess(`${data.rsvp?.name || "Invité"} — présence enregistrée.`);
+      }
       setManualToken("");
     } catch {
-      setMessage("Erreur réseau lors du check-in.");
+      showError("Erreur réseau lors du check-in.");
     } finally {
       setBusy(false);
       window.setTimeout(() => {
@@ -99,6 +98,7 @@ export function AdminCheckIn() {
 
   return (
     <section id="admin-checkin" className="mt-14 scroll-mt-28 space-y-6">
+      {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="section-title text-3xl text-mist">Check-in jour J</h2>
@@ -151,8 +151,6 @@ export function AdminCheckIn() {
           >
             {busy ? "Vérification…" : "Enregistrer la présence"}
           </button>
-
-          {message ? <p className="meta-date text-sm text-champagne">{message}</p> : null}
 
           {lastGuest ? (
             <div className="border border-line bg-forest p-4 text-sm">

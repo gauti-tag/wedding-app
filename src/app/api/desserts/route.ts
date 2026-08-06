@@ -42,9 +42,13 @@ export async function PUT(request: Request) {
     await saveDesserts(parsed.data);
     await auditAs(user, "update", "desserts", `${parsed.data.items.length} desserts`);
     return NextResponse.json({ ok: true, desserts: parsed.data });
-  } catch {
+  } catch (err) {
+    console.error("[api/desserts PUT]", err);
     return NextResponse.json(
-      { error: "Impossible d’enregistrer les desserts." },
+      {
+        error:
+          err instanceof Error ? err.message : "Impossible d’enregistrer les desserts.",
+      },
       { status: 500 },
     );
   }

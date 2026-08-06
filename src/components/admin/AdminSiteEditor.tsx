@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import type { LocalizedText, SiteContent } from "@/lib/types";
 
 function toDatetimeLocal(value: string) {
@@ -65,30 +66,35 @@ export function AdminSiteEditor({
   onSaved?: (site: SiteContent) => void;
 }) {
   const [content, setContent] = useState<SiteContent>(initialSite);
-  const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
   async function onSave() {
     setBusy(true);
-    setStatus("");
-    const res = await fetch("/api/site", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(content),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setStatus(data.error || "Enregistrement impossible.");
-      return;
+    try {
+      const res = await fetch("/api/site", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(content),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Enregistrement impossible.");
+        return;
+      }
+      setContent(data.site);
+      onSaved?.(data.site);
+      showSuccess("Identité & hero enregistrés.");
+    } catch {
+      showError("Enregistrement impossible.");
+    } finally {
+      setBusy(false);
     }
-    setContent(data.site);
-    onSaved?.(data.site);
-    setStatus("Identité & hero enregistrés.");
   }
 
   return (
     <section id="admin-site" className="mt-14 scroll-mt-28 space-y-6">
+      {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="section-title text-3xl text-mist">Couple & hero</h2>
@@ -106,8 +112,6 @@ export function AdminSiteEditor({
           {busy ? "Enregistrement…" : "Enregistrer"}
         </button>
       </div>
-
-      {status ? <p className="text-sm text-champagne">{status}</p> : null}
 
       <div className="space-y-4 border border-line bg-white p-5">
         <p className="text-xs tracking-[0.16em] text-champagne uppercase">Futurs mariés</p>

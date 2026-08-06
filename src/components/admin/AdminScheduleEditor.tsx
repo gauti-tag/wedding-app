@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import type { LocalizedText, ScheduleContent, ScheduleVenue } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -66,8 +67,8 @@ export function AdminScheduleEditor({
   initialSchedule: ScheduleContent;
 }) {
   const [schedule, setSchedule] = useState<ScheduleContent>(initialSchedule);
-  const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
   function addVenue() {
     const venue: ScheduleVenue = {
@@ -97,24 +98,29 @@ export function AdminScheduleEditor({
 
   async function onSave() {
     setBusy(true);
-    setStatus("");
-    const res = await fetch("/api/schedule", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(schedule),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setStatus(data.error || "Enregistrement impossible.");
-      return;
+    try {
+      const res = await fetch("/api/schedule", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(schedule),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Enregistrement impossible.");
+        return;
+      }
+      setSchedule(data.schedule);
+      showSuccess("Programme enregistré.");
+    } catch {
+      showError("Enregistrement impossible.");
+    } finally {
+      setBusy(false);
     }
-    setSchedule(data.schedule);
-    setStatus("Programme enregistré.");
   }
 
   return (
     <section id="admin-schedule" className="mt-14 scroll-mt-28 space-y-6">
+      {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="section-title text-3xl text-mist">Programme</h2>
@@ -136,8 +142,6 @@ export function AdminScheduleEditor({
           </button>
         </div>
       </div>
-
-      {status ? <p className="text-sm text-champagne">{status}</p> : null}
 
       <div className="space-y-4 border border-line bg-white p-5">
         <LocalizedFields

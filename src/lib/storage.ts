@@ -91,11 +91,15 @@ async function saveContent<T>(key: string, value: T) {
     return;
   }
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase.from("app_content").upsert({
-    key,
-    data: value,
-    updated_at: new Date().toISOString(),
-  });
+  // Remplace toujours la ligne (y compris tableaux JSONB vidés après suppressions).
+  const { error } = await supabase.from("app_content").upsert(
+    {
+      key,
+      data: value as object,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "key" },
+  );
   if (error) throw error;
 }
 

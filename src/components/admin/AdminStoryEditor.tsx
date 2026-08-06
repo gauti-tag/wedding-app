@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import type { LocalizedText, StoryContent } from "@/lib/types";
 
 function LocalizedFields({
@@ -54,29 +55,34 @@ function LocalizedFields({
 
 export function AdminStoryEditor({ initialStory }: { initialStory: StoryContent }) {
   const [story, setStory] = useState<StoryContent>(initialStory);
-  const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
   async function onSave() {
     setBusy(true);
-    setStatus("");
-    const res = await fetch("/api/story", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(story),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setStatus(data.error || "Enregistrement impossible.");
-      return;
+    try {
+      const res = await fetch("/api/story", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(story),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Enregistrement impossible.");
+        return;
+      }
+      setStory(data.story);
+      showSuccess("Histoire enregistrée.");
+    } catch {
+      showError("Enregistrement impossible.");
+    } finally {
+      setBusy(false);
     }
-    setStory(data.story);
-    setStatus("Histoire enregistrée.");
   }
 
   return (
     <section id="admin-story" className="mt-14 scroll-mt-28 space-y-6">
+      {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="section-title text-3xl text-mist">Histoire</h2>
@@ -94,8 +100,6 @@ export function AdminStoryEditor({ initialStory }: { initialStory: StoryContent 
           {busy ? "Enregistrement…" : "Enregistrer l’histoire"}
         </button>
       </div>
-
-      {status ? <p className="text-sm text-champagne">{status}</p> : null}
 
       <div className="space-y-4 border border-line bg-white p-5">
         <LocalizedFields

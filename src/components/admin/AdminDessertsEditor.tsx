@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import type { DessertItem, DessertsContent, LocalizedText } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -66,8 +67,32 @@ export function AdminDessertsEditor({
   initialDesserts: DessertsContent;
 }) {
   const [desserts, setDesserts] = useState<DessertsContent>(initialDesserts);
-  const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const { showSuccess, showError, AlertDialog } = useAdminAlert();
+
+  async function persist(next: DessertsContent, successMessage = "Desserts enregistrés.") {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/desserts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Enregistrement impossible.");
+        return false;
+      }
+      setDesserts(data.desserts);
+      showSuccess(successMessage);
+      return true;
+    } catch {
+      showError("Enregistrement impossible.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function addDessert() {
     const item: DessertItem = {
@@ -78,8 +103,10 @@ export function AdminDessertsEditor({
     setDesserts((prev) => ({ items: [...prev.items, item] }));
   }
 
-  function removeDessert(id: string) {
-    setDesserts((prev) => ({ items: prev.items.filter((item) => item.id !== id) }));
+  async function removeDessert(id: string) {
+    const next = { items: desserts.items.filter((item) => item.id !== id) };
+    setDesserts(next);
+    await persist(next, "Dessert supprimé.");
   }
 
   function updateDessert(id: string, updater: (item: DessertItem) => DessertItem) {
@@ -89,25 +116,12 @@ export function AdminDessertsEditor({
   }
 
   async function onSave() {
-    setBusy(true);
-    setStatus("");
-    const res = await fetch("/api/desserts", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(desserts),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setStatus(data.error || "Enregistrement impossible.");
-      return;
-    }
-    setDesserts(data.desserts);
-    setStatus("Desserts enregistrés.");
+    await persist(desserts);
   }
 
   return (
     <section id="admin-desserts" className="mt-14 scroll-mt-28 space-y-6">
+      {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="section-title text-3xl text-mist">Desserts</h2>
@@ -130,8 +144,6 @@ export function AdminDessertsEditor({
         </div>
       </div>
 
-      {status ? <p className="text-sm text-champagne">{status}</p> : null}
-
       {desserts.items.length === 0 ? (
         <p className="text-sm text-soft">
           Aucun dessert. Ajoutez yaourt, salade de fruits, gâteau, etc.
@@ -148,8 +160,9 @@ export function AdminDessertsEditor({
               </p>
               <button
                 type="button"
-                onClick={() => removeDessert(item.id)}
-                className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne"
+                disabled={busy}
+                onClick={() => void removeDessert(item.id)}
+                className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne disabled:opacity-50"
               >
                 Supprimer
               </button>

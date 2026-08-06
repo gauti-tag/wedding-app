@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import type { DrinkItem, DrinksContent, LocalizedText } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -62,8 +63,32 @@ function LocalizedFields({
 
 export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksContent }) {
   const [drinks, setDrinks] = useState<DrinksContent>(initialDrinks);
-  const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const { showSuccess, showError, AlertDialog } = useAdminAlert();
+
+  async function persist(next: DrinksContent, successMessage = "Boissons enregistrées.") {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/drinks", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Enregistrement impossible.");
+        return false;
+      }
+      setDrinks(data.drinks);
+      showSuccess(successMessage);
+      return true;
+    } catch {
+      showError("Enregistrement impossible.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function addDrink() {
     const item: DrinkItem = {
@@ -74,8 +99,10 @@ export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksCont
     setDrinks((prev) => ({ items: [...prev.items, item] }));
   }
 
-  function removeDrink(id: string) {
-    setDrinks((prev) => ({ items: prev.items.filter((item) => item.id !== id) }));
+  async function removeDrink(id: string) {
+    const next = { items: drinks.items.filter((item) => item.id !== id) };
+    setDrinks(next);
+    await persist(next, "Boisson supprimée.");
   }
 
   function updateDrink(id: string, updater: (item: DrinkItem) => DrinkItem) {
@@ -85,25 +112,12 @@ export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksCont
   }
 
   async function onSave() {
-    setBusy(true);
-    setStatus("");
-    const res = await fetch("/api/drinks", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(drinks),
-    });
-    const data = await res.json();
-    setBusy(false);
-    if (!res.ok) {
-      setStatus(data.error || "Enregistrement impossible.");
-      return;
-    }
-    setDrinks(data.drinks);
-    setStatus("Boissons enregistrées.");
+    await persist(drinks);
   }
 
   return (
     <section id="admin-drinks" className="mt-14 scroll-mt-28 space-y-6">
+      {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="section-title text-3xl text-mist">Boissons</h2>
@@ -126,8 +140,6 @@ export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksCont
         </div>
       </div>
 
-      {status ? <p className="text-sm text-champagne">{status}</p> : null}
-
       {drinks.items.length === 0 ? (
         <p className="text-sm text-soft">
           Aucune boisson. Ajoutez vin, bière, champagne, bissap, etc.
@@ -144,8 +156,9 @@ export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksCont
               </p>
               <button
                 type="button"
-                onClick={() => removeDrink(item.id)}
-                className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne"
+                disabled={busy}
+                onClick={() => void removeDrink(item.id)}
+                className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne disabled:opacity-50"
               >
                 Supprimer
               </button>
