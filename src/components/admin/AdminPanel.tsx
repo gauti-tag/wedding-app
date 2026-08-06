@@ -10,7 +10,7 @@ import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
-import { maskEmail, maskName, maskPhone } from "@/lib/mask-pii";
+import { maskName, maskPhone } from "@/lib/mask-pii";
 import { hasPermission, roleLabels, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
@@ -204,7 +204,6 @@ export function AdminPanel({
       const guestLabel = (guestOfLabels[r.guestOf] || r.guestOf || "").toLowerCase();
       const haystack = [
         r.name,
-        r.email,
         r.phone,
         r.status,
         guestLabel,
@@ -345,7 +344,6 @@ export function AdminPanel({
   function exportCsv() {
     const header = [
       "name",
-      "email",
       "phone",
       "status",
       "guestOf",
@@ -360,7 +358,6 @@ export function AdminPanel({
     const rows = rsvps.map((r) =>
       [
         r.name,
-        r.email,
         r.phone,
         r.status,
         guestOfLabels[r.guestOf] || r.guestOf,
@@ -588,7 +585,7 @@ export function AdminPanel({
               setRsvpQuery(e.target.value);
               setRsvpPage(1);
             }}
-            placeholder="Nom, email, téléphone, statut, invité(e) de…"
+            placeholder="Nom, téléphone, statut, invité(e) de…"
             autoComplete="off"
           />
           {rsvpQuery.trim() ? (
@@ -628,7 +625,6 @@ export function AdminPanel({
                 pagedRsvps.map((rsvp) => {
                   const revealed = canRevealPii && Boolean(revealedRsvpIds[rsvp.id]);
                   const displayName = revealed ? rsvp.name : maskName(rsvp.name);
-                  const displayEmail = revealed ? rsvp.email : maskEmail(rsvp.email);
                   const displayPhone = revealed
                     ? rsvp.phone || "—"
                     : maskPhone(rsvp.phone || "");
@@ -637,7 +633,6 @@ export function AdminPanel({
                   <tr key={rsvp.id} className="border-t border-line">
                     <td className="px-4 py-3">
                       <div className="text-mist">{displayName}</div>
-                      <div className="text-xs text-soft">{displayEmail}</div>
                       {canRevealPii ? (
                         <button
                           type="button"

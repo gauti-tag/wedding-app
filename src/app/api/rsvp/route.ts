@@ -4,20 +4,16 @@ import { auditAs, requirePermission } from "@/lib/auth";
 import { getRsvps, getSiteContent, saveRsvps } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
 import type { Rsvp } from "@/lib/types";
-import {
-  isValidCiPhone,
-  isValidEmail,
-  normalizeCiPhone,
-  normalizeEmail,
-} from "@/lib/validation";
+import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
 import { formatCiWhatsAppPhone, ticketWhatsAppForRsvp } from "@/lib/whatsapp";
+
+/** Email technique pour la contrainte unique DB (plus demandé aux invités). */
+function guestEmailFromPhone(nationalPhone: string) {
+  return `${nationalPhone}@wa.guest.local`;
+}
 
 const schema = z.object({
   name: z.string().trim().min(2).max(120),
-  email: z
-    .string()
-    .trim()
-    .refine(isValidEmail, { message: "email_invalid" }),
   phone: z
     .string()
     .trim()
@@ -42,12 +38,6 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       const issue = parsed.error.issues[0]?.message;
-      if (issue === "email_invalid") {
-        return NextResponse.json(
-          { error: "Email invalide.", code: "email_invalid" },
-          { status: 400 },
-        );
-      }
       if (issue === "phone_invalid") {
         return NextResponse.json(
           { error: "Numéro de téléphone ivoirien invalide.", code: "phone_invalid" },
@@ -60,7 +50,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const email = normalizeEmail(parsed.data.email);
     const nationalPhone = normalizeCiPhone(parsed.data.phone);
     const phone = nationalPhone ? formatCiWhatsAppPhone(nationalPhone) : null;
     if (!nationalPhone || !phone) {
@@ -71,13 +60,6 @@ export async function POST(request: Request) {
     }
 
     const rsvps = await getRsvps();
-
-    if (rsvps.some((r) => normalizeEmail(r.email) === email)) {
-      return NextResponse.json(
-        { error: "Cet email a déjà été utilisé.", code: "email_taken" },
-        { status: 409 },
-      );
-    }
 
     if (rsvps.some((r) => normalizeCiPhone(r.phone) === nationalPhone)) {
       return NextResponse.json(
@@ -90,7 +72,7 @@ export async function POST(request: Request) {
     const entry: Rsvp = {
       id: crypto.randomUUID(),
       ...rsvpFields,
-      email,
+      email: guestEmailFromPhone(nationalPhone),
       phone,
       createdAt: new Date().toISOString(),
       ticketToken: createTicketToken(),

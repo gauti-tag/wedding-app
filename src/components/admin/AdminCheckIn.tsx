@@ -157,7 +157,6 @@ export function AdminCheckIn() {
           {lastGuest ? (
             <div className="border border-line bg-forest p-4 text-sm">
               <p className="text-mist">{lastGuest.name}</p>
-              <p className="mt-1 text-soft">{lastGuest.email}</p>
               <p className="mt-1 text-soft">{lastGuest.phone}</p>
               <p className="meta-date mt-3 text-xs tracking-[0.14em] text-champagne uppercase">
                 {lastGuest.checkedInAt

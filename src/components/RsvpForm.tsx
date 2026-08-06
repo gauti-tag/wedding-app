@@ -5,12 +5,7 @@ import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
 import { coupleLabel, site } from "@/lib/site";
 import type { SiteContent } from "@/lib/types";
-import {
-  CI_PHONE_PATTERN,
-  EMAIL_PATTERN,
-  isValidCiPhone,
-  isValidEmail,
-} from "@/lib/validation";
+import { CI_PHONE_PATTERN, isValidCiPhone } from "@/lib/validation";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -42,19 +37,12 @@ export function RsvpForm({
     const form = new FormData(formEl);
     const payload = {
       name: String(form.get("name") || ""),
-      email: String(form.get("email") || ""),
       phone: String(form.get("phone") || ""),
       status: String(form.get("status") || "yes"),
       guestOf: String(form.get("guestOf") || "both"),
       message: String(form.get("message") || ""),
       locale,
     };
-
-    if (!isValidEmail(payload.email)) {
-      setStatus("error");
-      setError(dict.rsvp.errorEmailInvalid);
-      return;
-    }
 
     if (!isValidCiPhone(payload.phone)) {
       setStatus("error");
@@ -71,15 +59,11 @@ export function RsvpForm({
       const data = await res.json();
       if (!res.ok) {
         const message =
-          data.code === "email_taken"
-            ? dict.rsvp.errorEmailTaken
-            : data.code === "phone_taken"
-              ? dict.rsvp.errorPhoneTaken
-              : data.code === "email_invalid"
-                ? dict.rsvp.errorEmailInvalid
-                : data.code === "phone_invalid"
-                  ? dict.rsvp.errorPhoneInvalid
-                  : data.error || dict.rsvp.error;
+          data.code === "phone_taken"
+            ? dict.rsvp.errorPhoneTaken
+            : data.code === "phone_invalid"
+              ? dict.rsvp.errorPhoneInvalid
+              : data.error || dict.rsvp.error;
         throw new Error(message);
       }
       if (data.whatsapp?.ticketUrl && data.whatsapp?.url) {
@@ -117,34 +101,17 @@ export function RsvpForm({
         </div>
 
         <form onSubmit={onSubmit} className="space-y-5 border border-line bg-white/90 p-6 md:p-8">
-          <div>
-            <label className="label" htmlFor="name">
-              {dict.rsvp.name}
-            </label>
-            <input
-              id="name"
-              name="name"
-              required
-              className="field"
-              placeholder={dict.rsvp.namePlaceholder}
-            />
-          </div>
-
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <label className="label" htmlFor="email">
-                {dict.rsvp.email}
+              <label className="label" htmlFor="name">
+                {dict.rsvp.name}
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
+                id="name"
+                name="name"
                 required
-                pattern={EMAIL_PATTERN}
-                title={dict.rsvp.errorEmailInvalid}
                 className="field"
-                placeholder={dict.rsvp.emailPlaceholder}
-                autoComplete="email"
+                placeholder={dict.rsvp.namePlaceholder}
               />
             </div>
             <div>

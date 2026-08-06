@@ -54,8 +54,6 @@ export type Dictionary = {
     contact: string;
     name: string;
     namePlaceholder: string;
-    email: string;
-    emailPlaceholder: string;
     phone: string;
     phonePlaceholder: string;
     status: string;
@@ -75,9 +73,7 @@ export type Dictionary = {
     viewTicket: string;
     whatsappCta: string;
     error: string;
-    errorEmailTaken: string;
     errorPhoneTaken: string;
-    errorEmailInvalid: string;
     errorPhoneInvalid: string;
   };
   footer: {

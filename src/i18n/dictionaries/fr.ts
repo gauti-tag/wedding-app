@@ -56,8 +56,6 @@ const fr: Dictionary = {
     contact: "Contact",
     name: "Nom complet",
     namePlaceholder: "Votre nom",
-    email: "Email",
-    emailPlaceholder: "vous@email.com",
     phone: "Numéro WhatsApp",
     phonePlaceholder: "+2250708345891",
     status: "Présence",
@@ -78,9 +76,7 @@ const fr: Dictionary = {
     viewTicket: "Voir ma carte",
     whatsappCta: "Recevoir sur WhatsApp",
     error: "Une erreur est survenue.",
-    errorEmailTaken: "Cet email a déjà été utilisé pour une réponse.",
     errorPhoneTaken: "Ce numéro de téléphone a déjà été utilisé pour une réponse.",
-    errorEmailInvalid: "Veuillez saisir une adresse email valide.",
     errorPhoneInvalid:
       "Veuillez saisir un numéro WhatsApp ivoirien valide (ex. +2250708345891).",
   },
