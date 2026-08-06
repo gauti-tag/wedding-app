@@ -13,6 +13,12 @@ type CheckInResult = {
   rsvp?: Rsvp;
 };
 
+function vibrate(pattern: number | number[]) {
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    navigator.vibrate(pattern);
+  }
+}
+
 export function AdminCheckIn() {
   const [manualToken, setManualToken] = useState("");
   const [busy, setBusy] = useState(false);
@@ -76,17 +82,21 @@ export function AdminCheckIn() {
       const data = (await res.json()) as CheckInResult;
       if (!res.ok) {
         setLastGuest(data.rsvp || null);
+        vibrate([40, 30, 40, 30, 80]);
         showError(data.error || "Check-in refusé.");
         return;
       }
       setLastGuest(data.rsvp || null);
       if (data.alreadyCheckedIn) {
+        vibrate([60, 40, 60]);
         showInfo(`${data.rsvp?.name || "Invité"} est déjà enregistré(e).`);
       } else {
+        vibrate(200);
         showSuccess(`${data.rsvp?.name || "Invité"} — présence enregistrée.`);
       }
       setManualToken("");
     } catch {
+      vibrate([40, 30, 40, 30, 80]);
       showError("Erreur réseau lors du check-in.");
     } finally {
       setBusy(false);
