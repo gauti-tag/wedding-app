@@ -23,8 +23,10 @@ export default async function TicketPage({ params, searchParams }: Props) {
   const rsvp = rsvps.find((r) => r.ticketToken === token);
   if (!rsvp || rsvp.status === "no") notFound();
 
-  const isPreview = preview === "1" || Boolean(sessionUser);
-  if (!isPreview) {
+  // Compte les vues invité (pas l’aperçu admin explicite ni session couple).
+  const isAdminPreview = preview === "1";
+  const skipViewCount = isAdminPreview || Boolean(sessionUser);
+  if (!skipViewCount) {
     await recordTicketView(token);
   }
 
@@ -38,7 +40,7 @@ export default async function TicketPage({ params, searchParams }: Props) {
       dateLabel={siteContent.hero.weddingDateLabel.fr}
       qrDataUrl={qr}
       ticketCode={rsvp.ticketToken}
-      skipDownloadPrompt={isPreview}
+      skipDownloadPrompt={isAdminPreview}
     />
   );
 }

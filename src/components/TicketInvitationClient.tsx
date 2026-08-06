@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   guestName: string;
@@ -8,7 +9,7 @@ type Props = {
   dateLabel: string;
   qrDataUrl: string;
   ticketCode: string;
-  /** Aperçu admin : pas de dialogue ni téléchargement. */
+  /** Aperçu admin (?preview=1) : pas de dialogue ni téléchargement. */
   skipDownloadPrompt?: boolean;
 };
 
@@ -136,9 +137,17 @@ export function TicketInvitationClient({
   ticketCode,
   skipDownloadPrompt = false,
 }: Props) {
-  const [promptOpen, setPromptOpen] = useState(!skipDownloadPrompt);
+  const [mounted, setMounted] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+    if (!skipDownloadPrompt) {
+      setPromptOpen(true);
+    }
+  }, [skipDownloadPrompt]);
 
   const closePrompt = useCallback(() => {
     setPromptOpen(false);
@@ -164,49 +173,52 @@ export function TicketInvitationClient({
     }
   }
 
-  return (
-    <main className="flex min-h-full items-center justify-center bg-ivory px-4 py-12">
-      {promptOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-mist/50 px-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="ticket-download-title"
-        >
-          <div className="w-full max-w-md border border-line bg-white p-6 shadow-xl md:p-8">
-            <p className="eyebrow text-primary">Invitation</p>
-            <h2 id="ticket-download-title" className="section-title mt-3 text-2xl text-mist">
-              Enregistrer la carte ?
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-soft">
-              Souhaitez-vous télécharger votre carte d’invitation (image PNG) sur cet appareil ?
+  const dialog =
+    mounted && promptOpen ? (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 px-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ticket-download-title"
+      >
+        <div className="w-full max-w-md border border-line bg-white p-6 shadow-2xl md:p-8">
+          <p className="eyebrow text-primary">Invitation</p>
+          <h2 id="ticket-download-title" className="section-title mt-3 text-2xl text-mist">
+            Enregistrer la carte ?
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-soft">
+            Souhaitez-vous télécharger votre carte d’invitation (image PNG) sur cet appareil ?
+          </p>
+          {error ? (
+            <p className="mt-3 text-sm text-red-800" role="alert">
+              {error}
             </p>
-            {error ? (
-              <p className="mt-3 text-sm text-red-800" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                className="btn-ghost w-full sm:w-auto"
-                disabled={busy}
-                onClick={closePrompt}
-              >
-                Non
-              </button>
-              <button
-                type="button"
-                className="btn-primary w-full sm:w-auto disabled:opacity-60"
-                disabled={busy}
-                onClick={() => void onConfirmDownload()}
-              >
-                {busy ? "Téléchargement…" : "Oui, télécharger"}
-              </button>
-            </div>
+          ) : null}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              className="btn-ghost w-full sm:w-auto"
+              disabled={busy}
+              onClick={closePrompt}
+            >
+              Non
+            </button>
+            <button
+              type="button"
+              className="btn-primary w-full sm:w-auto disabled:opacity-60"
+              disabled={busy}
+              onClick={() => void onConfirmDownload()}
+            >
+              {busy ? "Téléchargement…" : "Oui, télécharger"}
+            </button>
           </div>
         </div>
-      ) : null}
+      </div>
+    ) : null;
+
+  return (
+    <main className="flex min-h-full items-center justify-center bg-ivory px-4 py-12">
+      {mounted && dialog ? createPortal(dialog, document.body) : null}
 
       <article className="relative w-full max-w-md overflow-hidden rounded-3xl border border-line bg-white px-8 py-10 text-center shadow-xl md:px-10 md:py-12">
         <div className="absolute top-5 left-5 h-8 w-8 border-t border-l border-primary/30" />
