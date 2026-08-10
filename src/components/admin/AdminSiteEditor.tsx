@@ -67,9 +67,9 @@ export function AdminSiteEditor({
   onSaved?: (site: SiteContent) => void;
 }) {
   const [content, setContent] = useState<SiteContent>({
-    rsvpDeadline: "2026-09-01T23:59:00",
-    contactPhone: "+2250708345891",
     ...initialSite,
+    rsvpDeadline: initialSite.rsvpDeadline || "2026-09-01T23:59:00",
+    contactPhone: initialSite.contactPhone || "+2250708345891",
     hero: {
       weddingDateLabel: { fr: "", en: "" },
       tagline: { fr: "", en: "" },
