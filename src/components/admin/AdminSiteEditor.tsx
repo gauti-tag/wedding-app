@@ -66,19 +66,18 @@ export function AdminSiteEditor({
   initialSite: SiteContent;
   onSaved?: (site: SiteContent) => void;
 }) {
-  const [content, setContent] = useState<SiteContent>({
+  const [content, setContent] = useState<SiteContent>(() => ({
     ...initialSite,
     rsvpDeadline: initialSite.rsvpDeadline || "2026-09-01T23:59:00",
     contactPhone: initialSite.contactPhone || "+2250708345891",
     hero: {
-      weddingDateLabel: { fr: "", en: "" },
-      tagline: { fr: "", en: "" },
-      ctaRsvp: { fr: "", en: "" },
-      ctaSchedule: { fr: "", en: "" },
-      ...initialSite.hero,
+      weddingDateLabel: initialSite.hero?.weddingDateLabel ?? { fr: "", en: "" },
+      tagline: initialSite.hero?.tagline ?? { fr: "", en: "" },
+      ctaRsvp: initialSite.hero?.ctaRsvp ?? { fr: "", en: "" },
+      ctaSchedule: initialSite.hero?.ctaSchedule ?? { fr: "", en: "" },
     },
     heroCarousel: normalizeHeroCarousel(initialSite.heroCarousel),
-  });
+  }));
   const [busy, setBusy] = useState(false);
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
