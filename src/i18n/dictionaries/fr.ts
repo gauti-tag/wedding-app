@@ -12,6 +12,8 @@ const fr: Dictionary = {
     gallery: "Galerie",
     rsvp: "RSVP",
     confirm: "Confirmer",
+    openMenu: "Ouvrir le menu",
+    closeMenu: "Fermer le menu",
   },
   story: {
     placeholders: ["Photo duo", "Souvenir", "Ensemble"],
@@ -83,6 +85,11 @@ const fr: Dictionary = {
       "Veuillez saisir un numéro WhatsApp ivoirien valide (ex. +2250708345891).",
     errorDeadlinePassed:
       "La confirmation de présence n’est plus acceptée car le délai est dépassé.",
+    errorCapacityFull:
+      "La confirmation de présence n’est plus acceptée : le nombre de places est atteint.",
+    capacityFullTitle: "Complet",
+    capacityFullMessage:
+      "Le nombre de places prévu pour l’événement est atteint. Les confirmations « oui » ne sont plus acceptées.",
   },
   footer: {
     coupleSpace: "Espace couple",

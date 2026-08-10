@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
+import { wouldExceedGuestCapacity } from "@/lib/guest-capacity";
 import { isRsvpDeadlinePassed } from "@/lib/rsvp-deadline";
 import { getRsvps, getSiteContent, saveRsvps, setRsvpBlocked } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
@@ -78,6 +79,17 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Ce numéro de téléphone a déjà été utilisé.", code: "phone_taken" },
         { status: 409 },
+      );
+    }
+
+    if (wouldExceedGuestCapacity(siteContent.guestCapacity, rsvps, parsed.data.status)) {
+      return NextResponse.json(
+        {
+          error:
+            "La confirmation de présence n’est plus acceptée : le nombre de places est atteint.",
+          code: "capacity_full",
+        },
+        { status: 403 },
       );
     }
 

@@ -24,17 +24,25 @@ export function GallerySection({
     const el = scrollerRef.current;
     if (!el) return;
 
+    const desktop = window.matchMedia("(min-width: 768px)");
+
     function update() {
       if (!el) return;
+      if (!desktop.matches) {
+        setAtBottom(true);
+        return;
+      }
       const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
       setAtBottom(remaining < 12);
     }
 
     update();
     el.addEventListener("scroll", update, { passive: true });
+    desktop.addEventListener("change", update);
     window.addEventListener("resize", update);
     return () => {
       el.removeEventListener("scroll", update);
+      desktop.removeEventListener("change", update);
       window.removeEventListener("resize", update);
     };
   }, [scrollable, gallery.length]);
@@ -53,7 +61,7 @@ export function GallerySection({
             ref={scrollerRef}
             className={
               scrollable
-                ? "max-h-[min(70vh,52rem)] overflow-y-auto overscroll-contain scroll-smooth pr-1 [scrollbar-color:var(--caramel)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-caramel/70 [&::-webkit-scrollbar-track]:bg-transparent"
+                ? "md:max-h-[min(70vh,52rem)] md:overflow-y-auto md:overscroll-contain md:scroll-smooth md:pr-1 md:[scrollbar-color:var(--caramel)_transparent] md:[scrollbar-width:thin] md:[&::-webkit-scrollbar]:w-1.5 md:[&::-webkit-scrollbar-thumb]:rounded-full md:[&::-webkit-scrollbar-thumb]:bg-caramel/70 md:[&::-webkit-scrollbar-track]:bg-transparent"
                 : undefined
             }
           >
@@ -83,12 +91,16 @@ export function GallerySection({
                       className="mb-4 break-inside-avoid"
                     >
                       <figure className="overflow-hidden border border-line">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo.url}
-                          alt={photo.caption || dict.gallery.photoAlt}
-                          className="w-full object-cover transition duration-700 hover:scale-[1.03]"
-                        />
+                        <div className="relative overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={photo.url}
+                            alt={photo.caption || dict.gallery.photoAlt}
+                            className="w-full object-cover transition duration-700 hover:scale-[1.03]"
+                          />
+                          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cacao/25 via-cacao/45 to-cacao/90" />
+                          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />
+                        </div>
                         {photo.caption ? (
                           <figcaption className="border-t border-line bg-white/90 px-3 py-2 text-xs text-soft">
                             {photo.caption}

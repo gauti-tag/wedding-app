@@ -7,6 +7,13 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 gsap.registerPlugin(ScrollTrigger);
 
+function isMobileMotion() {
+  return (
+    window.matchMedia("(pointer: coarse)").matches ||
+    window.matchMedia("(max-width: 767px)").matches
+  );
+}
+
 export function ParallaxMedia({
   children,
   className = "",
@@ -21,7 +28,7 @@ export function ParallaxMedia({
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion || isMobileMotion()) return;
     const root = rootRef.current;
     const media = mediaRef.current;
     if (!root || !media) return;
@@ -49,7 +56,7 @@ export function ParallaxMedia({
 
   return (
     <div ref={rootRef} className={`overflow-hidden ${className}`}>
-      <div ref={mediaRef} className="h-full w-full will-change-transform">
+      <div ref={mediaRef} className="h-full w-full md:will-change-transform">
         {children}
       </div>
     </div>

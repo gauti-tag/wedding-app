@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
+import { resolveImageTarget } from "@/lib/image-targets";
+import { resizeImageToTarget } from "@/lib/image-resize";
 import { deleteUpload, getPhotos, savePhotos, saveUpload } from "@/lib/storage";
 import type { Photo, PhotoAlbum } from "@/lib/types";
 
@@ -32,8 +34,17 @@ export async function POST(request: Request) {
     }
 
     const album = albums.includes(albumRaw) ? albumRaw : "gallery";
-    const uploaded = await saveUpload(file);
     const photos = await getPhotos();
+    const existingStoryCount = photos.filter((p) => p.album === "story").length;
+    const target = resolveImageTarget(album, existingStoryCount);
+
+    const rawBuffer = Buffer.from(await file.arrayBuffer());
+    const resized = await resizeImageToTarget(rawBuffer, target);
+    const uploaded = await saveUpload(resized.buffer, {
+      filenameHint: file.name,
+      contentType: resized.contentType,
+      extension: resized.extension,
+    });
 
     if (album === "hero") {
       const heroes = photos
@@ -59,9 +70,18 @@ export async function POST(request: Request) {
 
     photos.push(entry);
     await savePhotos(photos);
-    await auditAs(user, "create", "photo", `${album}: ${uploaded.filename}`);
+    await auditAs(
+      user,
+      "create",
+      "photo",
+      `${album}: ${uploaded.filename} (${target.width}x${target.height})`,
+    );
 
-    return NextResponse.json({ ok: true, photo: entry });
+    return NextResponse.json({
+      ok: true,
+      photo: entry,
+      resizedTo: { width: target.width, height: target.height, label: target.label },
+    });
   } catch {
     return NextResponse.json({ error: "Échec de l'upload." }, { status: 500 });
   }

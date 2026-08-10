@@ -8,6 +8,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { StorySection } from "@/components/StorySection";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
+import { isGuestCapacityFull } from "@/lib/guest-capacity";
 import { coupleLabel } from "@/lib/site";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import {
@@ -15,6 +16,7 @@ import {
   getDrinks,
   getMenu,
   getPhotos,
+  getRsvps,
   getSchedule,
   getSiteContent,
   getStory,
@@ -32,20 +34,23 @@ export default async function Home({ params }: Props) {
   if (!isLocale(raw)) notFound();
 
   const dict = getDictionary(raw);
-  const [photos, siteContent, story, schedule, menu, drinks, desserts] = await Promise.all([
-    getPhotos(),
-    getSiteContent(),
-    getStory(),
-    getSchedule(),
-    getMenu(),
-    getDrinks(),
-    getDesserts(),
-  ]);
+  const [photos, siteContent, story, schedule, menu, drinks, desserts, rsvps] =
+    await Promise.all([
+      getPhotos(),
+      getSiteContent(),
+      getStory(),
+      getSchedule(),
+      getMenu(),
+      getDrinks(),
+      getDesserts(),
+      getRsvps(),
+    ]);
   const heroPhotos = photos
     .filter((photo) => photo.album === "hero")
     .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
     .slice(0, MAX_HERO_PHOTOS);
   const names = coupleLabel(siteContent);
+  const capacityFull = isGuestCapacityFull(siteContent.guestCapacity, rsvps);
 
   return (
     <>
@@ -67,7 +72,12 @@ export default async function Home({ params }: Props) {
           desserts={desserts}
         />
         <GallerySection photos={photos} dict={dict} />
-        <RsvpForm dict={dict} locale={raw} siteContent={siteContent} />
+        <RsvpForm
+          dict={dict}
+          locale={raw}
+          siteContent={siteContent}
+          capacityFull={capacityFull}
+        />
       </main>
       <SiteFooter dict={dict} siteContent={siteContent} locale={raw} />
     </>

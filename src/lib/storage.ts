@@ -3,6 +3,7 @@ import path from "path";
 import { mapPhoto, mapRsvp, toDbPhoto, toDbRsvp, type DbPhoto, type DbRsvp } from "@/lib/supabase/mappers";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/server";
 import { defaultHeroCarousel, normalizeHeroCarousel } from "@/lib/hero-carousel";
+import { normalizeGuestCapacity } from "@/lib/guest-capacity";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
   DessertsContent,
@@ -65,6 +66,7 @@ const emptySite: SiteContent = {
   weddingDate: "2026-10-31T16:00:00",
   rsvpDeadline: "2026-09-01T23:59:00",
   contactPhone: "+2250708345891",
+  guestCapacity: 100,
   hero: {
     weddingDateLabel: { fr: "", en: "" },
     tagline: { fr: "", en: "" },
@@ -314,6 +316,7 @@ export async function getSiteContent(): Promise<SiteContent> {
     heroCarousel: normalizeHeroCarousel(raw.heroCarousel),
     rsvpDeadline: raw.rsvpDeadline || emptySite.rsvpDeadline,
     contactPhone: raw.contactPhone || emptySite.contactPhone,
+    guestCapacity: normalizeGuestCapacity(raw.guestCapacity, emptySite.guestCapacity),
   };
 }
 
@@ -321,13 +324,25 @@ export async function saveSiteContent(content: SiteContent) {
   await saveContent("site", content);
 }
 
-export async function saveUpload(file: File): Promise<{ filename: string; url: string }> {
-  const ext = path.extname(file.name) || ".jpg";
+export async function saveUpload(
+  file: File | Buffer,
+  options?: {
+    filenameHint?: string;
+    contentType?: string;
+    extension?: string;
+  },
+): Promise<{ filename: string; url: string }> {
+  const hint = options?.filenameHint || (file instanceof File ? file.name : "photo.jpg");
+  const ext = options?.extension || path.extname(hint) || ".jpg";
   const safeExt = [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext.toLowerCase())
     ? ext.toLowerCase()
     : ".jpg";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${safeExt}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const buffer = Buffer.isBuffer(file) ? file : Buffer.from(await file.arrayBuffer());
+  const contentType =
+    options?.contentType ||
+    (file instanceof File ? file.type : "") ||
+    (safeExt === ".png" ? "image/png" : "image/jpeg");
 
   if (!isSupabaseConfigured()) {
     await ensureDir(uploadsDir);
@@ -336,7 +351,6 @@ export async function saveUpload(file: File): Promise<{ filename: string; url: s
   }
 
   const supabase = getSupabaseAdmin();
-  const contentType = file.type || "image/jpeg";
   const { error } = await supabase.storage.from("uploads").upload(filename, buffer, {
     contentType,
     upsert: false,

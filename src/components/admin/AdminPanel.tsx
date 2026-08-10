@@ -14,6 +14,7 @@ import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
+import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
 import { hasPermission, roleLabels, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
@@ -133,21 +134,21 @@ const albumSizeGuides: Record<
   { ratio: string; size: string; tip: string; slots?: string }
 > = {
   hero: {
-    ratio: "Paysage 16:9 (ou 3:2)",
-    size: "1920 × 1080 px (idéal : 2400 × 1350 px)",
-    tip: "Jusqu’à 6 photos en carrousel plein écran. Paramétrez les animations dans Couple & hero.",
+    ratio: "Paysage 16:9",
+    size: `${ALBUM_IMAGE_TARGETS.hero.label} — recadré automatiquement à l’upload`,
+    tip: "Jusqu’à 6 photos en carrousel plein écran. Toute photo est redimensionnée à 1920×1080.",
     slots: "1 à 6 images — défilement en boucle",
   },
   story: {
     ratio: "1ʳᵉ photo 16:10 · 2ᵉ et 3ᵉ en 4:5",
-    size: "1600 × 1000 px · puis 1200 × 1500 px",
-    tip: "Seules les 3 premières photos « Notre histoire » s’affichent. Recadrage object-cover dans chaque case.",
+    size: "1600 × 1000 puis 1200 × 1500 — recadré automatiquement",
+    tip: "Seules les 3 premières photos « Notre histoire » s’affichent. Redimensionnement auto selon l’ordre.",
     slots: "Grande (haut) : paysage · Deux petites : portrait",
   },
   gallery: {
-    ratio: "Portrait 4:5 ou 3:4 (mélange possible)",
-    size: "1200 × 1500 px (ou ~1600 px sur le grand côté)",
-    tip: "Colonne masonry : l’image garde son ratio. Les portraits donnent un bel effet d’ensemble.",
+    ratio: "Portrait 4:5",
+    size: `${ALBUM_IMAGE_TARGETS.gallery.label} — recadré automatiquement à l’upload`,
+    tip: "Colonne masonry. Toute photo est redimensionnée à 1200×1500 (cover).",
   },
 };
 
@@ -272,7 +273,11 @@ export function AdminPanel({
     });
     setFile(null);
     setCaption("");
-    showSuccess("Photo ajoutée.");
+    showSuccess(
+      data.resizedTo
+        ? `Photo ajoutée et redimensionnée en ${data.resizedTo.label}.`
+        : "Photo ajoutée.",
+    );
   }
 
   async function onDelete(id: string) {
@@ -472,7 +477,10 @@ export function AdminPanel({
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {[
             { label: "Réponses", value: counts.total },
-            { label: "RSVP oui", value: counts.yes },
+            {
+              label: "Places (oui / max)",
+              value: `${counts.yes} / ${site.guestCapacity || "—"}`,
+            },
             { label: "Check-in jour J", value: counts.checkedIn },
             { label: `Côté ${site.partnerOne}`, value: counts.ofPartnerOne },
             { label: `Côté ${site.partnerTwo}`, value: counts.ofPartnerTwo },

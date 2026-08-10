@@ -10,6 +10,8 @@ export type Dictionary = {
     gallery: string;
     rsvp: string;
     confirm: string;
+    openMenu: string;
+    closeMenu: string;
   };
   story: {
     placeholders: [string, string, string];
@@ -77,6 +79,9 @@ export type Dictionary = {
     errorPhoneTaken: string;
     errorPhoneInvalid: string;
     errorDeadlinePassed: string;
+    errorCapacityFull: string;
+    capacityFullTitle: string;
+    capacityFullMessage: string;
   };
   footer: {
     coupleSpace: string;

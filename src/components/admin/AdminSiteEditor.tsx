@@ -70,6 +70,7 @@ export function AdminSiteEditor({
     ...initialSite,
     rsvpDeadline: initialSite.rsvpDeadline || "2026-09-01T23:59:00",
     contactPhone: initialSite.contactPhone || "+2250708345891",
+    guestCapacity: initialSite.guestCapacity || 100,
     hero: {
       weddingDateLabel: initialSite.hero?.weddingDateLabel ?? { fr: "", en: "" },
       tagline: initialSite.hero?.tagline ?? { fr: "", en: "" },
@@ -187,23 +188,47 @@ export function AdminSiteEditor({
             </p>
           </div>
           <div>
-            <label className="label" htmlFor="contactPhone">
-              Téléphone de contact (RSVP)
+            <label className="label" htmlFor="guestCapacity">
+              Nombre de places (confirmations « oui »)
             </label>
             <input
-              id="contactPhone"
-              type="tel"
+              id="guestCapacity"
+              type="number"
+              min={1}
+              max={5000}
               className="field"
-              value={content.contactPhone}
-              placeholder="+2250708345891"
+              value={content.guestCapacity}
               onChange={(e) =>
-                setContent((prev) => ({ ...prev, contactPhone: e.target.value }))
+                setContent((prev) => ({
+                  ...prev,
+                  guestCapacity: Number(e.target.value) || 1,
+                }))
               }
             />
             <p className="mt-2 text-xs text-soft">
-              Affiché sur le formulaire public (lien WhatsApp / appel).
+              Une fois ce nombre de « oui » atteint, plus aucune confirmation positive n’est
+              acceptée.
             </p>
           </div>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="contactPhone">
+            Téléphone de contact (RSVP)
+          </label>
+          <input
+            id="contactPhone"
+            type="tel"
+            className="field max-w-md"
+            value={content.contactPhone}
+            placeholder="+2250708345891"
+            onChange={(e) =>
+              setContent((prev) => ({ ...prev, contactPhone: e.target.value }))
+            }
+          />
+          <p className="mt-2 text-xs text-soft">
+            Affiché sur le formulaire public (lien WhatsApp / appel).
+          </p>
         </div>
 
         <LocalizedFields

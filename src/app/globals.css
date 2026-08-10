@@ -47,6 +47,28 @@
 
 html {
   scroll-behavior: auto;
+  scroll-padding-top: 4.5rem;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: 4rem;
+  }
+
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Moins de coût GPU sur mobile (blur / will-change) */
+  .section-shell {
+    width: min(1120px, calc(100% - 1.5rem));
+  }
+
+  img {
+    content-visibility: auto;
+  }
 }
 
 html.lenis,

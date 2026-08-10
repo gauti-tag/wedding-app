@@ -20,13 +20,15 @@ export function RsvpForm({
   dict,
   locale,
   siteContent,
+  capacityFull = false,
 }: {
   dict: Dictionary;
   locale: Locale;
   siteContent: Pick<
     SiteContent,
-    "partnerOne" | "partnerTwo" | "rsvpDeadline" | "contactPhone"
+    "partnerOne" | "partnerTwo" | "rsvpDeadline" | "contactPhone" | "guestCapacity"
   >;
+  capacityFull?: boolean;
 }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
@@ -49,6 +51,7 @@ export function RsvpForm({
     : siteContent.contactPhone
       ? `tel:${siteContent.contactPhone.replace(/\s/g, "")}`
       : "";
+  const formClosed = deadlinePassed;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,11 +70,17 @@ export function RsvpForm({
     const payload = {
       name: String(form.get("name") || ""),
       phone: String(form.get("phone") || ""),
-      status: String(form.get("status") || "yes"),
+      status: String(form.get("status") || (capacityFull ? "maybe" : "yes")),
       guestOf: String(form.get("guestOf") || "both"),
       message: String(form.get("message") || ""),
       locale,
     };
+
+    if (capacityFull && payload.status === "yes") {
+      setStatus("error");
+      setError(dict.rsvp.errorCapacityFull);
+      return;
+    }
 
     if (!isValidCiPhone(payload.phone)) {
       setStatus("error");
@@ -90,11 +99,13 @@ export function RsvpForm({
         const message =
           data.code === "deadline_passed"
             ? dict.rsvp.errorDeadlinePassed
-            : data.code === "phone_taken"
-              ? dict.rsvp.errorPhoneTaken
-              : data.code === "phone_invalid"
-                ? dict.rsvp.errorPhoneInvalid
-                : data.error || dict.rsvp.error;
+            : data.code === "capacity_full"
+              ? dict.rsvp.errorCapacityFull
+              : data.code === "phone_taken"
+                ? dict.rsvp.errorPhoneTaken
+                : data.code === "phone_invalid"
+                  ? dict.rsvp.errorPhoneInvalid
+                  : data.error || dict.rsvp.error;
         throw new Error(message);
       }
       if (data.whatsapp?.ticketUrl && data.whatsapp?.url) {
@@ -137,7 +148,7 @@ export function RsvpForm({
           ) : null}
         </div>
 
-        {deadlinePassed ? (
+        {formClosed ? (
           <div
             role="status"
             className="space-y-3 border border-line bg-white/90 px-6 py-8 md:p-8"
@@ -155,6 +166,15 @@ export function RsvpForm({
           </div>
         ) : (
           <form onSubmit={onSubmit} className="space-y-5 border border-line bg-white/90 p-6 md:p-8">
+            {capacityFull ? (
+              <div
+                role="status"
+                className="border border-line bg-forest px-4 py-3 text-sm text-champagne"
+              >
+                <p className="font-medium">{dict.rsvp.capacityFullTitle}</p>
+                <p className="mt-1 text-soft">{dict.rsvp.capacityFullMessage}</p>
+              </div>
+            ) : null}
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label className="label" htmlFor="name">
@@ -192,8 +212,14 @@ export function RsvpForm({
                 <label className="label" htmlFor="status">
                   {dict.rsvp.status}
                 </label>
-                <select id="status" name="status" className="field" defaultValue="yes" required>
-                  <option value="yes">{dict.rsvp.statusYes}</option>
+                <select
+                  id="status"
+                  name="status"
+                  className="field"
+                  defaultValue={capacityFull ? "maybe" : "yes"}
+                  required
+                >
+                  {!capacityFull ? <option value="yes">{dict.rsvp.statusYes}</option> : null}
                   <option value="maybe">{dict.rsvp.statusMaybe}</option>
                   <option value="no">{dict.rsvp.statusNo}</option>
                 </select>

@@ -133,6 +133,8 @@ export type SiteContent = {
   rsvpDeadline: string;
   /** Numéro de contact affiché sur le formulaire RSVP (ex. +2250708345891). */
   contactPhone: string;
+  /** Nombre max de confirmations « oui » (places) acceptées. */
+  guestCapacity: number;
   hero: {
     weddingDateLabel: LocalizedText;
     tagline: LocalizedText;

@@ -48,12 +48,16 @@ export function StorySection({
                 }`}
               >
                 {photo.url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={photo.url}
-                    alt={photo.caption || dict.story.photoAlt}
-                    className="h-full w-full object-cover transition duration-700 hover:scale-105"
-                  />
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.url}
+                      alt={photo.caption || dict.story.photoAlt}
+                      className="h-full w-full object-cover transition duration-700 hover:scale-105"
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cacao/25 via-cacao/45 to-cacao/90" />
+                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />
+                  </>
                 ) : (
                   <div className="flex h-full w-full items-end bg-[linear-gradient(145deg,#efe8e0,#e5d9cc_40%,#d4c0a8)] p-4">
                     <span className="text-xs tracking-[0.18em] text-champagne uppercase">

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
+import { normalizeGuestCapacity } from "@/lib/guest-capacity";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
 import { formatCiWhatsAppPhone } from "@/lib/whatsapp";
@@ -31,6 +32,7 @@ const siteSchema = z.object({
     .min(8)
     .max(40)
     .refine(isValidCiPhone, { message: "Téléphone invalide." }),
+  guestCapacity: z.number().int().min(1).max(5000),
   hero: z.object({
     weddingDateLabel: localizedSchema,
     tagline: localizedSchema,
@@ -83,6 +85,7 @@ export async function PUT(request: Request) {
       weddingDate: withSeconds(parsed.data.weddingDate),
       rsvpDeadline: withSeconds(parsed.data.rsvpDeadline),
       contactPhone,
+      guestCapacity: normalizeGuestCapacity(parsed.data.guestCapacity),
       heroCarousel: normalizeHeroCarousel(parsed.data.heroCarousel),
     };
     await saveSiteContent(content);

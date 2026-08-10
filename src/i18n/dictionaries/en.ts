@@ -12,6 +12,8 @@ const en: Dictionary = {
     gallery: "Gallery",
     rsvp: "RSVP",
     confirm: "RSVP",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
   },
   story: {
     placeholders: ["Couple photo", "Memory", "Together"],
@@ -83,6 +85,11 @@ const en: Dictionary = {
       "Please enter a valid Ivorian WhatsApp number (e.g. +2250708345891).",
     errorDeadlinePassed:
       "Attendance confirmation is no longer accepted because the deadline has passed.",
+    errorCapacityFull:
+      "Attendance confirmation is no longer accepted: the guest capacity has been reached.",
+    capacityFullTitle: "Fully booked",
+    capacityFullMessage:
+      "The planned number of seats for the event has been reached. “Yes” confirmations are no longer accepted.",
   },
   footer: {
     coupleSpace: "Couple space",
