@@ -52,7 +52,6 @@ const fr: Dictionary = {
     eyebrow: "Réponse souhaitée",
     title: "RSVP",
     deadlinePrefix: "Merci de confirmer votre présence avant le",
-    deadline: "1er septembre 2026",
     contact: "Contact",
     name: "Nom complet",
     namePlaceholder: "Votre nom",
@@ -75,10 +74,15 @@ const fr: Dictionary = {
       "Conservez le lien de votre carte d’invitation. Présentez le QR à l’entrée le jour J.",
     viewTicket: "Voir ma carte",
     whatsappCta: "Recevoir sur WhatsApp",
+    closedTitle: "Confirmations closes",
+    closedMessage:
+      "La confirmation de présence n’est plus acceptée car le délai est dépassé.",
     error: "Une erreur est survenue.",
     errorPhoneTaken: "Ce numéro de téléphone a déjà été utilisé pour une réponse.",
     errorPhoneInvalid:
       "Veuillez saisir un numéro WhatsApp ivoirien valide (ex. +2250708345891).",
+    errorDeadlinePassed:
+      "La confirmation de présence n’est plus acceptée car le délai est dépassé.",
   },
   footer: {
     coupleSpace: "Espace couple",

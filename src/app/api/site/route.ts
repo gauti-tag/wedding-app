@@ -1,25 +1,49 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
+import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
+import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
+import { formatCiWhatsAppPhone } from "@/lib/whatsapp";
 
 const localizedSchema = z.object({
   fr: z.string().trim().max(500),
   en: z.string().trim().max(500),
 });
 
+const datetimeLocalSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, "Date invalide.");
+
+function withSeconds(value: string) {
+  return value.length === 16 ? `${value}:00` : value;
+}
+
 const siteSchema = z.object({
   partnerOne: z.string().trim().min(1).max(80),
   partnerTwo: z.string().trim().min(1).max(80),
-  weddingDate: z
+  weddingDate: datetimeLocalSchema,
+  rsvpDeadline: datetimeLocalSchema,
+  contactPhone: z
     .string()
     .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, "Date invalide."),
+    .min(8)
+    .max(40)
+    .refine(isValidCiPhone, { message: "Téléphone invalide." }),
   hero: z.object({
     weddingDateLabel: localizedSchema,
     tagline: localizedSchema,
     ctaRsvp: localizedSchema,
     ctaSchedule: localizedSchema,
+  }),
+  heroCarousel: z.object({
+    autoplay: z.boolean(),
+    intervalMs: z.number().min(2500).max(15000),
+    transitionMs: z.number().min(400).max(3000),
+    effect: z.enum(["fade", "slide", "zoom"]),
+    kenBurns: z.boolean(),
+    pauseOnHover: z.boolean(),
   }),
 });
 
@@ -37,16 +61,30 @@ export async function PUT(request: Request) {
     const parsed = siteSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Données du site invalides. Vérifiez noms, date et textes FR/EN." },
+        {
+          error:
+            "Données du site invalides. Vérifiez noms, dates, téléphone de contact, carrousel et textes FR/EN.",
+        },
         { status: 400 },
       );
     }
 
-    const weddingDate = parsed.data.weddingDate.length === 16
-      ? `${parsed.data.weddingDate}:00`
-      : parsed.data.weddingDate;
+    const nationalPhone = normalizeCiPhone(parsed.data.contactPhone);
+    const contactPhone = nationalPhone ? formatCiWhatsAppPhone(nationalPhone) : null;
+    if (!contactPhone) {
+      return NextResponse.json(
+        { error: "Numéro de contact invalide (format WhatsApp CI attendu)." },
+        { status: 400 },
+      );
+    }
 
-    const content = { ...parsed.data, weddingDate };
+    const content = {
+      ...parsed.data,
+      weddingDate: withSeconds(parsed.data.weddingDate),
+      rsvpDeadline: withSeconds(parsed.data.rsvpDeadline),
+      contactPhone,
+      heroCarousel: normalizeHeroCarousel(parsed.data.heroCarousel),
+    };
     await saveSiteContent(content);
     await auditAs(user, "update", "site", `${content.partnerOne} & ${content.partnerTwo}`);
     return NextResponse.json({ ok: true, site: content });

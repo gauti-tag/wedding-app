@@ -13,6 +13,7 @@ import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
 import { maskName, maskPhone } from "@/lib/mask-pii";
+import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { hasPermission, roleLabels, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
@@ -106,7 +107,7 @@ type Props = {
 };
 
 const albumLabels: Record<PhotoAlbum, string> = {
-  hero: "Hero (plein écran)",
+  hero: "Hero (carrousel, max 6)",
   story: "Notre histoire",
   gallery: "Galerie",
 };
@@ -134,7 +135,8 @@ const albumSizeGuides: Record<
   hero: {
     ratio: "Paysage 16:9 (ou 3:2)",
     size: "1920 × 1080 px (idéal : 2400 × 1350 px)",
-    tip: "Plein écran. Cadrez le sujet au centre : les bords sont coupés sur mobile (écran vertical).",
+    tip: "Jusqu’à 6 photos en carrousel plein écran. Paramétrez les animations dans Couple & hero.",
+    slots: "1 à 6 images — défilement en boucle",
   },
   story: {
     ratio: "1ʳᵉ photo 16:10 · 2ᵉ et 3ᵉ en 4:5",
@@ -252,11 +254,19 @@ export function AdminPanel({
     }
 
     setPhotos((prev) => {
-      const next = [...prev];
-      if (data.photo.album === "hero") {
-        return [...next.map((p) => (p.album === "hero" ? { ...p, album: "gallery" as const } : p)), data.photo];
-      }
-      return [...next, data.photo];
+      if (data.photo.album !== "hero") return [...prev, data.photo];
+      const heroes = prev
+        .filter((p) => p.album === "hero")
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const keepIds = new Set(
+        heroes.slice(Math.max(0, heroes.length - (MAX_HERO_PHOTOS - 1))).map((p) => p.id),
+      );
+      return [
+        ...prev.map((p) =>
+          p.album === "hero" && !keepIds.has(p.id) ? { ...p, album: "gallery" as const } : p,
+        ),
+        data.photo,
+      ];
     });
     setFile(null);
     setCaption("");

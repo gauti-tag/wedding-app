@@ -1,11 +1,13 @@
 ﻿"use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
-import { coupleLabel, site } from "@/lib/site";
+import { formatRsvpDeadlineLabel, isRsvpDeadlinePassed } from "@/lib/rsvp-deadline";
+import { coupleLabel } from "@/lib/site";
 import type { SiteContent } from "@/lib/types";
 import { CI_PHONE_PATTERN, isValidCiPhone } from "@/lib/validation";
+import { phoneToWhatsAppDigits } from "@/lib/whatsapp";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -21,14 +23,41 @@ export function RsvpForm({
 }: {
   dict: Dictionary;
   locale: Locale;
-  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo">;
+  siteContent: Pick<
+    SiteContent,
+    "partnerOne" | "partnerTwo" | "rsvpDeadline" | "contactPhone"
+  >;
 }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [whatsapp, setWhatsapp] = useState<WhatsAppPayload | null>(null);
 
+  const deadlinePassed = useMemo(
+    () => isRsvpDeadlinePassed(siteContent.rsvpDeadline),
+    [siteContent.rsvpDeadline],
+  );
+  const deadlineLabel = useMemo(
+    () => formatRsvpDeadlineLabel(siteContent.rsvpDeadline, locale),
+    [siteContent.rsvpDeadline, locale],
+  );
+  const contactWaDigits = useMemo(
+    () => phoneToWhatsAppDigits(siteContent.contactPhone),
+    [siteContent.contactPhone],
+  );
+  const contactHref = contactWaDigits
+    ? `https://wa.me/${contactWaDigits}`
+    : siteContent.contactPhone
+      ? `tel:${siteContent.contactPhone.replace(/\s/g, "")}`
+      : "";
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (deadlinePassed || isRsvpDeadlinePassed(siteContent.rsvpDeadline)) {
+      setStatus("error");
+      setError(dict.rsvp.errorDeadlinePassed);
+      return;
+    }
+
     setStatus("loading");
     setError("");
     setWhatsapp(null);
@@ -59,11 +88,13 @@ export function RsvpForm({
       const data = await res.json();
       if (!res.ok) {
         const message =
-          data.code === "phone_taken"
-            ? dict.rsvp.errorPhoneTaken
-            : data.code === "phone_invalid"
-              ? dict.rsvp.errorPhoneInvalid
-              : data.error || dict.rsvp.error;
+          data.code === "deadline_passed"
+            ? dict.rsvp.errorDeadlinePassed
+            : data.code === "phone_taken"
+              ? dict.rsvp.errorPhoneTaken
+              : data.code === "phone_invalid"
+                ? dict.rsvp.errorPhoneInvalid
+                : data.error || dict.rsvp.error;
         throw new Error(message);
       }
       if (data.whatsapp?.ticketUrl && data.whatsapp?.url) {
@@ -90,131 +121,155 @@ export function RsvpForm({
           </h2>
           <p className="mt-5 max-w-md text-base font-normal leading-7 text-soft">
             {dict.rsvp.deadlinePrefix}{" "}
-            <span className="meta-date text-champagne">{dict.rsvp.deadline}</span>.
+            <span className="meta-date text-champagne">{deadlineLabel}</span>.
           </p>
-          <p className="mt-4 text-sm text-soft">
-            {dict.rsvp.contact} :{" "}
-            <a href={`mailto:${site.contactEmail}`} className="text-champagne no-underline">
-              {site.contactEmail}
-            </a>
-          </p>
+          {siteContent.contactPhone ? (
+            <p className="mt-4 text-sm text-soft">
+              {dict.rsvp.contact} :{" "}
+              {contactHref ? (
+                <a href={contactHref} className="text-champagne no-underline">
+                  {siteContent.contactPhone}
+                </a>
+              ) : (
+                <span className="text-champagne">{siteContent.contactPhone}</span>
+              )}
+            </p>
+          ) : null}
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-5 border border-line bg-white/90 p-6 md:p-8">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="label" htmlFor="name">
-                {dict.rsvp.name}
-              </label>
-              <input
-                id="name"
-                name="name"
-                required
-                className="field"
-                placeholder={dict.rsvp.namePlaceholder}
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="phone">
-                {dict.rsvp.phone}
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                required
-                pattern={CI_PHONE_PATTERN}
-                title={dict.rsvp.errorPhoneInvalid}
-                inputMode="tel"
-                className="field"
-                placeholder={dict.rsvp.phonePlaceholder}
-                autoComplete="tel"
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="label" htmlFor="status">
-                {dict.rsvp.status}
-              </label>
-              <select id="status" name="status" className="field" defaultValue="yes" required>
-                <option value="yes">{dict.rsvp.statusYes}</option>
-                <option value="maybe">{dict.rsvp.statusMaybe}</option>
-                <option value="no">{dict.rsvp.statusNo}</option>
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="guestOf">
-                {dict.rsvp.guestOf}
-              </label>
-              <select id="guestOf" name="guestOf" className="field" defaultValue="both" required>
-                <option value="gautier">{siteContent.partnerOne}</option>
-                <option value="francybel">{siteContent.partnerTwo}</option>
-                <option value="both">{coupleLabel(siteContent)}</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="label" htmlFor="message">
-              {dict.rsvp.message}
-            </label>
-            <textarea
-              id="message"
-              name="message"
-              rows={4}
-              className="field resize-y"
-              placeholder={dict.rsvp.messagePlaceholder}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={status === "loading"}
-            className="btn-primary w-full disabled:opacity-60"
+        {deadlinePassed ? (
+          <div
+            role="status"
+            className="space-y-3 border border-line bg-white/90 px-6 py-8 md:p-8"
           >
-            {status === "loading" ? dict.rsvp.submitting : dict.rsvp.submit}
-          </button>
-
-          {status === "success" || status === "error" ? (
-            <div
-              role={status === "error" ? "alert" : "status"}
-              className={`space-y-4 px-4 py-4 text-sm leading-relaxed ${
-                status === "success"
-                  ? "border border-line bg-forest text-champagne"
-                  : "border border-red-200 bg-red-50 text-red-800"
-              }`}
-            >
-              <p className="meta-date text-center">
-                {status === "success" ? dict.rsvp.success : error}
+            <p className="section-title text-2xl text-mist">{dict.rsvp.closedTitle}</p>
+            <p className="text-sm leading-relaxed text-soft">{dict.rsvp.closedMessage}</p>
+            {siteContent.contactPhone && contactHref ? (
+              <p className="text-sm text-soft">
+                {dict.rsvp.contact} :{" "}
+                <a href={contactHref} className="text-champagne no-underline">
+                  {siteContent.contactPhone}
+                </a>
               </p>
-              {status === "success" && whatsapp ? (
-                <>
-                  <p className="text-center text-soft">{dict.rsvp.successTicketHint}</p>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-                    <a
-                      href={whatsapp.ticketUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-ghost inline-flex justify-center no-underline"
-                    >
-                      {dict.rsvp.viewTicket}
-                    </a>
-                    <a
-                      href={whatsapp.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-primary inline-flex justify-center no-underline"
-                    >
-                      {dict.rsvp.whatsappCta}
-                    </a>
-                  </div>
-                </>
-              ) : null}
+            ) : null}
+          </div>
+        ) : (
+          <form onSubmit={onSubmit} className="space-y-5 border border-line bg-white/90 p-6 md:p-8">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="name">
+                  {dict.rsvp.name}
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  required
+                  className="field"
+                  placeholder={dict.rsvp.namePlaceholder}
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="phone">
+                  {dict.rsvp.phone}
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  pattern={CI_PHONE_PATTERN}
+                  title={dict.rsvp.errorPhoneInvalid}
+                  inputMode="tel"
+                  className="field"
+                  placeholder={dict.rsvp.phonePlaceholder}
+                  autoComplete="tel"
+                />
+              </div>
             </div>
-          ) : null}
-        </form>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="status">
+                  {dict.rsvp.status}
+                </label>
+                <select id="status" name="status" className="field" defaultValue="yes" required>
+                  <option value="yes">{dict.rsvp.statusYes}</option>
+                  <option value="maybe">{dict.rsvp.statusMaybe}</option>
+                  <option value="no">{dict.rsvp.statusNo}</option>
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="guestOf">
+                  {dict.rsvp.guestOf}
+                </label>
+                <select id="guestOf" name="guestOf" className="field" defaultValue="both" required>
+                  <option value="gautier">{siteContent.partnerOne}</option>
+                  <option value="francybel">{siteContent.partnerTwo}</option>
+                  <option value="both">{coupleLabel(siteContent)}</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="message">
+                {dict.rsvp.message}
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows={4}
+                className="field resize-y"
+                placeholder={dict.rsvp.messagePlaceholder}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="btn-primary w-full disabled:opacity-60"
+            >
+              {status === "loading" ? dict.rsvp.submitting : dict.rsvp.submit}
+            </button>
+
+            {status === "success" || status === "error" ? (
+              <div
+                role={status === "error" ? "alert" : "status"}
+                className={`space-y-4 px-4 py-4 text-sm leading-relaxed ${
+                  status === "success"
+                    ? "border border-line bg-forest text-champagne"
+                    : "border border-red-200 bg-red-50 text-red-800"
+                }`}
+              >
+                <p className="meta-date text-center">
+                  {status === "success" ? dict.rsvp.success : error}
+                </p>
+                {status === "success" && whatsapp ? (
+                  <>
+                    <p className="text-center text-soft">{dict.rsvp.successTicketHint}</p>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                      <a
+                        href={whatsapp.ticketUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn-ghost inline-flex justify-center no-underline"
+                      >
+                        {dict.rsvp.viewTicket}
+                      </a>
+                      <a
+                        href={whatsapp.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn-primary inline-flex justify-center no-underline"
+                      >
+                        {dict.rsvp.whatsappCta}
+                      </a>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+          </form>
+        )}
       </div>
     </section>
   );

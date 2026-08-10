@@ -2,6 +2,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { mapPhoto, mapRsvp, toDbPhoto, toDbRsvp, type DbPhoto, type DbRsvp } from "@/lib/supabase/mappers";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/server";
+import { defaultHeroCarousel, normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
   DessertsContent,
@@ -62,12 +63,15 @@ const emptySite: SiteContent = {
   partnerOne: "Gautier",
   partnerTwo: "Francybel",
   weddingDate: "2026-10-31T16:00:00",
+  rsvpDeadline: "2026-09-01T23:59:00",
+  contactPhone: "+2250708345891",
   hero: {
     weddingDateLabel: { fr: "", en: "" },
     tagline: { fr: "", en: "" },
     ctaRsvp: { fr: "", en: "" },
     ctaSchedule: { fr: "", en: "" },
   },
+  heroCarousel: { ...defaultHeroCarousel },
 };
 
 async function getContent<T>(key: string, fallback: T): Promise<T> {
@@ -269,7 +273,18 @@ export async function saveSchedule(schedule: ScheduleContent) {
 }
 
 export async function getSiteContent(): Promise<SiteContent> {
-  return getContent("site", emptySite);
+  const raw = await getContent<Partial<SiteContent>>("site", emptySite);
+  return {
+    ...emptySite,
+    ...raw,
+    hero: {
+      ...emptySite.hero,
+      ...(raw.hero ?? {}),
+    },
+    heroCarousel: normalizeHeroCarousel(raw.heroCarousel),
+    rsvpDeadline: raw.rsvpDeadline || emptySite.rsvpDeadline,
+    contactPhone: raw.contactPhone || emptySite.contactPhone,
+  };
 }
 
 export async function saveSiteContent(content: SiteContent) {

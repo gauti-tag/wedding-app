@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
+import { isRsvpDeadlinePassed } from "@/lib/rsvp-deadline";
 import { getRsvps, getSiteContent, saveRsvps } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
 import type { Rsvp } from "@/lib/types";
@@ -33,6 +34,18 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const siteContent = await getSiteContent();
+    if (isRsvpDeadlinePassed(siteContent.rsvpDeadline)) {
+      return NextResponse.json(
+        {
+          error:
+            "La confirmation de présence n’est plus acceptée car le délai est dépassé.",
+          code: "deadline_passed",
+        },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
     const parsed = schema.safeParse(body);
 
@@ -87,7 +100,6 @@ export async function POST(request: Request) {
 
     let whatsapp: { ticketUrl: string; url: string } | null = null;
     if (entry.status === "yes" || entry.status === "maybe") {
-      const siteContent = await getSiteContent();
       const wa = ticketWhatsAppForRsvp(entry, siteContent, {
         toGuest: false,
         locale,

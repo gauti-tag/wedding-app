@@ -9,6 +9,7 @@ import { StorySection } from "@/components/StorySection";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { coupleLabel } from "@/lib/site";
+import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import {
   getDesserts,
   getDrinks,
@@ -40,14 +41,17 @@ export default async function Home({ params }: Props) {
     getDrinks(),
     getDesserts(),
   ]);
-  const heroPhoto = photos.find((photo) => photo.album === "hero");
+  const heroPhotos = photos
+    .filter((photo) => photo.album === "hero")
+    .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+    .slice(0, MAX_HERO_PHOTOS);
   const names = coupleLabel(siteContent);
 
   return (
     <>
       <SiteNav locale={raw} dict={dict} coupleName={names} />
       <main>
-        <Hero heroPhoto={heroPhoto} siteContent={siteContent} locale={raw} />
+        <Hero heroPhotos={heroPhotos} siteContent={siteContent} locale={raw} />
         <StorySection photos={photos} story={story} locale={raw} dict={dict} />
         <ScheduleSection
           schedule={schedule}

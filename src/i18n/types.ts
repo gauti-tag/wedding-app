@@ -50,7 +50,6 @@ export type Dictionary = {
     eyebrow: string;
     title: string;
     deadlinePrefix: string;
-    deadline: string;
     contact: string;
     name: string;
     namePlaceholder: string;
@@ -72,9 +71,12 @@ export type Dictionary = {
     successTicketHint: string;
     viewTicket: string;
     whatsappCta: string;
+    closedTitle: string;
+    closedMessage: string;
     error: string;
     errorPhoneTaken: string;
     errorPhoneInvalid: string;
+    errorDeadlinePassed: string;
   };
   footer: {
     coupleSpace: string;

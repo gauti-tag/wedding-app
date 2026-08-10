@@ -1,8 +1,10 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { HeroCarouselBackground } from "@/components/HeroCarouselBackground";
 import { ParallaxMedia } from "@/components/motion/ParallaxMedia";
 import type { Locale } from "@/i18n/config";
+import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { t } from "@/lib/localized";
 import { coupleLabel } from "@/lib/site";
 import type { Photo, SiteContent } from "@/lib/types";
@@ -10,16 +12,17 @@ import type { Photo, SiteContent } from "@/lib/types";
 const luxuryEase = [0.16, 1, 0.3, 1] as const;
 
 export function Hero({
-  heroPhoto,
+  heroPhotos,
   siteContent,
   locale,
 }: {
-  heroPhoto?: Photo;
+  heroPhotos: Photo[];
   siteContent: SiteContent;
   locale: Locale;
 }) {
   const reduceMotion = useReducedMotion();
   const names = coupleLabel(siteContent);
+  const carousel = normalizeHeroCarousel(siteContent.heroCarousel);
 
   function fadeUp(delay: number) {
     return {
@@ -35,16 +38,11 @@ export function Hero({
     <section id="top" className="relative min-h-[100svh] overflow-hidden">
       <div className="absolute inset-0">
         <ParallaxMedia className="h-full w-full" strength={10}>
-          {heroPhoto ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={heroPhoto.url}
-              alt={heroPhoto.caption || names}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="h-full w-full bg-[radial-gradient(circle_at_25%_20%,#a67c52_0%,transparent_42%),radial-gradient(circle_at_75%_70%,#6b3e2a_0%,transparent_40%),linear-gradient(160deg,#3b2416,#5a3824_50%,#3b2416)]" />
-          )}
+          <HeroCarouselBackground
+            photos={heroPhotos}
+            settings={carousel}
+            fallbackAlt={names}
+          />
         </ParallaxMedia>
         <div className="absolute inset-0 bg-gradient-to-b from-cacao/25 via-cacao/45 to-cacao/90" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />

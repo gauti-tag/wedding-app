@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auditAs, requirePermission } from "@/lib/auth";
+import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { deleteUpload, getPhotos, savePhotos, saveUpload } from "@/lib/storage";
 import type { Photo, PhotoAlbum } from "@/lib/types";
 
@@ -35,8 +36,14 @@ export async function POST(request: Request) {
     const photos = await getPhotos();
 
     if (album === "hero") {
-      for (const photo of photos) {
-        if (photo.album === "hero") photo.album = "gallery";
+      const heroes = photos
+        .filter((photo) => photo.album === "hero")
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      if (heroes.length >= MAX_HERO_PHOTOS) {
+        const overflow = heroes.slice(0, heroes.length - (MAX_HERO_PHOTOS - 1));
+        for (const photo of overflow) {
+          photo.album = "gallery";
+        }
       }
     }
 

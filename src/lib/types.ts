@@ -104,18 +104,40 @@ export type ScheduleContent = {
   venues: ScheduleVenue[];
 };
 
+export type HeroCarouselEffect = "fade" | "slide" | "zoom";
+
+export type HeroCarouselSettings = {
+  /** Défilement auto en boucle. */
+  autoplay: boolean;
+  /** Délai entre deux slides (ms). */
+  intervalMs: number;
+  /** Durée de la transition (ms). */
+  transitionMs: number;
+  /** Type d’animation entre slides. */
+  effect: HeroCarouselEffect;
+  /** Léger zoom cinématique sur l’image active. */
+  kenBurns: boolean;
+  /** Pause au survol (desktop). */
+  pauseOnHover: boolean;
+};
+
 /** Identité du couple, date (countdown) et textes du hero. */
 export type SiteContent = {
   partnerOne: string;
   partnerTwo: string;
   /** Date/heure cible du compte à rebours (ISO local, ex. 2026-10-31T16:00:00). */
   weddingDate: string;
+  /** Date/heure limite pour confirmer sa présence (ISO local). */
+  rsvpDeadline: string;
+  /** Numéro de contact affiché sur le formulaire RSVP (ex. +2250708345891). */
+  contactPhone: string;
   hero: {
     weddingDateLabel: LocalizedText;
     tagline: LocalizedText;
     ctaRsvp: LocalizedText;
     ctaSchedule: LocalizedText;
   };
+  heroCarousel: HeroCarouselSettings;
 };
 
 export type { Role, Permission } from "./roles";
