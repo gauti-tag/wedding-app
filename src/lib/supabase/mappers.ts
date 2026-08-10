@@ -32,6 +32,8 @@ export type DbRsvp = {
   email_sent_at: string | null;
   ticket_viewed_at: string | null;
   ticket_view_count: number;
+  /** Présent après migration 20260810100005 ; optionnel pour compat. */
+  blocked_at?: string | null;
   created_at: string;
 };
 
@@ -97,6 +99,7 @@ export function mapRsvp(row: DbRsvp): Rsvp {
     emailSentAt: row.email_sent_at,
     ticketViewedAt: row.ticket_viewed_at ?? null,
     ticketViewCount: row.ticket_view_count ?? 0,
+    blockedAt: row.blocked_at ?? null,
     createdAt: row.created_at,
   };
 }

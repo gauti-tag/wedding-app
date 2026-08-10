@@ -145,16 +145,25 @@ export async function savePhotos(photos: Photo[]) {
 }
 
 export async function getRsvps(): Promise<Rsvp[]> {
+  const blocks = await getRsvpBlocks();
+
   if (!isSupabaseConfigured()) {
     const raw = await readJsonFile<Rsvp[]>(path.join(dataDir, "rsvps.json"), []);
-    const rsvps = raw.map(ensureRsvpTicketFields);
+    const rsvps = raw
+      .map((r) =>
+        ensureRsvpTicketFields({
+          ...r,
+          blockedAt: r.blockedAt || blocks[r.id] || null,
+        }),
+      );
     const needsPersist = raw.some(
       (r) =>
         !r.ticketToken ||
         r.checkedInAt === undefined ||
         r.emailSentAt === undefined ||
         r.ticketViewedAt === undefined ||
-        r.ticketViewCount === undefined,
+        r.ticketViewCount === undefined ||
+        r.blockedAt === undefined,
     );
     if (needsPersist && rsvps.length) {
       await writeJsonFile(path.join(dataDir, "rsvps.json"), rsvps);
@@ -170,7 +179,28 @@ export async function getRsvps(): Promise<Rsvp[]> {
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return ((data || []) as DbRsvp[]).map(mapRsvp).map(ensureRsvpTicketFields);
+  return ((data || []) as DbRsvp[])
+    .map(mapRsvp)
+    .map((r) =>
+      ensureRsvpTicketFields({
+        ...r,
+        blockedAt: r.blockedAt || blocks[r.id] || null,
+      }),
+    );
+}
+
+/** Carte id → date ISO de blocage (stockée hors colonne SQL pour compat). */
+export async function getRsvpBlocks(): Promise<Record<string, string>> {
+  const raw = await getContent<Record<string, string>>("rsvp_blocks", {});
+  return raw && typeof raw === "object" ? raw : {};
+}
+
+export async function setRsvpBlocked(id: string, blocked: boolean) {
+  const blocks = { ...(await getRsvpBlocks()) };
+  if (blocked) blocks[id] = new Date().toISOString();
+  else delete blocks[id];
+  await saveContent("rsvp_blocks", blocks);
+  return blocks[id] ?? null;
 }
 
 export async function saveRsvps(rsvps: Rsvp[]) {

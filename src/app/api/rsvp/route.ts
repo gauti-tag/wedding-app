@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { isRsvpDeadlinePassed } from "@/lib/rsvp-deadline";
-import { getRsvps, getSiteContent, saveRsvps } from "@/lib/storage";
+import { getRsvps, getSiteContent, saveRsvps, setRsvpBlocked } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
 import type { Rsvp } from "@/lib/types";
 import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
@@ -93,6 +93,7 @@ export async function POST(request: Request) {
       emailSentAt: null,
       ticketViewedAt: null,
       ticketViewCount: 0,
+      blockedAt: null,
     };
 
     rsvps.unshift(entry);
@@ -135,6 +136,7 @@ export async function DELETE(request: Request) {
     }
 
     await saveRsvps(next);
+    await setRsvpBlocked(id, false);
     await auditAs(user, "delete", "rsvp", target.name);
     return NextResponse.json({ ok: true });
   } catch {

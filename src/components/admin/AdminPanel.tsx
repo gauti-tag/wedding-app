@@ -177,10 +177,12 @@ export function AdminPanel({
   const { showSuccess, showError, showInfo, AlertDialog } = useAdminAlert();
   const [resendBusyId, setResendBusyId] = useState<string | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
+  const [blockBusyId, setBlockBusyId] = useState<string | null>(null);
   const [rsvpPage, setRsvpPage] = useState(1);
   const [rsvpQuery, setRsvpQuery] = useState("");
   const [revealedRsvpIds, setRevealedRsvpIds] = useState<Record<string, true>>({});
   const canRevealPii = currentUser.role === "admin";
+  const canBlockRsvp = currentUser.role === "admin";
 
   const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
   const RSVP_PAGE_SIZE = 10;
@@ -323,6 +325,35 @@ export function AdminPanel({
     }
   }
 
+  async function onToggleBlockRsvp(id: string, name: string, currentlyBlocked: boolean) {
+    const nextBlocked = !currentlyBlocked;
+    const ok = confirm(
+      nextBlocked
+        ? `Bloquer ${name} ? La carte et le check-in afficheront « non autorisé à l’événement ».`
+        : `Débloquer ${name} ? L’accès à l’événement sera rétabli.`,
+    );
+    if (!ok) return;
+    setBlockBusyId(id);
+    try {
+      const res = await fetch("/api/rsvp/block", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, blocked: nextBlocked }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Action impossible.");
+        return;
+      }
+      setRsvps((prev) => prev.map((r) => (r.id === id ? data.rsvp : r)));
+      showSuccess(nextBlocked ? `${name} a été bloqué(e).` : `${name} a été débloqué(e).`);
+    } catch {
+      showError("Action impossible.");
+    } finally {
+      setBlockBusyId(null);
+    }
+  }
+
   async function onDeleteRsvp(id: string, name: string) {
     if (!confirm(`Supprimer la réponse de ${name} ?`)) return;
     setDeleteBusyId(id);
@@ -364,6 +395,7 @@ export function AdminPanel({
       "ticketViewedAt",
       "ticketViewCount",
       "checkedInAt",
+      "blockedAt",
     ];
     const rows = rsvps.map((r) =>
       [
@@ -378,6 +410,7 @@ export function AdminPanel({
         r.ticketViewedAt || "",
         String(r.ticketViewCount ?? 0),
         r.checkedInAt || "",
+        r.blockedAt || "",
       ]
         .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
         .join(","),
@@ -689,6 +722,11 @@ export function AdminPanel({
                       <div>
                         <span className="text-mist">Vues</span> · {rsvp.ticketViewCount ?? 0}
                       </div>
+                      {rsvp.blockedAt ? (
+                        <div className="text-red-800">
+                          <span className="text-mist">Accès</span> · Bloqué
+                        </div>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-soft" suppressHydrationWarning>
                       {rsvp.checkedInAt ? formatAdminDate(rsvp.checkedInAt, true) : "—"}
@@ -716,6 +754,26 @@ export function AdminPanel({
                               </button>
                             ) : null}
                           </>
+                        ) : null}
+                        {canBlockRsvp ? (
+                          <button
+                            type="button"
+                            disabled={blockBusyId === rsvp.id}
+                            onClick={() =>
+                              void onToggleBlockRsvp(rsvp.id, rsvp.name, Boolean(rsvp.blockedAt))
+                            }
+                            className={`text-left text-xs tracking-[0.12em] uppercase disabled:opacity-50 ${
+                              rsvp.blockedAt
+                                ? "text-champagne hover:text-mist"
+                                : "text-red-700 hover:text-red-900"
+                            }`}
+                          >
+                            {blockBusyId === rsvp.id
+                              ? "…"
+                              : rsvp.blockedAt
+                                ? "Débloquer"
+                                : "Bloquer"}
+                          </button>
                         ) : null}
                         {can("manage_rsvp") ? (
                           <button

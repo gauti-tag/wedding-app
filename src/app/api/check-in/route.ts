@@ -45,6 +45,17 @@ export async function POST(request: Request) {
 
     const guest = rsvps[index];
 
+    if (guest.blockedAt) {
+      return NextResponse.json(
+        {
+          error: "Non autorisé à l’événement. Cette invitation a été bloquée.",
+          code: "blocked",
+          rsvp: guest,
+        },
+        { status: 403 },
+      );
+    }
+
     if (guest.status === "no") {
       return NextResponse.json(
         {

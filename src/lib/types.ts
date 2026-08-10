@@ -33,6 +33,8 @@ export type Rsvp = {
   ticketViewedAt: string | null;
   /** Nombre de consultations de la carte via le lien. */
   ticketViewCount: number;
+  /** Date ISO du blocage d’accès (carte / check-in), null si autorisé. */
+  blockedAt: string | null;
 };
 
 export type LocalizedText = {

@@ -37,5 +37,6 @@ export function ensureRsvpTicketFields(rsvp: Rsvp): Rsvp {
     emailSentAt: rsvp.emailSentAt ?? null,
     ticketViewedAt: rsvp.ticketViewedAt ?? null,
     ticketViewCount: typeof rsvp.ticketViewCount === "number" ? rsvp.ticketViewCount : 0,
+    blockedAt: rsvp.blockedAt ?? null,
   };
 }
