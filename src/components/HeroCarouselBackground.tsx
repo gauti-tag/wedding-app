@@ -95,16 +95,6 @@ export function HeroCarouselBackground({ photos, settings, fallbackAlt }: Props)
             draggable={false}
             decoding="async"
             fetchPriority={index === 0 ? "high" : "low"}
-            initial={false}
-            animate={{ scale: 1 }}
-            transition={
-              kenBurns
-                ? {
-                    duration: Math.max(settings.intervalMs / 1000, duration + 0.4),
-                    ease: "linear",
-                  }
-                : { duration: 0 }
-            }
           />
         </motion.div>
       </AnimatePresence>
