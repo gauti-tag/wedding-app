@@ -215,7 +215,7 @@ export async function downloadMcRundownPng(input: {
     const notes = cue.notes
       ? wrapText(ctx, cue.notes, width - pad * 2 - 24, 3)
       : [];
-    const blockH = Math.max(rowMin - 16, 52 + notes.length * 22);
+    const blockH = Math.max(80, 52 + notes.length * 22);
 
     ctx.fillStyle = "#3b2416";
     ctx.font = "600 20px Georgia, serif";

@@ -17,18 +17,8 @@ export function HeroCarouselBackground({ photos, settings, fallbackAlt }: Props)
   const reduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [mobileLite, setMobileLite] = useState(false);
   const slides = photos.slice(0, MAX_HERO_PHOTOS);
-  const kenBurns = settings.kenBurns && !mobileLite;
   const canLoop = slides.length > 1 && settings.autoplay && !reduceMotion;
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px), (pointer: coarse)");
-    const update = () => setMobileLite(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
 
   useEffect(() => {
     setIndex(0);
@@ -55,7 +45,7 @@ export function HeroCarouselBackground({ photos, settings, fallbackAlt }: Props)
       <img
         src={photo.url}
         alt={photo.caption || fallbackAlt}
-        className="h-full w-full object-cover"
+        className="h-full w-full bg-cacao object-contain"
       />
     );
   }
@@ -101,12 +91,12 @@ export function HeroCarouselBackground({ photos, settings, fallbackAlt }: Props)
           <motion.img
             src={active.url}
             alt={active.caption || fallbackAlt}
-            className="h-full w-full object-cover"
+            className="h-full w-full bg-cacao object-contain"
             draggable={false}
             decoding="async"
             fetchPriority={index === 0 ? "high" : "low"}
-            initial={kenBurns ? { scale: 1 } : false}
-            animate={kenBurns ? { scale: 1.08 } : { scale: 1 }}
+            initial={false}
+            animate={{ scale: 1 }}
             transition={
               kenBurns
                 ? {

@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const target = resolveImageTarget(album, existingStoryCount);
 
     const rawBuffer = Buffer.from(await file.arrayBuffer());
-    const resized = await resizeImageToTarget(rawBuffer, target);
+    const resized = await resizeImageToTarget(rawBuffer, target, album);
     const uploaded = await saveUpload(resized.buffer, {
       filenameHint: file.name,
       contentType: resized.contentType,

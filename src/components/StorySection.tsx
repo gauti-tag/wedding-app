@@ -53,7 +53,7 @@ export function StorySection({
                     <img
                       src={photo.url}
                       alt={photo.caption || dict.story.photoAlt}
-                      className="h-full w-full object-cover transition duration-700 hover:scale-105"
+                      className="h-full w-full object-contain transition duration-700"
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cacao/15 via-cacao/25 to-cacao/55 md:from-cacao/25 md:via-cacao/45 md:to-cacao/90" />
                     <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.28),transparent_50%,rgba(59,36,22,0.16))] md:bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />
