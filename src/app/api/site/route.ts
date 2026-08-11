@@ -6,6 +6,7 @@ import { normalizeGuestCapacity } from "@/lib/guest-capacity";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
 import { formatCiWhatsAppPhone } from "@/lib/whatsapp";
+import { serializeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 
 const localizedSchema = z.object({
   fr: z.string().trim().max(500),
@@ -33,6 +34,17 @@ const siteSchema = z.object({
     .max(40)
     .refine(isValidCiPhone, { message: "Téléphone invalide." }),
   guestCapacity: z.number().int().min(1).max(5000),
+  whatsappReminders: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).max(80),
+        label: z.string().trim().min(1).max(60),
+        date: datetimeLocalSchema,
+      }),
+    )
+    .max(12)
+    .optional()
+    .default([]),
   hero: z.object({
     weddingDateLabel: localizedSchema,
     tagline: localizedSchema,
@@ -65,7 +77,7 @@ export async function PUT(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Données du site invalides. Vérifiez noms, dates, téléphone de contact, carrousel et textes FR/EN.",
+            "Données du site invalides. Vérifiez noms, dates, rappels WhatsApp, téléphone de contact, carrousel et textes FR/EN.",
         },
         { status: 400 },
       );
@@ -86,6 +98,7 @@ export async function PUT(request: Request) {
       rsvpDeadline: withSeconds(parsed.data.rsvpDeadline),
       contactPhone,
       guestCapacity: normalizeGuestCapacity(parsed.data.guestCapacity),
+      whatsappReminders: serializeWhatsAppReminders(parsed.data.whatsappReminders),
       heroCarousel: normalizeHeroCarousel(parsed.data.heroCarousel),
     };
     await saveSiteContent(content);

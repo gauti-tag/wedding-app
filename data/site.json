@@ -4,6 +4,7 @@
   "weddingDate": "2026-10-31T14:00:00",
   "rsvpDeadline": "2026-09-01T23:59:00",
   "guestCapacity": 100,
+  "whatsappReminders": [],
   "contactPhone": "+2250708345891",
   "hero": {
     "weddingDateLabel": {

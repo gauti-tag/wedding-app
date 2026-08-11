@@ -37,11 +37,8 @@ export type Rsvp = {
   blockedAt: string | null;
 };
 
-/** Suivi des rappels WhatsApp J-7 / J-1 (stocké dans app_content). */
-export type RsvpReminderLog = {
-  j7?: string;
-  j1?: string;
-};
+/** Suivi des rappels WhatsApp envoyés (reminderId → date ISO). */
+export type RsvpReminderLog = Record<string, string>;
 
 export type LocalizedText = {
   fr: string;
@@ -112,6 +109,27 @@ export type ScheduleContent = {
   venues: ScheduleVenue[];
 };
 
+/** Passage interne pour le maître de cérémonie (non publié sur le site). */
+export type McRundownCue = {
+  id: string;
+  /** Libellé du passage (accueil, toast, gâteau…). */
+  label: string;
+  /** Heure de début HH:MM. Vide = enchaîné après le passage précédent. */
+  startTime: string;
+  /** Durée prévue, en minutes. */
+  durationMinutes: number;
+  /** Notes / texte à dire / consignes. */
+  notes: string;
+  /** Responsable optionnel (MC, DJ, photographe…). */
+  owner: string;
+};
+
+export type McRundownContent = {
+  title: string;
+  notes: string;
+  cues: McRundownCue[];
+};
+
 export type HeroCarouselEffect = "fade" | "slide" | "zoom";
 
 export type HeroCarouselSettings = {
@@ -141,6 +159,8 @@ export type SiteContent = {
   contactPhone: string;
   /** Nombre max de confirmations « oui » (places) acceptées. */
   guestCapacity: number;
+  /** Rappels WhatsApp planifiés (liste dynamique : libellé + date). */
+  whatsappReminders: WhatsAppReminderPlan[];
   hero: {
     weddingDateLabel: LocalizedText;
     tagline: LocalizedText;
@@ -148,6 +168,14 @@ export type SiteContent = {
     ctaSchedule: LocalizedText;
   };
   heroCarousel: HeroCarouselSettings;
+};
+
+export type WhatsAppReminderPlan = {
+  id: string;
+  /** Libellé affiché (ex. J-7, J-1, Rappel final). */
+  label: string;
+  /** Date/heure cible (datetime-local). */
+  date: string;
 };
 
 export type { Role, Permission } from "./roles";

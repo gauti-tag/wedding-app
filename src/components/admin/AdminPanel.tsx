@@ -7,6 +7,7 @@ import { AdminCheckIn } from "@/components/admin/AdminCheckIn";
 import { AdminDessertsEditor } from "@/components/admin/AdminDessertsEditor";
 import { AdminDrinksEditor } from "@/components/admin/AdminDrinksEditor";
 import { AdminInviteQr } from "@/components/admin/AdminInviteQr";
+import { AdminMcRundownEditor } from "@/components/admin/AdminMcRundownEditor";
 import { AdminMenuEditor } from "@/components/admin/AdminMenuEditor";
 import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
@@ -15,6 +16,7 @@ import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
+import { formatOptionalDatetimeLabel } from "@/lib/rsvp-deadline";
 import { hasPermission, roleLabels, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
@@ -22,6 +24,7 @@ import type {
   DessertsContent,
   DrinksContent,
   GuestOf,
+  McRundownContent,
   MenuContent,
   Photo,
   PhotoAlbum,
@@ -102,6 +105,7 @@ type Props = {
   initialSite: SiteContent;
   initialStory: StoryContent;
   initialSchedule: ScheduleContent;
+  initialMcRundown: McRundownContent;
   initialMenu: MenuContent;
   initialDrinks: DrinksContent;
   initialDesserts: DessertsContent;
@@ -121,6 +125,7 @@ const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-site", label: "Couple & hero", permission: "manage_content" },
   { href: "#admin-story", label: "Histoire", permission: "manage_content" },
   { href: "#admin-schedule", label: "Programme", permission: "manage_content" },
+  { href: "#admin-mc-rundown", label: "Feuille MC", permission: "manage_content" },
   { href: "#admin-menu", label: "Menu", permission: "manage_content" },
   { href: "#admin-desserts", label: "Desserts", permission: "manage_content" },
   { href: "#admin-drinks", label: "Boissons", permission: "manage_content" },
@@ -162,6 +167,7 @@ export function AdminPanel({
   initialSite,
   initialStory,
   initialSchedule,
+  initialMcRundown,
   initialMenu,
   initialDrinks,
   initialDesserts,
@@ -334,14 +340,14 @@ export function AdminPanel({
     }
   }
 
-  async function onWhatsAppReminder(id: string, kind: "j7" | "j1") {
-    const busyKey = `${id}:${kind}`;
+  async function onWhatsAppReminder(id: string, reminderId: string, reminderLabel: string) {
+    const busyKey = `${id}:${reminderId}`;
     setResendBusyId(busyKey);
     try {
       const res = await fetch("/api/rsvp/remind", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, kind }),
+        body: JSON.stringify({ id, reminderId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -354,11 +360,7 @@ export function AdminPanel({
       if (data.whatsappUrl) {
         window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
       }
-      showSuccess(
-        kind === "j7"
-          ? "WhatsApp ouvert — envoyez le rappel J-7."
-          : "WhatsApp ouvert — envoyez le rappel J-1.",
-      );
+      showSuccess(`WhatsApp ouvert — envoyez le rappel « ${reminderLabel} ».`);
     } catch {
       showError("Rappel WhatsApp impossible.");
     } finally {
@@ -366,22 +368,17 @@ export function AdminPanel({
     }
   }
 
-  async function onNextReminder(kind: "j7" | "j1") {
+  async function onNextReminder(reminderId: string, reminderLabel: string) {
     const next = rsvps.find(
-      (r) =>
-        r.status === "yes" &&
-        !r.blockedAt &&
-        !(kind === "j7" ? reminders[r.id]?.j7 : reminders[r.id]?.j1),
+      (r) => r.status === "yes" && !r.blockedAt && !reminders[r.id]?.[reminderId],
     );
     if (!next) {
       showInfo(
-        kind === "j7"
-          ? "Tous les invités « oui » ont déjà un rappel J-7 (ou aucun éligible)."
-          : "Tous les invités « oui » ont déjà un rappel J-1 (ou aucun éligible).",
+        `Tous les invités « oui » ont déjà le rappel « ${reminderLabel} » (ou aucun éligible).`,
       );
       return;
     }
-    await onWhatsAppReminder(next.id, kind);
+    await onWhatsAppReminder(next.id, reminderId, reminderLabel);
   }
 
   async function onToggleBlockRsvp(id: string, name: string, currentlyBlocked: boolean) {
@@ -670,6 +667,11 @@ export function AdminPanel({
           <AdminSiteEditor initialSite={site} onSaved={setSite} />
           <AdminStoryEditor initialStory={initialStory} />
           <AdminScheduleEditor initialSchedule={initialSchedule} />
+          <AdminMcRundownEditor
+            initialRundown={initialMcRundown}
+            coupleNames={`${site.partnerOne} & ${site.partnerTwo}`}
+            dateLabel={site.hero.weddingDateLabel.fr || site.weddingDate}
+          />
           <AdminMenuEditor initialMenu={initialMenu} />
           <AdminDessertsEditor initialDesserts={initialDesserts} />
           <AdminDrinksEditor initialDrinks={initialDrinks} />
@@ -689,27 +691,38 @@ export function AdminPanel({
           <div className="mb-6 border border-line bg-white/80 px-4 py-4 md:px-5">
             <p className="text-sm font-medium text-mist">Rappels WhatsApp</p>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-soft">
-              Messages prêts pour les invités confirmés (« oui »). Ouvrez WhatsApp, envoyez, puis
-              passez au suivant. Idéal à J-7 puis J-1 avant le mariage.
+              Messages prêts pour les invités confirmés (« oui »). Les rappels se planifient
+              dynamiquement dans Couple & hero.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="btn-ghost !px-4 !py-2 text-xs"
-                disabled={Boolean(resendBusyId)}
-                onClick={() => void onNextReminder("j7")}
-              >
-                Prochain rappel J-7
-              </button>
-              <button
-                type="button"
-                className="btn-ghost !px-4 !py-2 text-xs"
-                disabled={Boolean(resendBusyId)}
-                onClick={() => void onNextReminder("j1")}
-              >
-                Prochain rappel J-1
-              </button>
-            </div>
+            {site.whatsappReminders.length === 0 ? (
+              <p className="mt-3 text-xs text-soft">
+                Aucun rappel planifié. Ajoutez-en dans Couple & hero.
+              </p>
+            ) : (
+              <>
+                <ul className="mt-3 space-y-1 text-xs text-soft">
+                  {site.whatsappReminders.map((reminder) => (
+                    <li key={reminder.id}>
+                      <span className="text-mist">{reminder.label}</span> ·{" "}
+                      {formatOptionalDatetimeLabel(reminder.date) || "Date à définir"}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {site.whatsappReminders.map((reminder) => (
+                    <button
+                      key={reminder.id}
+                      type="button"
+                      className="btn-ghost !px-4 !py-2 text-xs"
+                      disabled={Boolean(resendBusyId)}
+                      onClick={() => void onNextReminder(reminder.id, reminder.label)}
+                    >
+                      Prochain « {reminder.label} »
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         ) : null}
 
@@ -812,20 +825,16 @@ export function AdminPanel({
                       <div>
                         <span className="text-mist">Vues</span> · {rsvp.ticketViewCount ?? 0}
                       </div>
-                      {rsvp.status === "yes" ? (
+                      {rsvp.status === "yes" && site.whatsappReminders.length > 0 ? (
                         <>
-                          <div>
-                            <span className="text-mist">Rappel J-7</span> ·{" "}
-                            {reminders[rsvp.id]?.j7
-                              ? formatAdminDate(reminders[rsvp.id].j7!, true)
-                              : "—"}
-                          </div>
-                          <div>
-                            <span className="text-mist">Rappel J-1</span> ·{" "}
-                            {reminders[rsvp.id]?.j1
-                              ? formatAdminDate(reminders[rsvp.id].j1!, true)
-                              : "—"}
-                          </div>
+                          {site.whatsappReminders.map((reminder) => (
+                            <div key={reminder.id}>
+                              <span className="text-mist">{reminder.label}</span> ·{" "}
+                              {reminders[rsvp.id]?.[reminder.id]
+                                ? formatAdminDate(reminders[rsvp.id][reminder.id], true)
+                                : "—"}
+                            </div>
+                          ))}
                         </>
                       ) : null}
                       {rsvp.blockedAt ? (
@@ -859,26 +868,30 @@ export function AdminPanel({
                                 {resendBusyId === rsvp.id ? "Ouverture…" : "WhatsApp"}
                               </button>
                             ) : null}
-                            {can("manage_rsvp") && rsvp.status === "yes" && !rsvp.blockedAt ? (
-                              <>
-                                <button
-                                  type="button"
-                                  disabled={resendBusyId === `${rsvp.id}:j7`}
-                                  onClick={() => void onWhatsAppReminder(rsvp.id, "j7")}
-                                  className="text-left text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
-                                >
-                                  {resendBusyId === `${rsvp.id}:j7` ? "Ouverture…" : "Rappel J-7"}
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={resendBusyId === `${rsvp.id}:j1`}
-                                  onClick={() => void onWhatsAppReminder(rsvp.id, "j1")}
-                                  className="text-left text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
-                                >
-                                  {resendBusyId === `${rsvp.id}:j1` ? "Ouverture…" : "Rappel J-1"}
-                                </button>
-                              </>
-                            ) : null}
+                            {can("manage_rsvp") &&
+                            rsvp.status === "yes" &&
+                            !rsvp.blockedAt &&
+                            site.whatsappReminders.length > 0
+                              ? site.whatsappReminders.map((reminder) => (
+                                  <button
+                                    key={reminder.id}
+                                    type="button"
+                                    disabled={resendBusyId === `${rsvp.id}:${reminder.id}`}
+                                    onClick={() =>
+                                      void onWhatsAppReminder(
+                                        rsvp.id,
+                                        reminder.id,
+                                        reminder.label,
+                                      )
+                                    }
+                                    className="text-left text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
+                                  >
+                                    {resendBusyId === `${rsvp.id}:${reminder.id}`
+                                      ? "Ouverture…"
+                                      : `Rappel ${reminder.label}`}
+                                  </button>
+                                ))
+                              : null}
                           </>
                         ) : null}
                         {canBlockRsvp ? (

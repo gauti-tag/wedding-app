@@ -110,7 +110,7 @@ async function upsertContent(key, data) {
 
 async function migrateContent() {
   console.log("→ app_content");
-  const keys = ["site", "story", "schedule", "menu", "drinks", "desserts"];
+  const keys = ["site", "story", "schedule", "mc-rundown", "menu", "drinks", "desserts"];
   for (const key of keys) {
     const data = await readJson(`${key}.json`, null);
     if (data) await upsertContent(key, data);

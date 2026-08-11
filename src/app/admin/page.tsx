@@ -6,6 +6,7 @@ import { hasPermission } from "@/lib/roles";
 import {
   getDesserts,
   getDrinks,
+  getMcRundown,
   getMenu,
   getPhotos,
   getRsvpReminders,
@@ -14,6 +15,7 @@ import {
   getSiteContent,
   getStory,
 } from "@/lib/storage";
+import { emptyMcRundown } from "@/lib/mc-rundown";
 import { ensureSeedAdmin, listPublicUsers, publicUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +34,7 @@ export default async function AdminPage() {
   const canUsers = hasPermission(user.role, "manage_users");
   const canAudit = hasPermission(user.role, "view_audit");
 
-  const [photos, rsvps, reminders, siteContent, story, schedule, menu, drinks, desserts, users, audit] =
+  const [photos, rsvps, reminders, siteContent, story, schedule, mcRundown, menu, drinks, desserts, users, audit] =
     await Promise.all([
       canPhotos || canContent ? getPhotos() : Promise.resolve([]),
       canRsvp ? getRsvps() : Promise.resolve([]),
@@ -48,6 +50,7 @@ export default async function AdminPage() {
             directions: { fr: "", en: "" },
             venues: [],
           }),
+      canContent ? getMcRundown() : Promise.resolve(emptyMcRundown()),
       canContent
         ? getMenu()
         : Promise.resolve({ subtitle: { fr: "", en: "" }, note: { fr: "", en: "" }, cuisines: [] }),
@@ -66,6 +69,7 @@ export default async function AdminPage() {
       initialSite={siteContent}
       initialStory={story}
       initialSchedule={schedule}
+      initialMcRundown={mcRundown}
       initialMenu={menu}
       initialDrinks={drinks}
       initialDesserts={desserts}

@@ -38,3 +38,30 @@ export function formatRsvpDeadlineLabel(rsvpDeadline: string, locale: Locale) {
     year: "numeric",
   });
 }
+
+/** Normalise une date optionnelle (vide si absente / invalide). */
+export function normalizeOptionalDatetime(value: string | undefined | null): string {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return "";
+  const parsed = parseLocalDateTime(trimmed);
+  if (!parsed) return "";
+  const y = parsed.getFullYear();
+  const m = String(parsed.getMonth() + 1).padStart(2, "0");
+  const d = String(parsed.getDate()).padStart(2, "0");
+  const hh = String(parsed.getHours()).padStart(2, "0");
+  const mm = String(parsed.getMinutes()).padStart(2, "0");
+  const ss = String(parsed.getSeconds()).padStart(2, "0");
+  return `${y}-${m}-${d}T${hh}:${mm}:${ss}`;
+}
+
+/** Affiche une date optionnelle admin (JJ/MM/AAAA HH:mm), ou null si vide. */
+export function formatOptionalDatetimeLabel(value: string): string | null {
+  const parsed = parseLocalDateTime(value);
+  if (!parsed) return null;
+  const dd = String(parsed.getDate()).padStart(2, "0");
+  const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+  const yyyy = parsed.getFullYear();
+  const hh = String(parsed.getHours()).padStart(2, "0");
+  const min = String(parsed.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+}

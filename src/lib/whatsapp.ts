@@ -105,10 +105,8 @@ export function ticketWhatsAppForRsvp(
   };
 }
 
-export type ReminderKind = "j7" | "j1";
-
 export function buildReminderWhatsAppMessage(input: {
-  kind: ReminderKind;
+  label: string;
   guestName: string;
   coupleNames: string;
   ticketUrl: string;
@@ -117,51 +115,19 @@ export function buildReminderWhatsAppMessage(input: {
 }) {
   const locale = input.locale || "fr";
   const dateLine = input.dateLabel || "";
+  const label = input.label.trim() || (locale === "en" ? "Reminder" : "Rappel");
 
   if (locale === "en") {
-    if (input.kind === "j7") {
-      return [
-        `Hello ${input.guestName},`,
-        "",
-        `Just one week to go until ${input.coupleNames}'s wedding! 💍`,
-        dateLine ? `${dateLine}` : "",
-        "",
-        "We can't wait to celebrate with you. Keep your invitation QR ready for check-in:",
-        input.ticketUrl,
-        "",
-        "With love,",
-        input.coupleNames,
-      ]
-        .filter(Boolean)
-        .join("\n");
-    }
     return [
       `Hello ${input.guestName},`,
       "",
-      `Tomorrow is the big day for ${input.coupleNames}! ✨`,
+      `${label} — ${input.coupleNames}'s wedding is approaching! 💍`,
       dateLine ? `${dateLine}` : "",
       "",
-      "See you there — please have your QR invitation ready at the entrance:",
+      "We can't wait to celebrate with you. Keep your invitation QR ready for check-in:",
       input.ticketUrl,
       "",
-      "Looking forward to hugging you,",
-      input.coupleNames,
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  if (input.kind === "j7") {
-    return [
-      `Bonjour ${input.guestName},`,
-      "",
-      `Plus qu'une semaine avant le mariage de ${input.coupleNames} ! 💍`,
-      dateLine ? `${dateLine}` : "",
-      "",
-      "Nous avons hâte de célébrer avec vous. Gardez votre invitation QR prête pour l'accueil :",
-      input.ticketUrl,
-      "",
-      "Avec toute notre affection,",
+      "With love,",
       input.coupleNames,
     ]
       .filter(Boolean)
@@ -171,13 +137,13 @@ export function buildReminderWhatsAppMessage(input: {
   return [
     `Bonjour ${input.guestName},`,
     "",
-    `C'est demain — le grand jour de ${input.coupleNames} ! ✨`,
+    `${label} — le mariage de ${input.coupleNames} approche ! 💍`,
     dateLine ? `${dateLine}` : "",
     "",
-    "À très vite — pensez à présenter votre QR d'invitation à l'entrée :",
+    "Nous avons hâte de célébrer avec vous. Gardez votre invitation QR prête pour l'accueil :",
     input.ticketUrl,
     "",
-    "Nous avons hâte de vous retrouver,",
+    "Avec toute notre affection,",
     input.coupleNames,
   ]
     .filter(Boolean)
@@ -187,13 +153,13 @@ export function buildReminderWhatsAppMessage(input: {
 export function reminderWhatsAppForRsvp(
   rsvp: Pick<Rsvp, "name" | "phone" | "ticketToken">,
   siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo" | "hero">,
-  kind: ReminderKind,
+  reminderLabel: string,
   options?: { locale?: "fr" | "en" },
 ) {
   const locale = options?.locale || "fr";
   const ticketUrl = ticketPageUrl(rsvp.ticketToken);
   const message = buildReminderWhatsAppMessage({
-    kind,
+    label: reminderLabel,
     guestName: rsvp.name,
     coupleNames: coupleLabel(siteContent),
     ticketUrl,
@@ -209,6 +175,5 @@ export function reminderWhatsAppForRsvp(
     message,
     url: whatsappUrl(message, digits),
     phoneDigits: digits,
-    kind,
   };
 }

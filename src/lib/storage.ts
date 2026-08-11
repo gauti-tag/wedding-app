@@ -4,10 +4,13 @@ import { mapPhoto, mapRsvp, toDbPhoto, toDbRsvp, type DbPhoto, type DbRsvp } fro
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/server";
 import { defaultHeroCarousel, normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { normalizeGuestCapacity } from "@/lib/guest-capacity";
+import { emptyMcRundown, normalizeMcRundown } from "@/lib/mc-rundown";
+import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
   DessertsContent,
   DrinksContent,
+  McRundownContent,
   MenuContent,
   Photo,
   Rsvp,
@@ -68,6 +71,7 @@ const emptySite: SiteContent = {
   rsvpDeadline: "2026-09-01T23:59:00",
   contactPhone: "+2250708345891",
   guestCapacity: 100,
+  whatsappReminders: [],
   hero: {
     weddingDateLabel: { fr: "", en: "" },
     tagline: { fr: "", en: "" },
@@ -212,10 +216,10 @@ export async function getRsvpReminders(): Promise<Record<string, RsvpReminderLog
   return raw && typeof raw === "object" ? raw : {};
 }
 
-export async function markRsvpReminder(id: string, kind: "j7" | "j1") {
+export async function markRsvpReminder(id: string, reminderId: string) {
   const all = { ...(await getRsvpReminders()) };
   const prev = all[id] || {};
-  all[id] = { ...prev, [kind]: new Date().toISOString() };
+  all[id] = { ...prev, [reminderId]: new Date().toISOString() };
   await saveContent("rsvp_reminders", all);
   return all[id];
 }
@@ -319,6 +323,15 @@ export async function saveSchedule(schedule: ScheduleContent) {
   await saveContent("schedule", schedule);
 }
 
+export async function getMcRundown(): Promise<McRundownContent> {
+  const raw = await getContent<unknown>("mc-rundown", emptyMcRundown());
+  return normalizeMcRundown(raw);
+}
+
+export async function saveMcRundown(rundown: McRundownContent) {
+  await saveContent("mc-rundown", normalizeMcRundown(rundown));
+}
+
 export async function getSiteContent(): Promise<SiteContent> {
   const raw = await getContent<Partial<SiteContent>>("site", emptySite);
   return {
@@ -332,6 +345,13 @@ export async function getSiteContent(): Promise<SiteContent> {
     rsvpDeadline: raw.rsvpDeadline || emptySite.rsvpDeadline,
     contactPhone: raw.contactPhone || emptySite.contactPhone,
     guestCapacity: normalizeGuestCapacity(raw.guestCapacity, emptySite.guestCapacity),
+    whatsappReminders: normalizeWhatsAppReminders(
+      (raw as { whatsappReminders?: unknown }).whatsappReminders,
+      {
+        j7: (raw as { whatsappReminderJ7?: string }).whatsappReminderJ7,
+        j1: (raw as { whatsappReminderJ1?: string }).whatsappReminderJ1,
+      },
+    ),
   };
 }
 

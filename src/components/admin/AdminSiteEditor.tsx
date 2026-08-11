@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
-import type { HeroCarouselEffect, LocalizedText, SiteContent } from "@/lib/types";
+import type { HeroCarouselEffect, LocalizedText, SiteContent, WhatsAppReminderPlan } from "@/lib/types";
+import {
+  createReminderId,
+  normalizeWhatsAppReminders,
+  reminderDateFromWedding,
+} from "@/lib/whatsapp-reminders";
 
 function toDatetimeLocal(value: string) {
   if (!value) return "";
@@ -71,6 +76,10 @@ export function AdminSiteEditor({
     rsvpDeadline: initialSite.rsvpDeadline || "2026-09-01T23:59:00",
     contactPhone: initialSite.contactPhone || "+2250708345891",
     guestCapacity: initialSite.guestCapacity || 100,
+    whatsappReminders: normalizeWhatsAppReminders(initialSite.whatsappReminders, {
+      j7: (initialSite as { whatsappReminderJ7?: string }).whatsappReminderJ7,
+      j1: (initialSite as { whatsappReminderJ1?: string }).whatsappReminderJ1,
+    }),
     hero: {
       weddingDateLabel: initialSite.hero?.weddingDateLabel ?? { fr: "", en: "" },
       tagline: initialSite.hero?.tagline ?? { fr: "", en: "" },
@@ -81,6 +90,37 @@ export function AdminSiteEditor({
   }));
   const [busy, setBusy] = useState(false);
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
+
+  function updateReminder(id: string, patch: Partial<WhatsAppReminderPlan>) {
+    setContent((prev) => ({
+      ...prev,
+      whatsappReminders: prev.whatsappReminders.map((item) =>
+        item.id === id ? { ...item, ...patch } : item,
+      ),
+    }));
+  }
+
+  function addReminder(preset?: { label: string; daysBefore: number }) {
+    const date = preset
+      ? reminderDateFromWedding(content.weddingDate, preset.daysBefore)
+      : "";
+    const next: WhatsAppReminderPlan = {
+      id: createReminderId(),
+      label: preset?.label || `Rappel ${content.whatsappReminders.length + 1}`,
+      date: date || content.weddingDate || "",
+    };
+    setContent((prev) => ({
+      ...prev,
+      whatsappReminders: [...prev.whatsappReminders, next].slice(0, 12),
+    }));
+  }
+
+  function removeReminder(id: string) {
+    setContent((prev) => ({
+      ...prev,
+      whatsappReminders: prev.whatsappReminders.filter((item) => item.id !== id),
+    }));
+  }
 
   async function onSave() {
     setBusy(true);
@@ -112,8 +152,8 @@ export function AdminSiteEditor({
         <div>
           <h2 className="section-title text-3xl text-mist">Couple & hero</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Noms des futurs mariés, date du compte à rebours, date limite RSVP, téléphone de contact,
-            carrousel hero et textes (FR/EN).
+            Noms des futurs mariés, date du compte à rebours, date limite RSVP, rappels WhatsApp
+            dynamiques, téléphone de contact, carrousel hero et textes (FR/EN).
           </p>
         </div>
         <button
@@ -209,6 +249,90 @@ export function AdminSiteEditor({
               Une fois ce nombre de « oui » atteint, plus aucune confirmation positive n’est
               acceptée.
             </p>
+          </div>
+        </div>
+
+        <div className="border-t border-line pt-4">
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+            Rappels WhatsApp (dynamiques)
+          </p>
+          <p className="mt-2 text-xs text-soft">
+            Ajoutez autant de rappels que nécessaire. Les raccourcis J-7 / J-1 calculent la date
+            automatiquement à partir de la date du mariage.
+          </p>
+
+          <div className="mt-3 space-y-3">
+            {content.whatsappReminders.length === 0 ? (
+              <p className="text-xs text-soft">Aucun rappel planifié pour le moment.</p>
+            ) : (
+              content.whatsappReminders.map((reminder, index) => (
+                <div
+                  key={reminder.id}
+                  className="grid gap-3 border border-line bg-ivory/50 p-3 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)_auto]"
+                >
+                  <div>
+                    <label className="label" htmlFor={`reminder-label-${reminder.id}`}>
+                      Libellé {index + 1}
+                    </label>
+                    <input
+                      id={`reminder-label-${reminder.id}`}
+                      className="field"
+                      value={reminder.label}
+                      onChange={(e) => updateReminder(reminder.id, { label: e.target.value })}
+                      placeholder="Ex. J-7, J-1, Rappel final"
+                    />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor={`reminder-date-${reminder.id}`}>
+                      Date & heure
+                    </label>
+                    <input
+                      id={`reminder-date-${reminder.id}`}
+                      type="datetime-local"
+                      className="field"
+                      value={toDatetimeLocal(reminder.date)}
+                      onChange={(e) => updateReminder(reminder.id, { date: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      className="text-xs tracking-[0.12em] text-red-700 uppercase hover:text-red-900"
+                      onClick={() => removeReminder(reminder.id)}
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-ghost !px-4 !py-2 text-xs"
+              disabled={content.whatsappReminders.length >= 12}
+              onClick={() => addReminder()}
+            >
+              Ajouter un rappel
+            </button>
+            <button
+              type="button"
+              className="btn-ghost !px-4 !py-2 text-xs"
+              disabled={content.whatsappReminders.length >= 12}
+              onClick={() => addReminder({ label: "J-7", daysBefore: 7 })}
+            >
+              + J-7 (auto)
+            </button>
+            <button
+              type="button"
+              className="btn-ghost !px-4 !py-2 text-xs"
+              disabled={content.whatsappReminders.length >= 12}
+              onClick={() => addReminder({ label: "J-1", daysBefore: 1 })}
+            >
+              + J-1 (auto)
+            </button>
           </div>
         </div>
 

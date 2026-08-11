@@ -7,10 +7,10 @@ import { reminderWhatsAppForRsvp } from "@/lib/whatsapp";
 
 const schema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["j7", "j1"]),
+  reminderId: z.string().min(1),
 });
 
-/** Prépare un rappel WhatsApp J-7 ou J-1 pour un invité confirmé. */
+/** Prépare un rappel WhatsApp pour un invité confirmé (plan dynamique). */
 export async function POST(request: Request) {
   const { user, error } = await requirePermission("manage_rsvp");
   if (error) return error;
@@ -41,7 +41,15 @@ export async function POST(request: Request) {
     }
 
     const siteContent = await getSiteContent();
-    const wa = reminderWhatsAppForRsvp(rsvp, siteContent, parsed.data.kind, { locale: "fr" });
+    const plan = siteContent.whatsappReminders.find((r) => r.id === parsed.data.reminderId);
+    if (!plan) {
+      return NextResponse.json(
+        { error: "Rappel introuvable. Vérifiez la planification dans Couple & hero." },
+        { status: 404 },
+      );
+    }
+
+    const wa = reminderWhatsAppForRsvp(rsvp, siteContent, plan.label, { locale: "fr" });
     if (!wa.phoneDigits) {
       return NextResponse.json(
         { error: "Numéro WhatsApp invalide pour cet invité." },
@@ -49,14 +57,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const reminder = await markRsvpReminder(rsvp.id, parsed.data.kind);
-    await auditAs(user, "whatsapp", `reminder_${parsed.data.kind}`, rsvp.name);
+    const reminder = await markRsvpReminder(rsvp.id, plan.id);
+    await auditAs(user, "whatsapp", `reminder_${plan.label}`, rsvp.name);
 
     return NextResponse.json({
       ok: true,
       whatsappUrl: wa.url,
       ticketUrl: wa.ticketUrl,
-      kind: parsed.data.kind,
+      reminderId: plan.id,
+      reminderLabel: plan.label,
       reminder,
     });
   } catch {
