@@ -35,9 +35,9 @@ export function Hero({
   }
 
   return (
-    <section id="top" className="relative min-h-[100svh] overflow-hidden">
-      <div className="absolute inset-0">
-        <ParallaxMedia className="h-full w-full" strength={10}>
+    <section id="top" className="relative h-[100svh] min-h-[100svh] overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden bg-cacao">
+        <ParallaxMedia className="absolute inset-0 h-full w-full" strength={10}>
           <HeroCarouselBackground
             photos={heroPhotos}
             settings={carousel}

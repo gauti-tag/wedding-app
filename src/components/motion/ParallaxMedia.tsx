@@ -55,8 +55,8 @@ export function ParallaxMedia({
   }, [reduceMotion, strength]);
 
   return (
-    <div ref={rootRef} className={`overflow-hidden ${className}`}>
-      <div ref={mediaRef} className="h-full w-full md:will-change-transform">
+    <div ref={rootRef} className={`relative overflow-hidden ${className}`}>
+      <div ref={mediaRef} className="absolute inset-0 h-full w-full md:will-change-transform">
         {children}
       </div>
     </div>

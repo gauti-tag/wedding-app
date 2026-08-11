@@ -135,27 +135,27 @@ const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-audit", label: "Audit", permission: "view_audit" },
 ];
 
-/** Formats alignés sur les cadres d’affichage (contain, sans crop). */
+/** Formats alignés sur les cadres d’affichage (remplissage du cadre prévu). */
 const albumSizeGuides: Record<
   PhotoAlbum,
   { ratio: string; size: string; tip: string; slots?: string }
 > = {
   hero: {
     ratio: "Paysage 16:9",
-    size: `${ALBUM_IMAGE_TARGETS.hero.label} — image entière (fit), sans coupe`,
-    tip: "Jusqu’à 6 photos en carrousel. Redimensionnées à 1920×1080 en conservant le ratio.",
+    size: `${ALBUM_IMAGE_TARGETS.hero.label} — remplit le cadre hero`,
+    tip: "Jusqu’à 6 photos plein écran. Redimensionnées à 1920×1080 pour occuper tout le hero.",
     slots: "1 à 6 images — défilement en boucle",
   },
   story: {
     ratio: "1ʳᵉ photo 16:10 · 2ᵉ et 3ᵉ en 4:5",
-    size: "1600 × 1000 puis 1200 × 1500 — image entière (fit), sans coupe",
-    tip: "Seules les 3 premières photos « Notre histoire » s’affichent. Ratio conservé.",
+    size: "1600 × 1000 puis 1200 × 1500 — remplit chaque emplacement",
+    tip: "Seules les 3 premières photos « Notre histoire » s’affichent, chacune dans son cadre.",
     slots: "Grande (haut) : paysage · Deux petites : portrait",
   },
   gallery: {
     ratio: "Portrait 4:5",
-    size: `${ALBUM_IMAGE_TARGETS.gallery.label} — image entière (fit), sans coupe`,
-    tip: "Colonne masonry. Redimensionnée à 1200×1500 en conservant le ratio.",
+    size: `${ALBUM_IMAGE_TARGETS.gallery.label} — remplit la tuile galerie`,
+    tip: "Chaque photo occupe un cadre 4:5 (1200×1500).",
   },
 };
 
@@ -285,7 +285,7 @@ export function AdminPanel({
     setCaption("");
     showSuccess(
       data.resizedTo
-        ? `Photo ajoutée et ajustée en ${data.resizedTo.label} (sans coupe).`
+        ? `Photo ajoutée et ajustée au cadre ${data.resizedTo.label}.`
         : "Photo ajoutée.",
     );
   }
@@ -597,8 +597,7 @@ export function AdminPanel({
             ) : null}
             <p>{albumSizeGuides[album].tip}</p>
             <p className="text-xs text-soft/90">
-              Fichier JPG ou WebP, max 8 Mo. L’image est ajustée (fit) dans le cadre prévu,
-              sans être coupée ni déformée.
+              Fichier JPG ou WebP, max 8 Mo. L’image remplit le cadre prévu (sans être étirée).
             </p>
           </aside>
 
@@ -640,7 +639,7 @@ export function AdminPanel({
               photos.map((photo) => (
                 <article key={photo.id} className="overflow-hidden border border-line bg-white">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo.url} alt={photo.caption || "Photo"} className="aspect-[4/3] w-full bg-forest object-contain" />
+                  <img src={photo.url} alt={photo.caption || "Photo"} className="aspect-[4/3] w-full object-cover" />
                   <div className="space-y-2 p-3">
                     <p className="text-xs tracking-[0.14em] text-gold uppercase">
                       {albumLabels[photo.album]}

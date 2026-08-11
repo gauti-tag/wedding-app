@@ -6,7 +6,7 @@ export type ImageTarget = {
   label: string;
 };
 
-/** Dimensions cibles (contain / fit) alignées sur les cadres d’affichage. */
+/** Dimensions cibles alignées sur les cadres d’affichage du site. */
 export const ALBUM_IMAGE_TARGETS: Record<PhotoAlbum, ImageTarget> = {
   hero: { width: 1920, height: 1080, label: "1920 × 1080" },
   story: { width: 1600, height: 1000, label: "1600 × 1000" },
