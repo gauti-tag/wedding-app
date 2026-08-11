@@ -8,6 +8,7 @@ import {
   getDrinks,
   getMenu,
   getPhotos,
+  getRsvpReminders,
   getRsvps,
   getSchedule,
   getSiteContent,
@@ -31,10 +32,11 @@ export default async function AdminPage() {
   const canUsers = hasPermission(user.role, "manage_users");
   const canAudit = hasPermission(user.role, "view_audit");
 
-  const [photos, rsvps, siteContent, story, schedule, menu, drinks, desserts, users, audit] =
+  const [photos, rsvps, reminders, siteContent, story, schedule, menu, drinks, desserts, users, audit] =
     await Promise.all([
       canPhotos || canContent ? getPhotos() : Promise.resolve([]),
       canRsvp ? getRsvps() : Promise.resolve([]),
+      canRsvp ? getRsvpReminders() : Promise.resolve({}),
       getSiteContent(),
       canContent ? getStory() : Promise.resolve({ eyebrow: { fr: "", en: "" }, title: { fr: "", en: "" }, body: { fr: "", en: "" } }),
       canContent
@@ -60,6 +62,7 @@ export default async function AdminPage() {
       currentUser={publicUser(user)}
       initialPhotos={photos}
       initialRsvps={rsvps}
+      initialReminders={reminders}
       initialSite={siteContent}
       initialStory={story}
       initialSchedule={schedule}

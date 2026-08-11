@@ -49,6 +49,11 @@ const fr: Dictionary = {
     subtitle: "Uploadez vos photos depuis l’espace admin pour animer cette galerie.",
     placeholder: "Emplacement photo",
     photoAlt: "Photo du couple",
+    openPhoto: "Agrandir la photo",
+    lightboxLabel: "Visionneuse de la galerie",
+    close: "Fermer",
+    prev: "Photo précédente",
+    next: "Photo suivante",
   },
   rsvp: {
     eyebrow: "Réponse souhaitée",

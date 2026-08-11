@@ -47,6 +47,11 @@ export type Dictionary = {
     subtitle: string;
     placeholder: string;
     photoAlt: string;
+    openPhoto: string;
+    lightboxLabel: string;
+    close: string;
+    prev: string;
+    next: string;
   };
   rsvp: {
     eyebrow: string;

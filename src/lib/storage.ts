@@ -11,6 +11,7 @@ import type {
   MenuContent,
   Photo,
   Rsvp,
+  RsvpReminderLog,
   ScheduleContent,
   SiteContent,
   StoryContent,
@@ -203,6 +204,20 @@ export async function setRsvpBlocked(id: string, blocked: boolean) {
   else delete blocks[id];
   await saveContent("rsvp_blocks", blocks);
   return blocks[id] ?? null;
+}
+
+/** Carte id → dates ISO des rappels WhatsApp J-7 / J-1. */
+export async function getRsvpReminders(): Promise<Record<string, RsvpReminderLog>> {
+  const raw = await getContent<Record<string, RsvpReminderLog>>("rsvp_reminders", {});
+  return raw && typeof raw === "object" ? raw : {};
+}
+
+export async function markRsvpReminder(id: string, kind: "j7" | "j1") {
+  const all = { ...(await getRsvpReminders()) };
+  const prev = all[id] || {};
+  all[id] = { ...prev, [kind]: new Date().toISOString() };
+  await saveContent("rsvp_reminders", all);
+  return all[id];
 }
 
 export async function saveRsvps(rsvps: Rsvp[]) {

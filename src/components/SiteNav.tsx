@@ -27,6 +27,11 @@ export function SiteNav({
     { href: "#rsvp", label: dict.nav.rsvp },
   ];
 
+  const nameParts = coupleName.split(/\s*&\s*/);
+  const initialOne = (nameParts[0] || coupleName).trim().charAt(0).toUpperCase();
+  const initialTwo = (nameParts[1] || "").trim().charAt(0).toUpperCase();
+  const initials = initialTwo ? `${initialOne} & ${initialTwo}` : initialOne;
+
   useEffect(() => {
     let frame = 0;
     const onScroll = () => {
@@ -68,16 +73,18 @@ export function SiteNav({
           : "bg-transparent"
       }`}
     >
-      <div className="section-shell flex items-center justify-between gap-2 py-3 md:gap-3 md:py-4">
+      <div className="section-shell flex items-center gap-2 py-2.5 md:gap-4 md:py-4">
         <a
           href="#top"
-          className={`couple-name inline-flex min-w-0 items-center gap-2 text-[1.35rem] no-underline touch-manipulation md:gap-3 md:text-3xl ${
+          aria-label={coupleName}
+          className={`couple-name flex min-w-0 flex-1 items-center gap-2.5 no-underline touch-manipulation md:gap-3 ${
             solid ? "text-mist" : "text-[#f7f4f0]"
           }`}
           onClick={() => setMenuOpen(false)}
         >
-          <WeddingRingIcon className="h-[0.85em] w-[0.85em] shrink-0 opacity-90" />
-          <span className="truncate">{coupleName}</span>
+          <WeddingRingIcon className="hidden h-[0.9em] w-[0.9em] shrink-0 opacity-90 md:block" />
+          <span className="text-[1.75rem] tracking-wide md:hidden">{initials}</span>
+          <span className="hidden text-3xl md:inline">{coupleName}</span>
         </a>
 
         <nav className="hidden items-center gap-5 md:flex lg:gap-7" aria-label="Primary">
@@ -96,20 +103,20 @@ export function SiteNav({
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex shrink-0 items-center gap-3 md:gap-4">
           <div
-            className={
+            className={`hidden md:block ${
               solid
                 ? ""
                 : "[&_a]:text-[#f7f4f0]/85 [&_a[aria-current=page]]:text-[#f7f4f0] [&_span]:text-[#f7f4f0]/45"
-            }
+            }`}
           >
             <LanguageSwitcher locale={locale} />
           </div>
 
           <a
             href="#rsvp"
-            className={`hidden !px-4 !py-2.5 text-[0.68rem] touch-manipulation sm:inline-flex ${
+            className={`hidden !px-4 !py-2.5 text-[0.68rem] touch-manipulation md:inline-flex ${
               solid ? "btn-primary" : "btn-primary-light"
             }`}
             onClick={() => setMenuOpen(false)}
@@ -119,10 +126,8 @@ export function SiteNav({
 
           <button
             type="button"
-            className={`inline-flex h-11 w-11 items-center justify-center border touch-manipulation md:hidden ${
-              solid
-                ? "border-line text-mist"
-                : "border-[#f7f4f0]/35 text-[#f7f4f0]"
+            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center touch-manipulation md:hidden ${
+              solid ? "text-mist" : "text-[#f7f4f0]"
             }`}
             aria-expanded={menuOpen}
             aria-controls={menuId}
@@ -130,7 +135,7 @@ export function SiteNav({
             onClick={() => setMenuOpen((open) => !open)}
           >
             <span className="sr-only">{menuOpen ? dict.nav.closeMenu : dict.nav.openMenu}</span>
-            <span className="relative block h-3.5 w-5" aria-hidden>
+            <span className="relative block h-3.5 w-[1.35rem]" aria-hidden>
               <span
                 className={`absolute left-0 h-[1.5px] w-full bg-current transition-transform duration-300 ${
                   menuOpen ? "top-[6px] rotate-45" : "top-0"
@@ -154,34 +159,37 @@ export function SiteNav({
       <div
         id={menuId}
         className={`md:hidden overflow-hidden transition-[max-height,opacity] duration-300 ease-out ${
-          menuOpen ? "max-h-[min(80svh,28rem)] opacity-100" : "max-h-0 opacity-0"
+          menuOpen ? "max-h-[min(85svh,32rem)] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
         }`}
       >
-        <nav
-          className="section-shell border-t border-line bg-ivory pb-5 pt-2"
-          aria-label={dict.nav.openMenu}
-        >
-          <ul className="flex flex-col">
-            {links.map((link) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  className="flex min-h-12 items-center border-b border-line text-[0.8rem] tracking-[0.2em] text-mist uppercase no-underline touch-manipulation active:bg-forest/70"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <a
-            href="#rsvp"
-            className="btn-primary mt-4 inline-flex w-full justify-center touch-manipulation"
-            onClick={() => setMenuOpen(false)}
-          >
-            {dict.nav.confirm}
-          </a>
-        </nav>
+        <div className="border-t border-line bg-ivory">
+          <nav className="section-shell pb-6 pt-3" aria-label={dict.nav.openMenu}>
+            <div className="mb-2 flex justify-end border-b border-line pb-3">
+              <LanguageSwitcher locale={locale} />
+            </div>
+
+            <ul className="flex flex-col">
+              {links.map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    className="flex min-h-[3.25rem] items-center border-b border-line text-[0.82rem] tracking-[0.18em] text-mist uppercase no-underline touch-manipulation active:bg-forest/70"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <a
+              href="#rsvp"
+              className="btn-primary mt-5 inline-flex w-full justify-center touch-manipulation"
+              onClick={() => setMenuOpen(false)}
+            >
+              {dict.nav.confirm}
+            </a>
+          </nav>
+        </div>
       </div>
     </header>
   );

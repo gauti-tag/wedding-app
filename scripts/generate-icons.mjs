@@ -40,7 +40,7 @@ function ogSvg() {
   <circle cx="980" cy="120" r="220" fill="#a67c52" opacity="0.16"/>
   <circle cx="180" cy="520" r="260" fill="#6b3e2a" opacity="0.1"/>
   <text x="80" y="210" font-family="Georgia, serif" font-size="42" letter-spacing="12" fill="#6b3e2a">SATURDAY 31.10.2026</text>
-  <text x="80" y="340" font-family="Georgia, serif" font-size="96" fill="#3b2416">Gautier &amp; Francybel</text>
+  <text x="80" y="340" font-family="Georgia, serif" font-size="96" fill="#3b2416">Aubin &amp; Francybel</text>
   <text x="80" y="420" font-family="Arial, sans-serif" font-size="28" fill="#7a5c4a">Wedding invitation</text>
   <rect x="80" y="470" width="120" height="2" fill="#a67c52" opacity="0.8"/>
 </svg>`);

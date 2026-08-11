@@ -37,6 +37,12 @@ export type Rsvp = {
   blockedAt: string | null;
 };
 
+/** Suivi des rappels WhatsApp J-7 / J-1 (stocké dans app_content). */
+export type RsvpReminderLog = {
+  j7?: string;
+  j1?: string;
+};
+
 export type LocalizedText = {
   fr: string;
   en: string;

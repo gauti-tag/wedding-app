@@ -15,13 +15,13 @@ export function Reveal({
   delay?: number;
 }) {
   const reduceMotion = useReducedMotion();
-  const [lite, setLite] = useState(false);
+  const [lite, setLite] = useState(true);
 
   useEffect(() => {
-    setLite(
+    const mobile =
       window.matchMedia("(pointer: coarse)").matches ||
-        window.matchMedia("(max-width: 767px)").matches,
-    );
+      window.matchMedia("(max-width: 767px)").matches;
+    setLite(mobile);
   }, []);
 
   if (reduceMotion) {
@@ -30,15 +30,17 @@ export function Reveal({
 
   return (
     <motion.div
+      data-reveal
       className={className}
-      initial={lite ? { opacity: 0, y: 16 } : { opacity: 0, y: 36, filter: "blur(6px)" }}
-      whileInView={lite ? { opacity: 1, y: 0 } : { opacity: 1, y: 0, filter: "blur(0px)" }}
-      viewport={{ once: true, amount: lite ? 0.12 : 0.22, margin: "0px 0px -6% 0px" }}
+      initial={{ opacity: 0, y: lite ? 16 : 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: lite ? 0.1 : 0.2, margin: "0px 0px -4% 0px" }}
       transition={{
-        duration: lite ? 0.55 : 1.05,
-        delay: lite ? Math.min(delay, 0.12) : delay,
+        duration: lite ? 0.45 : 0.9,
+        delay: lite ? Math.min(delay, 0.08) : delay,
         ease: luxuryEase,
       }}
+      style={{ filter: "none" }}
     >
       {children}
     </motion.div>

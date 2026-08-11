@@ -26,6 +26,7 @@ import type {
   Photo,
   PhotoAlbum,
   Rsvp,
+  RsvpReminderLog,
   ScheduleContent,
   SiteContent,
   StoryContent,
@@ -97,6 +98,7 @@ type Props = {
   currentUser: AdminUserPublic;
   initialPhotos: Photo[];
   initialRsvps: Rsvp[];
+  initialReminders: Record<string, RsvpReminderLog>;
   initialSite: SiteContent;
   initialStory: StoryContent;
   initialSchedule: ScheduleContent;
@@ -156,6 +158,7 @@ export function AdminPanel({
   currentUser,
   initialPhotos,
   initialRsvps,
+  initialReminders,
   initialSite,
   initialStory,
   initialSchedule,
@@ -170,6 +173,7 @@ export function AdminPanel({
 
   const [photos, setPhotos] = useState(initialPhotos);
   const [rsvps, setRsvps] = useState(initialRsvps);
+  const [reminders, setReminders] = useState(initialReminders);
   const [site, setSite] = useState(initialSite);
   const [album, setAlbum] = useState<PhotoAlbum>("gallery");
   const [caption, setCaption] = useState("");
@@ -328,6 +332,56 @@ export function AdminPanel({
     } finally {
       setResendBusyId(null);
     }
+  }
+
+  async function onWhatsAppReminder(id: string, kind: "j7" | "j1") {
+    const busyKey = `${id}:${kind}`;
+    setResendBusyId(busyKey);
+    try {
+      const res = await fetch("/api/rsvp/remind", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, kind }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Rappel WhatsApp impossible.");
+        return;
+      }
+      if (data.reminder) {
+        setReminders((prev) => ({ ...prev, [id]: data.reminder }));
+      }
+      if (data.whatsappUrl) {
+        window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
+      }
+      showSuccess(
+        kind === "j7"
+          ? "WhatsApp ouvert — envoyez le rappel J-7."
+          : "WhatsApp ouvert — envoyez le rappel J-1.",
+      );
+    } catch {
+      showError("Rappel WhatsApp impossible.");
+    } finally {
+      setResendBusyId(null);
+    }
+  }
+
+  async function onNextReminder(kind: "j7" | "j1") {
+    const next = rsvps.find(
+      (r) =>
+        r.status === "yes" &&
+        !r.blockedAt &&
+        !(kind === "j7" ? reminders[r.id]?.j7 : reminders[r.id]?.j1),
+    );
+    if (!next) {
+      showInfo(
+        kind === "j7"
+          ? "Tous les invités « oui » ont déjà un rappel J-7 (ou aucun éligible)."
+          : "Tous les invités « oui » ont déjà un rappel J-1 (ou aucun éligible).",
+      );
+      return;
+    }
+    await onWhatsAppReminder(next.id, kind);
   }
 
   async function onToggleBlockRsvp(id: string, name: string, currentlyBlocked: boolean) {
@@ -631,6 +685,34 @@ export function AdminPanel({
           </button>
         </div>
 
+        {can("manage_rsvp") ? (
+          <div className="mb-6 border border-line bg-white/80 px-4 py-4 md:px-5">
+            <p className="text-sm font-medium text-mist">Rappels WhatsApp</p>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-soft">
+              Messages prêts pour les invités confirmés (« oui »). Ouvrez WhatsApp, envoyez, puis
+              passez au suivant. Idéal à J-7 puis J-1 avant le mariage.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-ghost !px-4 !py-2 text-xs"
+                disabled={Boolean(resendBusyId)}
+                onClick={() => void onNextReminder("j7")}
+              >
+                Prochain rappel J-7
+              </button>
+              <button
+                type="button"
+                className="btn-ghost !px-4 !py-2 text-xs"
+                disabled={Boolean(resendBusyId)}
+                onClick={() => void onNextReminder("j1")}
+              >
+                Prochain rappel J-1
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="mb-4">
           <label className="label" htmlFor="rsvp-search">
             Rechercher
@@ -730,6 +812,22 @@ export function AdminPanel({
                       <div>
                         <span className="text-mist">Vues</span> · {rsvp.ticketViewCount ?? 0}
                       </div>
+                      {rsvp.status === "yes" ? (
+                        <>
+                          <div>
+                            <span className="text-mist">Rappel J-7</span> ·{" "}
+                            {reminders[rsvp.id]?.j7
+                              ? formatAdminDate(reminders[rsvp.id].j7!, true)
+                              : "—"}
+                          </div>
+                          <div>
+                            <span className="text-mist">Rappel J-1</span> ·{" "}
+                            {reminders[rsvp.id]?.j1
+                              ? formatAdminDate(reminders[rsvp.id].j1!, true)
+                              : "—"}
+                          </div>
+                        </>
+                      ) : null}
                       {rsvp.blockedAt ? (
                         <div className="text-red-800">
                           <span className="text-mist">Accès</span> · Bloqué
@@ -760,6 +858,26 @@ export function AdminPanel({
                               >
                                 {resendBusyId === rsvp.id ? "Ouverture…" : "WhatsApp"}
                               </button>
+                            ) : null}
+                            {can("manage_rsvp") && rsvp.status === "yes" && !rsvp.blockedAt ? (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={resendBusyId === `${rsvp.id}:j7`}
+                                  onClick={() => void onWhatsAppReminder(rsvp.id, "j7")}
+                                  className="text-left text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
+                                >
+                                  {resendBusyId === `${rsvp.id}:j7` ? "Ouverture…" : "Rappel J-7"}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={resendBusyId === `${rsvp.id}:j1`}
+                                  onClick={() => void onWhatsAppReminder(rsvp.id, "j1")}
+                                  className="text-left text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
+                                >
+                                  {resendBusyId === `${rsvp.id}:j1` ? "Ouverture…" : "Rappel J-1"}
+                                </button>
+                              </>
                             ) : null}
                           </>
                         ) : null}

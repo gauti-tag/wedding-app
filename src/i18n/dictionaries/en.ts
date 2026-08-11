@@ -49,6 +49,11 @@ const en: Dictionary = {
     subtitle: "Upload your photos from the admin space to bring this gallery to life.",
     placeholder: "Photo placeholder",
     photoAlt: "Couple photo",
+    openPhoto: "Enlarge photo",
+    lightboxLabel: "Gallery lightbox",
+    close: "Close",
+    prev: "Previous photo",
+    next: "Next photo",
   },
   rsvp: {
     eyebrow: "Kindly reply",

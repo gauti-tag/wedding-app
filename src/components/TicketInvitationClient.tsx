@@ -13,6 +13,38 @@ type Props = {
   skipDownloadPrompt?: boolean;
 };
 
+const OFFLINE_TICKET_PREFIX = "wedding-ticket-offline:";
+
+type OfflineTicketSnapshot = {
+  guestName: string;
+  coupleNames: string;
+  dateLabel: string;
+  qrDataUrl: string;
+  ticketCode: string;
+  savedAt: string;
+};
+
+function saveTicketOffline(snapshot: OfflineTicketSnapshot) {
+  try {
+    localStorage.setItem(
+      `${OFFLINE_TICKET_PREFIX}${snapshot.ticketCode}`,
+      JSON.stringify(snapshot),
+    );
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+async function pinTicketPageInCache() {
+  if (!("caches" in window)) return;
+  try {
+    const cache = await caches.open("wedding-tickets-v1");
+    await cache.add(window.location.href);
+  } catch {
+    /* ignore */
+  }
+}
+
 async function downloadInvitationCard(input: {
   guestName: string;
   coupleNames: string;
@@ -141,6 +173,8 @@ export function TicketInvitationClient({
   const [promptOpen, setPromptOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [offlineReady, setOfflineReady] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -148,6 +182,30 @@ export function TicketInvitationClient({
       setPromptOpen(true);
     }
   }, [skipDownloadPrompt]);
+
+  useEffect(() => {
+    if (skipDownloadPrompt) return;
+    saveTicketOffline({
+      guestName,
+      coupleNames,
+      dateLabel,
+      qrDataUrl,
+      ticketCode,
+      savedAt: new Date().toISOString(),
+    });
+    void pinTicketPageInCache().then(() => setOfflineReady(true));
+  }, [guestName, coupleNames, dateLabel, qrDataUrl, ticketCode, skipDownloadPrompt]);
+
+  useEffect(() => {
+    const sync = () => setIsOffline(!navigator.onLine);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
 
   const closePrompt = useCallback(() => {
     setPromptOpen(false);
@@ -217,8 +275,21 @@ export function TicketInvitationClient({
     ) : null;
 
   return (
-    <main className="flex min-h-full items-center justify-center bg-ivory px-4 py-12">
+    <main className="flex min-h-full flex-col items-center justify-center bg-ivory px-4 py-12">
       {mounted && dialog ? createPortal(dialog, document.body) : null}
+
+      {isOffline || offlineReady ? (
+        <p
+          className={`mb-4 max-w-md px-3 text-center text-xs tracking-[0.12em] uppercase ${
+            isOffline ? "text-champagne" : "text-soft"
+          }`}
+          role="status"
+        >
+          {isOffline
+            ? "Mode hors ligne — votre QR reste disponible"
+            : "Carte enregistrée pour un usage hors ligne sur cet appareil"}
+        </p>
+      ) : null}
 
       <article className="relative w-full max-w-md overflow-hidden rounded-3xl border border-line bg-white px-8 py-10 text-center shadow-xl md:px-10 md:py-12">
         <div className="absolute top-5 left-5 h-8 w-8 border-t border-l border-primary/30" />

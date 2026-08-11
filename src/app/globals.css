@@ -61,13 +61,16 @@ html {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Moins de coût GPU sur mobile (blur / will-change) */
   .section-shell {
     width: min(1120px, calc(100% - 1.5rem));
   }
 
-  img {
-    content-visibility: auto;
+  /* Évite un flou résiduel GPU (Safari / Chrome mobile) */
+  .reveal-clear,
+  [data-reveal] {
+    filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }
 
