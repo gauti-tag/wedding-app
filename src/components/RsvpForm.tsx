@@ -68,7 +68,7 @@ export function RsvpForm({
     [siteContent.contactPhone],
   );
   const contactHref = contactWaDigits
-    ? `https://wa.me/${contactWaDigits}`
+    ? `https://api.whatsapp.com/send?phone=${contactWaDigits}`
     : siteContent.contactPhone
       ? `tel:${siteContent.contactPhone.replace(/\s/g, "")}`
       : "";

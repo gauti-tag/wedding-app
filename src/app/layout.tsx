@@ -23,6 +23,9 @@ export const viewport: Viewport = {
   colorScheme: "light",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -65,7 +68,7 @@ export default async function RootLayout({
 
   return (
     <html lang={lang} className={`${display.variable} ${sans.variable} h-full`}>
-      <body className="min-h-full antialiased">
+      <body className="min-h-full touch-manipulation antialiased">
         {children}
         <PwaRegister />
       </body>

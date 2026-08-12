@@ -208,17 +208,17 @@ export function AdminSeatingEditor({
   }
 
   return (
-    <section id="admin-seating" className="mt-14 scroll-mt-28 space-y-6">
+    <section id="admin-seating" className="mt-14 scroll-mt-28 space-y-5 md:space-y-6">
       {AlertDialog}
       <div>
-        <h2 className="section-title text-3xl text-mist">Plan de table</h2>
-        <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
+        <h2 className="section-title text-2xl text-mist sm:text-3xl">Plan de table</h2>
+        <p className="mt-2 max-w-2xl text-sm font-normal leading-relaxed text-soft">
           Préenregistrez les tables et leurs sièges, puis attribuez-les aux confirmations « oui ».
           Une même place ne peut pas être donnée deux fois. Le placement s’affiche au check-in.
         </p>
       </div>
 
-      <div className="border border-line bg-white p-5 space-y-4">
+      <div className="space-y-4 border border-line bg-white p-4 md:p-5">
         <p className="text-xs tracking-[0.16em] text-champagne uppercase">
           Tables & sièges préenregistrés
         </p>
@@ -236,6 +236,7 @@ export function AdminSeatingEditor({
                 onChange={(e) => setNewTableLabel(e.target.value)}
                 placeholder="ex. 1 ou VIP"
                 maxLength={40}
+                autoComplete="off"
               />
             </div>
             <div>
@@ -248,6 +249,7 @@ export function AdminSeatingEditor({
                 value={newTableSeats}
                 onChange={(e) => setNewTableSeats(e.target.value)}
                 placeholder="1-8 ou A,B,C"
+                autoComplete="off"
               />
               <p className="mt-1 text-xs text-soft">Plage (1-8) ou liste (A,B,C).</p>
             </div>
@@ -290,7 +292,7 @@ export function AdminSeatingEditor({
                     {canEdit ? (
                       <button
                         type="button"
-                        className="text-xs tracking-[0.12em] text-red-700 uppercase hover:text-red-900 disabled:opacity-50"
+                        className="min-h-10 text-xs tracking-[0.12em] text-red-700 uppercase hover:text-red-900 disabled:opacity-50"
                         disabled={planBusy}
                         onClick={() => void removeTable(table)}
                       >
@@ -299,9 +301,9 @@ export function AdminSeatingEditor({
                     ) : null}
                   </div>
                   {canEdit ? (
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                       <input
-                        className="field min-w-[12rem] flex-1 !py-1.5"
+                        className="field min-w-0 flex-1 !py-2"
                         value={draft}
                         onChange={(e) =>
                           setSeatDrafts((prev) => ({ ...prev, [table.id]: e.target.value }))
@@ -309,17 +311,15 @@ export function AdminSeatingEditor({
                       />
                       <button
                         type="button"
-                        className="text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist disabled:opacity-40"
-                        disabled={
-                          planBusy || draft.trim() === table.seats.join(", ")
-                        }
+                        className="min-h-10 shrink-0 text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist disabled:opacity-40"
+                        disabled={planBusy || draft.trim() === table.seats.join(", ")}
                         onClick={() => void updateTableSeats(table, draft)}
                       >
                         Sauver sièges
                       </button>
                     </div>
                   ) : (
-                    <p className="mt-1 text-xs text-soft">{table.seats.join(" · ")}</p>
+                    <p className="mt-1 break-words text-xs text-soft">{table.seats.join(" · ")}</p>
                   )}
                 </li>
               );
@@ -328,10 +328,10 @@ export function AdminSeatingEditor({
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="space-y-4 border border-line bg-white p-5">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[14rem] flex-1">
+      <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
+        <div className="space-y-4 border border-line bg-white p-4 md:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="min-w-0 flex-1">
               <label className="label" htmlFor="seating-search">
                 Rechercher
               </label>
@@ -342,11 +342,13 @@ export function AdminSeatingEditor({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Nom, table…"
+                autoComplete="off"
               />
             </div>
-            <label className="flex items-center gap-2 pb-2 text-sm text-soft">
+            <label className="flex min-h-10 items-center gap-2 text-sm text-soft sm:pb-2">
               <input
                 type="checkbox"
+                className="size-4"
                 checked={onlyUnassigned}
                 onChange={(e) => setOnlyUnassigned(e.target.checked)}
               />
@@ -360,7 +362,118 @@ export function AdminSeatingEditor({
             </p>
           ) : null}
 
-          <div className="overflow-x-auto border border-line">
+          {/* Mobile : cartes empilées */}
+          <div className="space-y-3 md:hidden">
+            {filtered.length === 0 ? (
+              <p className="border border-line px-3 py-5 text-sm text-soft">
+                Aucun invité confirmé à placer.
+              </p>
+            ) : (
+              filtered.map((rsvp) => {
+                const draft = draftFor(rsvp);
+                const dirty =
+                  normalizeSeatingLabel(draft.tableLabel) !==
+                    normalizeSeatingLabel(rsvp.tableLabel) ||
+                  normalizeSeatingLabel(draft.seatLabel) !==
+                    normalizeSeatingLabel(rsvp.seatLabel);
+                const selectedTable = plan.tables.find(
+                  (t) =>
+                    t.label.toLowerCase() ===
+                    normalizeSeatingLabel(draft.tableLabel).toLowerCase(),
+                );
+                const occupied = occupiedSeatingKeys(rsvps, rsvp.id);
+                const wa = seatingWhatsAppForRsvp(rsvp, site, { toGuest: true });
+                return (
+                  <article key={rsvp.id} className="space-y-3 border border-line p-3">
+                    <p className="font-medium text-mist">{rsvp.name}</p>
+                    {canEdit ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="label" htmlFor={`table-m-${rsvp.id}`}>
+                            Table
+                          </label>
+                          <select
+                            id={`table-m-${rsvp.id}`}
+                            className="field !py-2"
+                            value={draft.tableLabel}
+                            onChange={(e) =>
+                              setDraft(rsvp.id, {
+                                tableLabel: e.target.value,
+                                seatLabel: "",
+                              })
+                            }
+                          >
+                            <option value="">—</option>
+                            {plan.tables.map((table) => (
+                              <option key={table.id} value={table.label}>
+                                {table.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label" htmlFor={`seat-m-${rsvp.id}`}>
+                            Siège
+                          </label>
+                          <select
+                            id={`seat-m-${rsvp.id}`}
+                            className="field !py-2"
+                            value={draft.seatLabel}
+                            disabled={!selectedTable}
+                            onChange={(e) =>
+                              setDraft(rsvp.id, { seatLabel: e.target.value })
+                            }
+                          >
+                            <option value="">—</option>
+                            {(selectedTable?.seats || []).map((seat) => {
+                              const taken = occupied.has(
+                                seatingKey(selectedTable?.label || "", seat),
+                              );
+                              return (
+                                <option key={seat} value={seat} disabled={taken}>
+                                  {seat}
+                                  {taken ? " (pris)" : ""}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-soft">
+                        {formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "Non assigné"}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-3">
+                      {wa?.url ? (
+                        <a
+                          href={wa.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="min-h-10 text-xs tracking-[0.12em] text-champagne uppercase no-underline hover:text-mist"
+                        >
+                          WhatsApp place
+                        </a>
+                      ) : null}
+                      {canEdit ? (
+                        <button
+                          type="button"
+                          className="min-h-10 text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist disabled:opacity-40"
+                          disabled={busyId === rsvp.id || !dirty}
+                          onClick={() => void saveSeating(rsvp)}
+                        >
+                          {busyId === rsvp.id ? "…" : "Sauver"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop / tablette : tableau */}
+          <div className="-mx-4 hidden overflow-x-auto border-y border-line md:mx-0 md:block md:border">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-forest text-xs tracking-[0.14em] text-soft uppercase">
                 <tr>
@@ -481,9 +594,9 @@ export function AdminSeatingEditor({
           </div>
         </div>
 
-        <div className="border border-line bg-white p-5">
+        <div className="border border-line bg-white p-4 md:p-5">
           <p className="text-xs tracking-[0.16em] text-champagne uppercase">Aperçu par table</p>
-          <div className="mt-4 max-h-[32rem] space-y-4 overflow-y-auto">
+          <div className="mt-4 grid max-h-none grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:max-h-[32rem] lg:grid-cols-1 lg:gap-4">
             {plan.tables.length === 0 && groups.length === 0 ? (
               <p className="text-sm text-soft">Pas encore de confirmation « oui ».</p>
             ) : (
@@ -510,7 +623,7 @@ export function AdminSeatingEditor({
                               seat.toLowerCase(),
                           );
                           return (
-                            <li key={seat}>
+                            <li key={seat} className="break-words">
                               <span className="text-champagne">{seat}</span>
                               {" · "}
                               {guest ? guest.name : "libre"}
@@ -539,7 +652,7 @@ export function AdminSeatingEditor({
                       </p>
                       <ul className="mt-2 space-y-1 text-sm text-soft">
                         {group.guests.map((g) => (
-                          <li key={g.id}>
+                          <li key={g.id} className="break-words">
                             {g.name}
                             {g.seatLabel ? (
                               <span className="text-champagne"> · {g.seatLabel}</span>

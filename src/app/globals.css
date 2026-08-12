@@ -55,10 +55,14 @@ html {
 @media (max-width: 767px) {
   html {
     scroll-padding-top: 4rem;
+    /* Limite le pinch-zoom / double-tap zoom (complète viewport.userScalable) */
+    touch-action: pan-x pan-y;
   }
 
   body {
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: none;
   }
 
   .section-shell {
@@ -286,8 +290,16 @@ img {
   color: var(--cacao);
   padding: 0.9rem 1rem;
   font: inherit;
+  /* ≥16px évite le zoom auto iOS au focus */
+  font-size: 16px;
   outline: none;
   transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+@media (min-width: 768px) {
+  .field {
+    font-size: inherit;
+  }
 }
 
 .field:focus {

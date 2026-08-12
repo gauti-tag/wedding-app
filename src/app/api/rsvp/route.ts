@@ -126,10 +126,19 @@ export async function POST(request: Request) {
     let whatsapp: { ticketUrl: string; url: string } | null = null;
     if (entry.status === "yes" || entry.status === "maybe") {
       const wa = ticketWhatsAppForRsvp(entry, siteContent, {
-        toGuest: false,
+        toGuest: true,
         locale,
       });
-      whatsapp = { ticketUrl: wa.ticketUrl, url: wa.url };
+      if (!wa.phoneDigits) {
+        // Fallback partage libre si le numéro n’est pas exploitable
+        const share = ticketWhatsAppForRsvp(entry, siteContent, {
+          toGuest: false,
+          locale,
+        });
+        whatsapp = { ticketUrl: share.ticketUrl, url: share.url };
+      } else {
+        whatsapp = { ticketUrl: wa.ticketUrl, url: wa.url };
+      }
     }
 
     return NextResponse.json({ ok: true, rsvp: entry, whatsapp });
