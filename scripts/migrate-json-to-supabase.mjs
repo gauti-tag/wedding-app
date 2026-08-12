@@ -243,6 +243,9 @@ async function migrateRsvps() {
     email_sent_at: r.emailSentAt || null,
     ticket_viewed_at: r.ticketViewedAt || null,
     ticket_view_count: r.ticketViewCount || 0,
+    blocked_at: r.blockedAt || null,
+    table_label: r.tableLabel || "",
+    seat_label: r.seatLabel || "",
     created_at: r.createdAt || new Date().toISOString(),
   }));
 

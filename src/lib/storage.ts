@@ -7,6 +7,7 @@ import { normalizeGuestCapacity } from "@/lib/guest-capacity";
 import { emptyMcRundown, normalizeMcRundown } from "@/lib/mc-rundown";
 import { normalizePhotos, requirePersistentStorage } from "@/lib/photo-urls";
 import { normalizeOptionalDatetime } from "@/lib/rsvp-deadline";
+import { emptySeatingPlan, normalizeSeatingPlan } from "@/lib/seating";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -18,6 +19,7 @@ import type {
   Rsvp,
   RsvpReminderLog,
   ScheduleContent,
+  SeatingPlanContent,
   SiteContent,
   StoryContent,
 } from "./types";
@@ -198,7 +200,9 @@ export async function getRsvps(): Promise<Rsvp[]> {
         r.emailSentAt === undefined ||
         r.ticketViewedAt === undefined ||
         r.ticketViewCount === undefined ||
-        r.blockedAt === undefined,
+        r.blockedAt === undefined ||
+        r.tableLabel === undefined ||
+        r.seatLabel === undefined,
     );
     if (needsPersist && rsvps.length) {
       await writeJsonFile(path.join(dataDir, "rsvps.json"), rsvps);
@@ -358,6 +362,15 @@ export async function getMcRundown(): Promise<McRundownContent> {
 
 export async function saveMcRundown(rundown: McRundownContent) {
   await saveContent("mc-rundown", normalizeMcRundown(rundown));
+}
+
+export async function getSeatingPlan(): Promise<SeatingPlanContent> {
+  const raw = await getContent<unknown>("seating-plan", emptySeatingPlan());
+  return normalizeSeatingPlan(raw);
+}
+
+export async function saveSeatingPlan(plan: SeatingPlanContent) {
+  await saveContent("seating-plan", normalizeSeatingPlan(plan));
 }
 
 export async function getSiteContent(): Promise<SiteContent> {

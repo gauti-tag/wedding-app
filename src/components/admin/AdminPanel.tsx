@@ -4,12 +4,14 @@ import { useMemo, useState, type FormEvent, type MouseEvent } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { AdminAuditLog } from "@/components/admin/AdminAuditLog";
 import { AdminCheckIn } from "@/components/admin/AdminCheckIn";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminDessertsEditor } from "@/components/admin/AdminDessertsEditor";
 import { AdminDrinksEditor } from "@/components/admin/AdminDrinksEditor";
 import { AdminInviteQr } from "@/components/admin/AdminInviteQr";
 import { AdminMcRundownEditor } from "@/components/admin/AdminMcRundownEditor";
 import { AdminMenuEditor } from "@/components/admin/AdminMenuEditor";
 import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
+import { AdminSeatingEditor } from "@/components/admin/AdminSeatingEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
@@ -17,6 +19,7 @@ import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
 import { formatOptionalDatetimeLabel } from "@/lib/rsvp-deadline";
+import { formatSeatingLabel } from "@/lib/seating";
 import { hasPermission, roleLabels, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
@@ -31,6 +34,7 @@ import type {
   Rsvp,
   RsvpReminderLog,
   ScheduleContent,
+  SeatingPlanContent,
   SiteContent,
   StoryContent,
 } from "@/lib/types";
@@ -106,6 +110,7 @@ type Props = {
   initialStory: StoryContent;
   initialSchedule: ScheduleContent;
   initialMcRundown: McRundownContent;
+  initialSeatingPlan: SeatingPlanContent;
   initialMenu: MenuContent;
   initialDrinks: DrinksContent;
   initialDesserts: DessertsContent;
@@ -120,6 +125,7 @@ const albumLabels: Record<PhotoAlbum, string> = {
 };
 
 const adminNav: { href: string; label: string; permission: Permission }[] = [
+  { href: "#admin-dashboard", label: "Tableau de bord", permission: "view_dashboard" },
   { href: "#admin-invite-qr", label: "QR invitation", permission: "manage_content" },
   { href: "#admin-photos", label: "Photos", permission: "manage_photos" },
   { href: "#admin-site", label: "Couple & hero", permission: "manage_content" },
@@ -130,6 +136,7 @@ const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-desserts", label: "Desserts", permission: "manage_content" },
   { href: "#admin-drinks", label: "Boissons", permission: "manage_content" },
   { href: "#admin-rsvp", label: "RSVP", permission: "view_rsvp" },
+  { href: "#admin-seating", label: "Plan de table", permission: "view_rsvp" },
   { href: "#admin-checkin", label: "Check-in", permission: "check_in" },
   { href: "#admin-users", label: "Utilisateurs", permission: "manage_users" },
   { href: "#admin-audit", label: "Audit", permission: "view_audit" },
@@ -168,6 +175,7 @@ export function AdminPanel({
   initialStory,
   initialSchedule,
   initialMcRundown,
+  initialSeatingPlan,
   initialMenu,
   initialDrinks,
   initialDesserts,
@@ -198,22 +206,6 @@ export function AdminPanel({
   const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
   const RSVP_PAGE_SIZE = 10;
 
-  const counts = useMemo(() => {
-    const yes = rsvps.filter((r) => r.status === "yes");
-    const checkedIn = rsvps.filter((r) => Boolean(r.checkedInAt));
-    const ofPartnerOne = rsvps.filter((r) => r.guestOf === "gautier" || r.guestOf === "both").length;
-    const ofPartnerTwo = rsvps.filter(
-      (r) => r.guestOf === "francybel" || r.guestOf === "both",
-    ).length;
-    return {
-      total: rsvps.length,
-      yes: yes.length,
-      checkedIn: checkedIn.length,
-      ofPartnerOne,
-      ofPartnerTwo,
-    };
-  }, [rsvps]);
-
   const filteredRsvps = useMemo(() => {
     const q = rsvpQuery.trim().toLowerCase();
     if (!q) return rsvps;
@@ -226,6 +218,8 @@ export function AdminPanel({
         r.status,
         guestLabel,
         r.message,
+        r.tableLabel,
+        r.seatLabel,
         r.ticketToken,
         r.checkedInAt ? "check-in" : "",
         r.emailSentAt ? "whatsapp" : "",
@@ -445,6 +439,8 @@ export function AdminPanel({
       "status",
       "guestOf",
       "message",
+      "table",
+      "seat",
       "ticketToken",
       "submittedAt",
       "whatsappSentAt",
@@ -460,6 +456,8 @@ export function AdminPanel({
         r.status,
         guestOfLabels[r.guestOf] || r.guestOf,
         r.message,
+        r.tableLabel || "",
+        r.seatLabel || "",
         r.ticketToken,
         r.createdAt,
         r.emailSentAt || "",
@@ -525,23 +523,13 @@ export function AdminPanel({
       ) : null}
 
       {can("view_dashboard") || can("view_rsvp") || can("check_in") ? (
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {[
-            { label: "Réponses", value: counts.total },
-            {
-              label: "Places (oui / max)",
-              value: `${counts.yes} / ${site.guestCapacity || "—"}`,
-            },
-            { label: "Check-in jour J", value: counts.checkedIn },
-            { label: `Côté ${site.partnerOne}`, value: counts.ofPartnerOne },
-            { label: `Côté ${site.partnerTwo}`, value: counts.ofPartnerTwo },
-          ].map((item) => (
-            <div key={item.label} className="border border-line bg-white p-5">
-              <p className="text-xs tracking-[0.18em] text-soft uppercase">{item.label}</p>
-              <p className="meta-date mt-2 text-4xl text-mist">{item.value}</p>
-            </div>
-          ))}
-        </div>
+        <AdminDashboard
+          rsvps={rsvps}
+          site={site}
+          guestOfLabels={guestOfLabels}
+          onExportCsv={exportCsv}
+          canExport={can("view_rsvp")}
+        />
       ) : null}
 
       {can("manage_content") ? (
@@ -760,6 +748,7 @@ export function AdminPanel({
                 <th className="px-4 py-3 font-medium">Téléphone</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3 font-medium">Invité(e) de</th>
+                <th className="px-4 py-3 font-medium">Table</th>
                 <th className="px-4 py-3 font-medium">Suivi</th>
                 <th className="px-4 py-3 font-medium">Check-in</th>
                 <th className="px-4 py-3 font-medium">Actions</th>
@@ -768,13 +757,13 @@ export function AdminPanel({
             <tbody>
               {rsvps.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-soft">
+                  <td colSpan={8} className="px-4 py-6 text-soft">
                     Aucune réponse pour l’instant.
                   </td>
                 </tr>
               ) : filteredRsvps.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-soft">
+                  <td colSpan={8} className="px-4 py-6 text-soft">
                     Aucun résultat pour « {rsvpQuery.trim()} ».
                   </td>
                 </tr>
@@ -811,6 +800,9 @@ export function AdminPanel({
                     <td className="px-4 py-3 text-champagne">{rsvp.status}</td>
                     <td className="px-4 py-3 text-mist">
                       {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-soft">
+                      {formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "—"}
                     </td>
                     <td className="px-4 py-3 text-xs leading-5 text-soft" suppressHydrationWarning>
                       <div>
@@ -966,7 +958,19 @@ export function AdminPanel({
       </section>
       ) : null}
 
-      {can("check_in") ? <AdminCheckIn /> : null}
+      {can("view_rsvp") ? (
+        <AdminSeatingEditor
+          rsvps={rsvps}
+          initialPlan={initialSeatingPlan}
+          site={site}
+          canEdit={can("manage_rsvp")}
+          onUpdated={(updated) =>
+            setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
+          }
+        />
+      ) : null}
+
+      {can("check_in") ? <AdminCheckIn site={site} /> : null}
       {can("manage_users") ? (
         <AdminUsersEditor initialUsers={initialUsers} currentUserId={currentUser.id} />
       ) : null}

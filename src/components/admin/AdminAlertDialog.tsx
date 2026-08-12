@@ -5,10 +5,16 @@ import { createPortal } from "react-dom";
 
 export type AdminAlertTone = "success" | "error" | "info";
 
+export type AdminAlertAction = {
+  label: string;
+  href: string;
+};
+
 export type AdminAlertState = {
   title?: string;
   message: string;
   tone?: AdminAlertTone;
+  action?: AdminAlertAction;
 };
 
 const TITLES: Record<AdminAlertTone, string> = {
@@ -51,13 +57,24 @@ export function AdminAlertDialog({
           {title}
         </h2>
         <p
-          className={`mt-3 text-sm leading-relaxed ${
+          className={`mt-3 whitespace-pre-line text-sm leading-relaxed ${
             tone === "error" ? "text-red-800" : "text-soft"
           }`}
         >
           {alert.message}
         </p>
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          {alert.action ? (
+            <a
+              href={alert.action.href}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-ghost inline-flex justify-center no-underline"
+              onClick={onClose}
+            >
+              {alert.action.label}
+            </a>
+          ) : null}
           <button type="button" className="btn-primary" onClick={onClose} autoFocus>
             OK
           </button>
@@ -71,17 +88,31 @@ export function AdminAlertDialog({
 export function useAdminAlert() {
   const [alert, setAlert] = useState<AdminAlertState | null>(null);
 
-  const showSuccess = useCallback((message: string, title?: string) => {
-    setAlert({ message, title, tone: "success" });
-  }, []);
+  const showSuccess = useCallback(
+    (message: string, titleOrAction?: string | AdminAlertAction, action?: AdminAlertAction) => {
+      if (typeof titleOrAction === "object") {
+        setAlert({ message, tone: "success", action: titleOrAction });
+        return;
+      }
+      setAlert({ message, title: titleOrAction, tone: "success", action });
+    },
+    [],
+  );
 
   const showError = useCallback((message: string, title?: string) => {
     setAlert({ message, title, tone: "error" });
   }, []);
 
-  const showInfo = useCallback((message: string, title?: string) => {
-    setAlert({ message, title, tone: "info" });
-  }, []);
+  const showInfo = useCallback(
+    (message: string, titleOrAction?: string | AdminAlertAction, action?: AdminAlertAction) => {
+      if (typeof titleOrAction === "object") {
+        setAlert({ message, tone: "info", action: titleOrAction });
+        return;
+      }
+      setAlert({ message, title: titleOrAction, tone: "info", action });
+    },
+    [],
+  );
 
   const clearAlert = useCallback(() => setAlert(null), []);
 

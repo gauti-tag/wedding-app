@@ -116,6 +116,8 @@ export async function POST(request: Request) {
       ticketViewedAt: null,
       ticketViewCount: 0,
       blockedAt: null,
+      tableLabel: "",
+      seatLabel: "",
     };
 
     rsvps.unshift(entry);

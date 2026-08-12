@@ -1,11 +1,18 @@
--- Contenu initial (peut être écrasé par le script de migration JSON)
+-- Contenu initial app_content (idempotent — n’écrase pas les données existantes)
+-- Aligné sur SiteContent / storage de l’app (Vercel).
+
 insert into public.app_content (key, data) values
 (
   'site',
   '{
-    "partnerOne": "Gautier",
+    "partnerOne": "Aubin",
     "partnerTwo": "Francybel",
-    "weddingDate": "2026-10-31T16:00:00",
+    "weddingDate": "2026-10-31T14:00:00",
+    "rsvpOpensAt": "",
+    "rsvpDeadline": "2026-09-01T23:59:00",
+    "guestCapacity": 100,
+    "whatsappReminders": [],
+    "contactPhone": "+2250708345891",
     "hero": {
       "weddingDateLabel": { "fr": "Samedi 31 octobre 2026", "en": "Saturday, October 31, 2026" },
       "tagline": {
@@ -14,6 +21,14 @@ insert into public.app_content (key, data) values
       },
       "ctaRsvp": { "fr": "Confirmer ma présence", "en": "Confirm your attendance" },
       "ctaSchedule": { "fr": "Voir le programme", "en": "View the schedule" }
+    },
+    "heroCarousel": {
+      "autoplay": true,
+      "intervalMs": 5500,
+      "transitionMs": 1200,
+      "effect": "fade",
+      "kenBurns": true,
+      "pauseOnHover": true
     }
   }'::jsonb
 ),
@@ -52,5 +67,25 @@ insert into public.app_content (key, data) values
 (
   'desserts',
   '{ "items": [] }'::jsonb
+),
+(
+  'mc-rundown',
+  '{
+    "title": "Feuille de route MC",
+    "notes": "",
+    "cues": []
+  }'::jsonb
+),
+(
+  'seating-plan',
+  '{ "tables": [] }'::jsonb
+),
+(
+  'rsvp_blocks',
+  '{}'::jsonb
+),
+(
+  'rsvp_reminders',
+  '{}'::jsonb
 )
 on conflict (key) do nothing;

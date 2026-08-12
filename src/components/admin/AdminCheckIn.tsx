@@ -1,9 +1,11 @@
 "use client";
 
 import { Html5Qrcode } from "html5-qrcode";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
-import type { Rsvp } from "@/lib/types";
+import { formatSeatingLabel } from "@/lib/seating";
+import type { Rsvp, SiteContent } from "@/lib/types";
+import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
 
 type CheckInResult = {
   ok?: boolean;
@@ -19,7 +21,11 @@ function vibrate(pattern: number | number[]) {
   }
 }
 
-export function AdminCheckIn() {
+export function AdminCheckIn({
+  site,
+}: {
+  site: Pick<SiteContent, "partnerOne" | "partnerTwo">;
+}) {
   const [manualToken, setManualToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -27,6 +33,16 @@ export function AdminCheckIn() {
   const { showSuccess, showError, showInfo, AlertDialog } = useAdminAlert();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanRef = useRef("");
+
+  const seatingLabel = useMemo(
+    () => (lastGuest ? formatSeatingLabel(lastGuest.tableLabel, lastGuest.seatLabel) : null),
+    [lastGuest],
+  );
+
+  const seatingWa = useMemo(
+    () => (lastGuest ? seatingWhatsAppForRsvp(lastGuest, site, { toGuest: true }) : null),
+    [lastGuest, site],
+  );
 
   useEffect(() => {
     return () => {
@@ -86,13 +102,39 @@ export function AdminCheckIn() {
         showError(data.error || "Check-in refusé.");
         return;
       }
-      setLastGuest(data.rsvp || null);
+
+      const guest = data.rsvp || null;
+      setLastGuest(guest);
+
+      const place = guest
+        ? formatSeatingLabel(guest.tableLabel, guest.seatLabel)
+        : null;
+      const wa = guest ? seatingWhatsAppForRsvp(guest, site, { toGuest: true }) : null;
+      const waAction =
+        wa?.url
+          ? { label: "Envoyer place WhatsApp", href: wa.url }
+          : undefined;
+
       if (data.alreadyCheckedIn) {
         vibrate([60, 40, 60]);
-        showInfo(`${data.rsvp?.name || "Invité"} est déjà enregistré(e).`);
+        showInfo(
+          [
+            `${guest?.name || "Invité"} est déjà enregistré(e).`,
+            place ? `\nPlace : ${place}` : "\nAucune table / siège assigné.",
+          ].join(""),
+          "Déjà check-in",
+          waAction,
+        );
       } else {
         vibrate(200);
-        showSuccess(`${data.rsvp?.name || "Invité"} — présence enregistrée.`);
+        showSuccess(
+          [
+            `${guest?.name || "Invité"} — présence enregistrée.`,
+            place ? `\n\nPlace : ${place}` : "\n\nAucune table / siège assigné.",
+          ].join(""),
+          "Check-in réussi",
+          waAction,
+        );
       }
       setManualToken("");
     } catch {
@@ -113,8 +155,8 @@ export function AdminCheckIn() {
         <div>
           <h2 className="section-title text-3xl text-mist">Check-in jour J</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Scannez le QR code de la carte d’invitation pour marquer la présence réelle des
-            invités.
+            Scannez le QR code de la carte d’invitation pour marquer la présence. La table et le
+            siège s’affichent au succès ; vous pouvez les envoyer séparément par WhatsApp.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -166,11 +208,28 @@ export function AdminCheckIn() {
             <div className="border border-line bg-forest p-4 text-sm">
               <p className="text-mist">{lastGuest.name}</p>
               <p className="mt-1 text-soft">{lastGuest.phone}</p>
+              {seatingLabel ? (
+                <p className="meta-date mt-3 text-xl tracking-[0.06em] text-champagne">
+                  {seatingLabel}
+                </p>
+              ) : (
+                <p className="mt-3 text-xs text-soft">Aucune table assignée</p>
+              )}
               <p className="meta-date mt-3 text-xs tracking-[0.14em] text-champagne uppercase">
                 {lastGuest.checkedInAt
                   ? `Check-in : ${new Date(lastGuest.checkedInAt).toLocaleString("fr-FR")}`
                   : "Pas encore check-in"}
               </p>
+              {seatingWa?.url ? (
+                <a
+                  href={seatingWa.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-primary mt-4 inline-flex w-full justify-center no-underline"
+                >
+                  Envoyer place par WhatsApp
+                </a>
+              ) : null}
             </div>
           ) : null}
         </div>

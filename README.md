@@ -61,10 +61,10 @@ Sans les variables Supabase, l’app continue d’utiliser `data/` et `public/up
 ## Supabase (production)
 
 1. Créer un projet sur [supabase.com](https://supabase.com)
-2. Dans **SQL Editor**, exécuter dans l’ordre les fichiers de `supabase/migrations/` :
-   - `20260803100000_init.sql`
-   - `20260803100001_storage.sql`
-   - `20260803100002_seed_content.sql`
+2. Dans **SQL Editor**, exécuter dans l’ordre les fichiers de `supabase/migrations/`  
+   (voir `supabase/MIGRATIONS.md`).  
+   **Base déjà en prod (Vercel)** : exécuter au minimum  
+   `20260812100009_schema_complete.sql` pour aligner colonnes RSVP + clés `app_content`.
 3. Copier l’URL + clés API (Settings → API) dans `.env.local` et dans Vercel
 4. Migrer les données locales :
    ```bash

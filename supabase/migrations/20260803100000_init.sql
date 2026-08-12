@@ -1,5 +1,8 @@
--- Wedding invitation — schéma initial Supabase
+-- Wedding invitation — schéma initial Supabase (complet)
 -- À exécuter dans Supabase SQL Editor, ou via CLI: supabase db push
+--
+-- Schéma aligné sur l’app (Vercel + Next.js) : RSVP tickets, blocage,
+-- plan de table, contenu app_content, photos, admin, audit.
 
 create extension if not exists "pgcrypto";
 
@@ -23,7 +26,7 @@ create table if not exists public.photos (
 
 create index if not exists photos_album_order_idx on public.photos (album, sort_order);
 
--- RSVP
+-- RSVP (colonnes complètes : ticket, check-in, blocage, placement)
 create table if not exists public.rsvps (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -35,6 +38,11 @@ create table if not exists public.rsvps (
   ticket_token text not null,
   checked_in_at timestamptz,
   email_sent_at timestamptz,
+  ticket_viewed_at timestamptz,
+  ticket_view_count integer not null default 0,
+  blocked_at timestamptz,
+  table_label text not null default '',
+  seat_label text not null default '',
   created_at timestamptz not null default now(),
   constraint rsvps_email_unique unique (email),
   constraint rsvps_phone_unique unique (phone),
@@ -43,6 +51,9 @@ create table if not exists public.rsvps (
 
 create index if not exists rsvps_created_at_idx on public.rsvps (created_at desc);
 create index if not exists rsvps_ticket_token_idx on public.rsvps (ticket_token);
+create index if not exists rsvps_table_label_idx
+  on public.rsvps (table_label)
+  where table_label <> '';
 
 -- Utilisateurs admin (auth applicative)
 create table if not exists public.admin_users (

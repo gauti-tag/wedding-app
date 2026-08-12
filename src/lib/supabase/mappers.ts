@@ -32,8 +32,9 @@ export type DbRsvp = {
   email_sent_at: string | null;
   ticket_viewed_at: string | null;
   ticket_view_count: number;
-  /** Présent après migration 20260810100005 ; optionnel pour compat. */
-  blocked_at?: string | null;
+  blocked_at: string | null;
+  table_label: string;
+  seat_label: string;
   created_at: string;
 };
 
@@ -100,6 +101,8 @@ export function mapRsvp(row: DbRsvp): Rsvp {
     ticketViewedAt: row.ticket_viewed_at ?? null,
     ticketViewCount: row.ticket_view_count ?? 0,
     blockedAt: row.blocked_at ?? null,
+    tableLabel: row.table_label ?? "",
+    seatLabel: row.seat_label ?? "",
     createdAt: row.created_at,
   };
 }
@@ -118,6 +121,9 @@ export function toDbRsvp(rsvp: Rsvp): DbRsvp {
     email_sent_at: rsvp.emailSentAt,
     ticket_viewed_at: rsvp.ticketViewedAt,
     ticket_view_count: rsvp.ticketViewCount ?? 0,
+    blocked_at: rsvp.blockedAt ?? null,
+    table_label: rsvp.tableLabel || "",
+    seat_label: rsvp.seatLabel || "",
     created_at: rsvp.createdAt,
   };
 }

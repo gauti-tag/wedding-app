@@ -38,5 +38,7 @@ export function ensureRsvpTicketFields(rsvp: Rsvp): Rsvp {
     ticketViewedAt: rsvp.ticketViewedAt ?? null,
     ticketViewCount: typeof rsvp.ticketViewCount === "number" ? rsvp.ticketViewCount : 0,
     blockedAt: rsvp.blockedAt ?? null,
+    tableLabel: rsvp.tableLabel ?? "",
+    seatLabel: rsvp.seatLabel ?? "",
   };
 }

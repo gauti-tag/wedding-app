@@ -35,6 +35,10 @@ export type Rsvp = {
   ticketViewCount: number;
   /** Date ISO du blocage d’accès (carte / check-in), null si autorisé. */
   blockedAt: string | null;
+  /** Libellé de table (ex. « 3 », « Famille », « VIP »). Vide = non assigné. */
+  tableLabel: string;
+  /** Siège / place à table (ex. « A », « 12 »). Vide = non assigné. */
+  seatLabel: string;
 };
 
 /** Suivi des rappels WhatsApp envoyés (reminderId → date ISO). */
@@ -128,6 +132,20 @@ export type McRundownContent = {
   title: string;
   notes: string;
   cues: McRundownCue[];
+};
+
+/** Table préenregistrée du plan de salle. */
+export type SeatingPlanTable = {
+  id: string;
+  /** Libellé affiché (ex. « 1 », « VIP », « Famille »). */
+  label: string;
+  /** Sièges disponibles sur cette table (ex. « 1 », « 2 », « A »). */
+  seats: string[];
+};
+
+/** Plan de table préenregistré (espace couple). */
+export type SeatingPlanContent = {
+  tables: SeatingPlanTable[];
 };
 
 export type HeroCarouselEffect = "fade" | "slide" | "zoom";

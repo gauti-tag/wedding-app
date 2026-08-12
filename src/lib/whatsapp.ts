@@ -177,3 +177,69 @@ export function reminderWhatsAppForRsvp(
     phoneDigits: digits,
   };
 }
+
+export function buildSeatingWhatsAppMessage(input: {
+  guestName: string;
+  coupleNames: string;
+  tableLabel: string;
+  seatLabel: string;
+  locale?: "fr" | "en";
+}) {
+  const locale = input.locale || "fr";
+  const table = input.tableLabel.trim();
+  const seat = input.seatLabel.trim();
+  const placeFr = [table && `table ${table}`, seat && `siège ${seat}`].filter(Boolean).join(", ");
+  const placeEn = [table && `table ${table}`, seat && `seat ${seat}`].filter(Boolean).join(", ");
+
+  if (locale === "en") {
+    return [
+      `Hello ${input.guestName},`,
+      "",
+      `Your place for the celebration with ${input.coupleNames}:`,
+      "",
+      `🪑 ${placeEn}`,
+      "",
+      "See you very soon!",
+      "",
+      input.coupleNames,
+    ].join("\n");
+  }
+
+  return [
+    `Bonjour ${input.guestName},`,
+    "",
+    `Voici votre place pour la célébration de ${input.coupleNames} :`,
+    "",
+    `🪑 ${placeFr}`,
+    "",
+    "À très bientôt !",
+    "",
+    input.coupleNames,
+  ].join("\n");
+}
+
+/** Message WhatsApp dédié table/siège — null si placement incomplet. */
+export function seatingWhatsAppForRsvp(
+  rsvp: Pick<Rsvp, "name" | "phone" | "tableLabel" | "seatLabel">,
+  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo">,
+  options?: { locale?: "fr" | "en"; toGuest?: boolean },
+) {
+  const tableLabel = (rsvp.tableLabel || "").trim();
+  const seatLabel = (rsvp.seatLabel || "").trim();
+  if (!tableLabel && !seatLabel) return null;
+
+  const locale = options?.locale || "fr";
+  const message = buildSeatingWhatsAppMessage({
+    guestName: rsvp.name,
+    coupleNames: coupleLabel(siteContent),
+    tableLabel,
+    seatLabel,
+    locale,
+  });
+  const digits = options?.toGuest === false ? null : phoneToWhatsAppDigits(rsvp.phone);
+  return {
+    message,
+    url: whatsappUrl(message, digits),
+    phoneDigits: digits,
+  };
+}
