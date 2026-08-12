@@ -181,7 +181,7 @@ async function migrateUploads(photos) {
 
     const { error: upError } = await supabase.storage
       .from("uploads")
-      .upload(filename, buffer, { contentType, upsert: true });
+      .upload(filename, new Uint8Array(buffer), { contentType, upsert: true, cacheControl: "3600" });
     if (upError) throw upError;
 
     const { data } = supabase.storage.from("uploads").getPublicUrl(filename);

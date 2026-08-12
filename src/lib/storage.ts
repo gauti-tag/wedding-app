@@ -431,9 +431,13 @@ export async function saveUpload(
   }
 
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase.storage.from("uploads").upload(filename, buffer, {
+  // Uint8Array (pas Buffer Node) : sur Vercel/fetch, un Buffer peut créer un objet
+  // Storage listé mais illisible (preview/URL publique en 500).
+  const payload = new Uint8Array(buffer);
+  const { error } = await supabase.storage.from("uploads").upload(filename, payload, {
     contentType,
     upsert: true,
+    cacheControl: "3600",
   });
   if (error) throw error;
 
