@@ -35,9 +35,9 @@ export function Hero({
   }
 
   return (
-    <section id="top" className="relative h-[100svh] min-h-[100svh] overflow-hidden">
+    <section id="top" className="relative h-dvh min-h-svh w-full overflow-hidden">
       <div className="absolute inset-0 overflow-hidden bg-cacao">
-        <ParallaxMedia className="absolute inset-0 h-full w-full" strength={10}>
+        <ParallaxMedia className="absolute inset-0 size-full" strength={10}>
           <HeroCarouselBackground
             photos={heroPhotos}
             settings={carousel}
@@ -48,7 +48,7 @@ export function Hero({
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />
       </div>
 
-      <div className="section-shell relative z-10 flex min-h-[100svh] flex-col justify-end pb-16 pt-28 md:pb-20">
+      <div className="section-shell relative z-10 flex h-full min-h-svh flex-col justify-end pb-16 pt-28 md:pb-20">
         <motion.p
           className="meta-date text-[0.72rem] tracking-[0.28em] text-[#f7f4f0]/90 uppercase"
           {...fadeUp(0.12)}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { PhotoFill } from "@/components/PhotoFill";
 import { Reveal } from "@/components/Reveal";
 import type { Dictionary } from "@/i18n/types";
 import type { Photo } from "@/lib/types";
@@ -137,7 +138,7 @@ export function GallerySection({
           <img
             src={activePhoto.url}
             alt={activePhoto.caption || dict.gallery.photoAlt}
-            className="mx-auto max-h-[min(80svh,820px)] w-auto max-w-full object-contain"
+            className="mx-auto h-auto max-h-[min(78dvh,820px)] w-full max-w-full object-contain"
           />
           {activePhoto.caption ? (
             <figcaption className="mt-3 text-center text-sm text-[#f7f4f0]/85">
@@ -201,12 +202,11 @@ export function GallerySection({
                         aria-label={dict.gallery.openPhoto}
                       >
                         <figure className="overflow-hidden border border-line">
-                          <div className="relative aspect-[4/5] overflow-hidden">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                          <div className="relative aspect-[4/5] w-full overflow-hidden">
+                            <PhotoFill
                               src={photo.url}
                               alt={photo.caption || dict.gallery.photoAlt}
-                              className="h-full w-full object-cover"
+                              sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
                             />
                             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cacao/15 via-cacao/25 to-cacao/55 md:from-cacao/25 md:via-cacao/45 md:to-cacao/90" />
                             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.28),transparent_50%,rgba(59,36,22,0.16))] md:bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />

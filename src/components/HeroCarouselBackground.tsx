@@ -2,6 +2,7 @@
 
 import { useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { PhotoFill } from "@/components/PhotoFill";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import type { HeroCarouselSettings, Photo } from "@/lib/types";
 
@@ -10,28 +11,6 @@ type Props = {
   settings: HeroCarouselSettings;
   fallbackAlt: string;
 };
-
-function HeroFillImage({
-  src,
-  alt,
-  priority = false,
-}: {
-  src: string;
-  alt: string;
-  priority?: boolean;
-}) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      className="absolute inset-0 h-full w-full object-cover object-center"
-      draggable={false}
-      decoding="async"
-      fetchPriority={priority ? "high" : "low"}
-    />
-  );
-}
 
 export function HeroCarouselBackground({ photos, settings, fallbackAlt }: Props) {
   const reduceMotion = useReducedMotion();
@@ -54,13 +33,13 @@ export function HeroCarouselBackground({ photos, settings, fallbackAlt }: Props)
 
   if (slides.length === 0) {
     return (
-      <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle_at_25%_20%,#a67c52_0%,transparent_42%),radial-gradient(circle_at_75%_70%,#6b3e2a_0%,transparent_40%),linear-gradient(160deg,#3b2416,#5a3824_50%,#3b2416)]" />
+      <div className="absolute inset-0 size-full bg-[radial-gradient(circle_at_25%_20%,#a67c52_0%,transparent_42%),radial-gradient(circle_at_75%_70%,#6b3e2a_0%,transparent_40%),linear-gradient(160deg,#3b2416,#5a3824_50%,#3b2416)]" />
     );
   }
 
   return (
     <div
-      className="absolute inset-0 h-full w-full overflow-hidden bg-cacao"
+      className="absolute inset-0 size-full overflow-hidden bg-cacao"
       onMouseEnter={() => {
         if (settings.pauseOnHover) setPaused(true);
       }}
@@ -69,23 +48,24 @@ export function HeroCarouselBackground({ photos, settings, fallbackAlt }: Props)
       {slides.map((photo, i) => (
         <div
           key={photo.id}
-          className="absolute inset-0 h-full w-full transition-opacity"
+          className="absolute inset-0 size-full transition-opacity"
           style={{
             opacity: i === index ? 1 : 0,
             transitionDuration: `${settings.transitionMs}ms`,
           }}
           aria-hidden={i !== index}
         >
-          <HeroFillImage
+          <PhotoFill
             src={photo.url}
             alt={photo.caption || fallbackAlt}
+            sizes="100vw"
             priority={i === 0}
           />
         </div>
       ))}
 
       {slides.length > 1 ? (
-        <div className="pointer-events-none absolute bottom-8 left-1/2 z-[5] flex -translate-x-1/2 gap-2 md:bottom-10">
+        <div className="pointer-events-none absolute bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[5] flex -translate-x-1/2 gap-2 md:bottom-10">
           {slides.map((photo, i) => (
             <span
               key={photo.id}

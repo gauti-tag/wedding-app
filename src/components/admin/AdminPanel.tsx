@@ -639,7 +639,11 @@ export function AdminPanel({
               photos.map((photo) => (
                 <article key={photo.id} className="overflow-hidden border border-line bg-white">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo.url} alt={photo.caption || "Photo"} className="aspect-[4/3] w-full object-cover" />
+                  <img
+                    src={photo.url}
+                    alt={photo.caption || "Photo"}
+                    className="aspect-[4/3] h-auto w-full object-cover"
+                  />
                   <div className="space-y-2 p-3">
                     <p className="text-xs tracking-[0.14em] text-gold uppercase">
                       {albumLabels[photo.album]}
