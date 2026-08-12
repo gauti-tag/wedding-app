@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { wouldExceedGuestCapacity } from "@/lib/guest-capacity";
-import { isRsvpDeadlinePassed } from "@/lib/rsvp-deadline";
+import { isRsvpDeadlinePassed, isRsvpNotYetOpen } from "@/lib/rsvp-deadline";
 import { getRsvps, getSiteContent, saveRsvps, setRsvpBlocked } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
 import type { Rsvp } from "@/lib/types";
@@ -36,6 +36,16 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const siteContent = await getSiteContent();
+    if (isRsvpNotYetOpen(siteContent.rsvpOpensAt)) {
+      return NextResponse.json(
+        {
+          error:
+            "La confirmation de présence n’est pas encore ouverte.",
+          code: "not_yet_open",
+        },
+        { status: 403 },
+      );
+    }
     if (isRsvpDeadlinePassed(siteContent.rsvpDeadline)) {
       return NextResponse.json(
         {

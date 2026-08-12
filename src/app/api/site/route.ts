@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { normalizeGuestCapacity } from "@/lib/guest-capacity";
+import { parseLocalDateTime } from "@/lib/rsvp-deadline";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
 import { formatCiWhatsAppPhone } from "@/lib/whatsapp";
@@ -18,6 +19,14 @@ const datetimeLocalSchema = z
   .trim()
   .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, "Date invalide.");
 
+const optionalDatetimeLocalSchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => value === "" || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value),
+    "Date invalide.",
+  );
+
 function withSeconds(value: string) {
   return value.length === 16 ? `${value}:00` : value;
 }
@@ -26,6 +35,7 @@ const siteSchema = z.object({
   partnerOne: z.string().trim().min(1).max(80),
   partnerTwo: z.string().trim().min(1).max(80),
   weddingDate: datetimeLocalSchema,
+  rsvpOpensAt: optionalDatetimeLocalSchema.optional().default(""),
   rsvpDeadline: datetimeLocalSchema,
   contactPhone: z
     .string()
@@ -92,9 +102,27 @@ export async function PUT(request: Request) {
       );
     }
 
+    const rsvpOpensAt = parsed.data.rsvpOpensAt
+      ? withSeconds(parsed.data.rsvpOpensAt)
+      : "";
+    if (rsvpOpensAt) {
+      const opens = parseLocalDateTime(rsvpOpensAt);
+      const deadline = parseLocalDateTime(withSeconds(parsed.data.rsvpDeadline));
+      if (opens && deadline && opens.getTime() >= deadline.getTime()) {
+        return NextResponse.json(
+          {
+            error:
+              "La date d’ouverture des confirmations doit être antérieure à la date limite RSVP.",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const content = {
       ...parsed.data,
       weddingDate: withSeconds(parsed.data.weddingDate),
+      rsvpOpensAt,
       rsvpDeadline: withSeconds(parsed.data.rsvpDeadline),
       contactPhone,
       guestCapacity: normalizeGuestCapacity(parsed.data.guestCapacity),

@@ -3,7 +3,12 @@
 import { useMemo, useState, type FormEvent } from "react";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
-import { formatRsvpDeadlineLabel, isRsvpDeadlinePassed } from "@/lib/rsvp-deadline";
+import {
+  formatRsvpDeadlineLabel,
+  formatRsvpOpensAtLabel,
+  isRsvpDeadlinePassed,
+  isRsvpNotYetOpen,
+} from "@/lib/rsvp-deadline";
 import { coupleLabel } from "@/lib/site";
 import type { SiteContent } from "@/lib/types";
 import { CI_PHONE_PATTERN, isValidCiPhone } from "@/lib/validation";
@@ -26,7 +31,12 @@ export function RsvpForm({
   locale: Locale;
   siteContent: Pick<
     SiteContent,
-    "partnerOne" | "partnerTwo" | "rsvpDeadline" | "contactPhone" | "guestCapacity"
+    | "partnerOne"
+    | "partnerTwo"
+    | "rsvpOpensAt"
+    | "rsvpDeadline"
+    | "contactPhone"
+    | "guestCapacity"
   >;
   capacityFull?: boolean;
 }) {
@@ -34,9 +44,20 @@ export function RsvpForm({
   const [error, setError] = useState("");
   const [whatsapp, setWhatsapp] = useState<WhatsAppPayload | null>(null);
 
+  const notYetOpen = useMemo(
+    () => isRsvpNotYetOpen(siteContent.rsvpOpensAt),
+    [siteContent.rsvpOpensAt],
+  );
   const deadlinePassed = useMemo(
     () => isRsvpDeadlinePassed(siteContent.rsvpDeadline),
     [siteContent.rsvpDeadline],
+  );
+  const opensLabel = useMemo(
+    () =>
+      siteContent.rsvpOpensAt
+        ? formatRsvpOpensAtLabel(siteContent.rsvpOpensAt, locale)
+        : "",
+    [siteContent.rsvpOpensAt, locale],
   );
   const deadlineLabel = useMemo(
     () => formatRsvpDeadlineLabel(siteContent.rsvpDeadline, locale),
@@ -51,10 +72,15 @@ export function RsvpForm({
     : siteContent.contactPhone
       ? `tel:${siteContent.contactPhone.replace(/\s/g, "")}`
       : "";
-  const formClosed = deadlinePassed;
+  const formClosed = notYetOpen || deadlinePassed;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (notYetOpen || isRsvpNotYetOpen(siteContent.rsvpOpensAt)) {
+      setStatus("error");
+      setError(dict.rsvp.errorNotYetOpen);
+      return;
+    }
     if (deadlinePassed || isRsvpDeadlinePassed(siteContent.rsvpDeadline)) {
       setStatus("error");
       setError(dict.rsvp.errorDeadlinePassed);
@@ -97,15 +123,17 @@ export function RsvpForm({
       const data = await res.json();
       if (!res.ok) {
         const message =
-          data.code === "deadline_passed"
-            ? dict.rsvp.errorDeadlinePassed
-            : data.code === "capacity_full"
-              ? dict.rsvp.errorCapacityFull
-              : data.code === "phone_taken"
-                ? dict.rsvp.errorPhoneTaken
-                : data.code === "phone_invalid"
-                  ? dict.rsvp.errorPhoneInvalid
-                  : data.error || dict.rsvp.error;
+          data.code === "not_yet_open"
+            ? dict.rsvp.errorNotYetOpen
+            : data.code === "deadline_passed"
+              ? dict.rsvp.errorDeadlinePassed
+              : data.code === "capacity_full"
+                ? dict.rsvp.errorCapacityFull
+                : data.code === "phone_taken"
+                  ? dict.rsvp.errorPhoneTaken
+                  : data.code === "phone_invalid"
+                    ? dict.rsvp.errorPhoneInvalid
+                    : data.error || dict.rsvp.error;
         throw new Error(message);
       }
       if (data.whatsapp?.ticketUrl && data.whatsapp?.url) {
@@ -130,10 +158,17 @@ export function RsvpForm({
           <h2 className="section-title mt-4 text-4xl font-semibold text-mist md:text-5xl">
             {dict.rsvp.title}
           </h2>
-          <p className="mt-5 max-w-md text-base font-normal leading-7 text-soft">
-            {dict.rsvp.deadlinePrefix}{" "}
-            <span className="meta-date text-champagne">{deadlineLabel}</span>.
-          </p>
+          {notYetOpen && opensLabel ? (
+            <p className="mt-5 max-w-md text-base font-normal leading-7 text-soft">
+              {dict.rsvp.opensPrefix}{" "}
+              <span className="meta-date text-champagne">{opensLabel}</span>.
+            </p>
+          ) : (
+            <p className="mt-5 max-w-md text-base font-normal leading-7 text-soft">
+              {dict.rsvp.deadlinePrefix}{" "}
+              <span className="meta-date text-champagne">{deadlineLabel}</span>.
+            </p>
+          )}
           {siteContent.contactPhone ? (
             <p className="mt-4 text-sm text-soft">
               {dict.rsvp.contact} :{" "}
@@ -153,8 +188,18 @@ export function RsvpForm({
             role="status"
             className="space-y-3 border border-line bg-white/90 px-6 py-8 md:p-8"
           >
-            <p className="section-title text-2xl text-mist">{dict.rsvp.closedTitle}</p>
-            <p className="text-sm leading-relaxed text-soft">{dict.rsvp.closedMessage}</p>
+            <p className="section-title text-2xl text-mist">
+              {notYetOpen ? dict.rsvp.notYetOpenTitle : dict.rsvp.closedTitle}
+            </p>
+            <p className="text-sm leading-relaxed text-soft">
+              {notYetOpen ? dict.rsvp.notYetOpenMessage : dict.rsvp.closedMessage}
+            </p>
+            {notYetOpen && opensLabel ? (
+              <p className="text-sm text-soft">
+                {dict.rsvp.opensPrefix}{" "}
+                <span className="meta-date text-champagne">{opensLabel}</span>.
+              </p>
+            ) : null}
             {siteContent.contactPhone && contactHref ? (
               <p className="text-sm text-soft">
                 {dict.rsvp.contact} :{" "}

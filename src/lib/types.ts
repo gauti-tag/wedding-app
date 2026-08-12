@@ -153,6 +153,11 @@ export type SiteContent = {
   partnerTwo: string;
   /** Date/heure cible du compte à rebours (ISO local, ex. 2026-10-31T16:00:00). */
   weddingDate: string;
+  /**
+   * Date/heure d’ouverture des confirmations RSVP (ISO local).
+   * Vide = déjà ouvert (jusqu’à rsvpDeadline).
+   */
+  rsvpOpensAt: string;
   /** Date/heure limite pour confirmer sa présence (ISO local). */
   rsvpDeadline: string;
   /** Numéro de contact affiché sur le formulaire RSVP (ex. +2250708345891). */

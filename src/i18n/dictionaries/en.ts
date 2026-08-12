@@ -59,6 +59,7 @@ const en: Dictionary = {
     eyebrow: "Kindly reply",
     title: "RSVP",
     deadlinePrefix: "Please confirm your attendance by",
+    opensPrefix: "Attendance confirmations open on",
     contact: "Contact",
     name: "Full name",
     namePlaceholder: "Your name",
@@ -84,12 +85,16 @@ const en: Dictionary = {
     closedTitle: "RSVP closed",
     closedMessage:
       "Attendance confirmation is no longer accepted because the deadline has passed.",
+    notYetOpenTitle: "RSVP not open yet",
+    notYetOpenMessage:
+      "Attendance confirmation is not open yet. Please come back on the date shown.",
     error: "Something went wrong.",
     errorPhoneTaken: "This phone number has already been used for a reply.",
     errorPhoneInvalid:
       "Please enter a valid Ivorian WhatsApp number (e.g. +2250708345891).",
     errorDeadlinePassed:
       "Attendance confirmation is no longer accepted because the deadline has passed.",
+    errorNotYetOpen: "Attendance confirmation is not open yet.",
     errorCapacityFull:
       "Attendance confirmation is no longer accepted: the guest capacity has been reached.",
     capacityFullTitle: "Fully booked",

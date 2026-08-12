@@ -5,6 +5,8 @@ import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/server";
 import { defaultHeroCarousel, normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { normalizeGuestCapacity } from "@/lib/guest-capacity";
 import { emptyMcRundown, normalizeMcRundown } from "@/lib/mc-rundown";
+import { normalizePhotos, requirePersistentStorage } from "@/lib/photo-urls";
+import { normalizeOptionalDatetime } from "@/lib/rsvp-deadline";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -68,6 +70,7 @@ const emptySite: SiteContent = {
   partnerOne: "Gautier",
   partnerTwo: "Francybel",
   weddingDate: "2026-10-31T16:00:00",
+  rsvpOpensAt: "",
   rsvpDeadline: "2026-09-01T23:59:00",
   contactPhone: "+2250708345891",
   guestCapacity: 100,
@@ -116,6 +119,7 @@ async function saveContent<T>(key: string, value: T) {
 
 export async function getPhotos(): Promise<Photo[]> {
   if (!isSupabaseConfigured()) {
+    requirePersistentStorage();
     const photos = await readJsonFile<Photo[]>(path.join(dataDir, "photos.json"), []);
     return photos.sort((a, b) => a.order - b.order);
   }
@@ -125,16 +129,40 @@ export async function getPhotos(): Promise<Photo[]> {
     .select("*")
     .order("sort_order", { ascending: true });
   if (error) throw error;
-  return ((data || []) as DbPhoto[]).map(mapPhoto);
+  return normalizePhotos(((data || []) as DbPhoto[]).map(mapPhoto));
+}
+
+/** Réécrit en base les URLs `/uploads/...` vers Supabase Storage. */
+export async function repairPhotoUrls(): Promise<number> {
+  if (!isSupabaseConfigured()) return 0;
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("photos")
+    .select("*")
+    .order("sort_order", { ascending: true });
+  if (error) throw error;
+
+  const raw = ((data || []) as DbPhoto[]).map(mapPhoto);
+  const repaired = normalizePhotos(raw);
+  const changed = repaired.filter((photo, index) => photo.url !== raw[index]?.url);
+  if (!changed.length) return 0;
+
+  const rows = repaired.map(toDbPhoto);
+  const { error: saveError } = await supabase.from("photos").upsert(rows);
+  if (saveError) throw saveError;
+  return changed.length;
 }
 
 export async function savePhotos(photos: Photo[]) {
+  const normalized = normalizePhotos(photos);
   if (!isSupabaseConfigured()) {
-    await writeJsonFile(path.join(dataDir, "photos.json"), photos);
+    requirePersistentStorage();
+    await writeJsonFile(path.join(dataDir, "photos.json"), normalized);
     return;
   }
   const supabase = getSupabaseAdmin();
-  const rows = photos.map(toDbPhoto);
+  const rows = normalized.map(toDbPhoto);
   const { data: existing, error: readError } = await supabase.from("photos").select("id");
   if (readError) throw readError;
   const nextIds = new Set(rows.map((r) => r.id));
@@ -342,6 +370,9 @@ export async function getSiteContent(): Promise<SiteContent> {
       ...(raw.hero ?? {}),
     },
     heroCarousel: normalizeHeroCarousel(raw.heroCarousel),
+    rsvpOpensAt: normalizeOptionalDatetime(
+      (raw as { rsvpOpensAt?: string }).rsvpOpensAt,
+    ),
     rsvpDeadline: raw.rsvpDeadline || emptySite.rsvpDeadline,
     contactPhone: raw.contactPhone || emptySite.contactPhone,
     guestCapacity: normalizeGuestCapacity(raw.guestCapacity, emptySite.guestCapacity),
@@ -367,6 +398,7 @@ export async function saveUpload(
     extension?: string;
   },
 ): Promise<{ filename: string; url: string }> {
+  requirePersistentStorage();
   const hint = options?.filenameHint || (file instanceof File ? file.name : "photo.jpg");
   const ext = options?.extension || path.extname(hint) || ".jpg";
   const safeExt = [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext.toLowerCase())
@@ -388,7 +420,7 @@ export async function saveUpload(
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.storage.from("uploads").upload(filename, buffer, {
     contentType,
-    upsert: false,
+    upsert: true,
   });
   if (error) throw error;
 

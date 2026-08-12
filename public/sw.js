@@ -1,5 +1,5 @@
 /* Wedding invitation PWA service worker */
-const CACHE_VERSION = "wedding-pwa-v3";
+const CACHE_VERSION = "wedding-pwa-v4";
 const TICKET_CACHE = "wedding-tickets-v1";
 const PRECACHE = [
   "/",
@@ -68,10 +68,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Icons / uploads / images: cache-first
+  // Icons / static images: cache-first (uploads locaux uniquement en dev)
   if (
     url.pathname.startsWith("/icons/") ||
-    url.pathname.startsWith("/uploads/") ||
     url.pathname.endsWith(".png") ||
     url.pathname.endsWith(".jpg") ||
     url.pathname.endsWith(".webp") ||
@@ -79,6 +78,12 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith(".webmanifest")
   ) {
     event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  // Fichiers locaux /uploads : réseau d'abord (évite un 404 mis en cache sur Vercel)
+  if (url.pathname.startsWith("/uploads/")) {
+    event.respondWith(networkFirst(request));
     return;
   }
 

@@ -82,8 +82,13 @@ export async function POST(request: Request) {
       photo: entry,
       resizedTo: { width: target.width, height: target.height, label: target.label },
     });
-  } catch {
-    return NextResponse.json({ error: "Échec de l'upload." }, { status: 500 });
+  } catch (err) {
+    console.error("Photo upload failed:", err);
+    const message =
+      err instanceof Error && err.message.includes("Stockage persistant")
+        ? err.message
+        : "Échec de l'upload.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

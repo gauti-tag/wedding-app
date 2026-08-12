@@ -73,6 +73,7 @@ export function AdminSiteEditor({
 }) {
   const [content, setContent] = useState<SiteContent>(() => ({
     ...initialSite,
+    rsvpOpensAt: initialSite.rsvpOpensAt || "",
     rsvpDeadline: initialSite.rsvpDeadline || "2026-09-01T23:59:00",
     contactPhone: initialSite.contactPhone || "+2250708345891",
     guestCapacity: initialSite.guestCapacity || 100,
@@ -152,7 +153,7 @@ export function AdminSiteEditor({
         <div>
           <h2 className="section-title text-3xl text-mist">Couple & hero</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Noms des futurs mariés, date du compte à rebours, date limite RSVP, rappels WhatsApp
+            Noms des futurs mariés, date du compte à rebours, fenêtre RSVP, rappels WhatsApp
             dynamiques, téléphone de contact, carrousel hero et textes (FR/EN).
           </p>
         </div>
@@ -211,6 +212,35 @@ export function AdminSiteEditor({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
+            <label className="label" htmlFor="rsvpOpensAt">
+              Ouverture des confirmations RSVP
+            </label>
+            <input
+              id="rsvpOpensAt"
+              type="datetime-local"
+              className="field"
+              value={toDatetimeLocal(content.rsvpOpensAt)}
+              onChange={(e) =>
+                setContent((prev) => ({ ...prev, rsvpOpensAt: e.target.value }))
+              }
+            />
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <p className="text-xs text-soft">
+                Avant cette date/heure, le formulaire de confirmation est fermé. Laissez vide
+                pour ouvrir immédiatement.
+              </p>
+              {content.rsvpOpensAt ? (
+                <button
+                  type="button"
+                  className="text-xs text-champagne underline-offset-2 hover:underline"
+                  onClick={() => setContent((prev) => ({ ...prev, rsvpOpensAt: "" }))}
+                >
+                  Effacer (déjà ouvert)
+                </button>
+              ) : null}
+            </div>
+          </div>
+          <div>
             <label className="label" htmlFor="rsvpDeadline">
               Date limite RSVP
             </label>
@@ -227,29 +257,30 @@ export function AdminSiteEditor({
               Après cette date/heure, les confirmations de présence sont refusées.
             </p>
           </div>
-          <div>
-            <label className="label" htmlFor="guestCapacity">
-              Nombre de places (confirmations « oui »)
-            </label>
-            <input
-              id="guestCapacity"
-              type="number"
-              min={1}
-              max={5000}
-              className="field"
-              value={content.guestCapacity}
-              onChange={(e) =>
-                setContent((prev) => ({
-                  ...prev,
-                  guestCapacity: Number(e.target.value) || 1,
-                }))
-              }
-            />
-            <p className="mt-2 text-xs text-soft">
-              Une fois ce nombre de « oui » atteint, plus aucune confirmation positive n’est
-              acceptée.
-            </p>
-          </div>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="guestCapacity">
+            Nombre de places (confirmations « oui »)
+          </label>
+          <input
+            id="guestCapacity"
+            type="number"
+            min={1}
+            max={5000}
+            className="field max-w-xs"
+            value={content.guestCapacity}
+            onChange={(e) =>
+              setContent((prev) => ({
+                ...prev,
+                guestCapacity: Number(e.target.value) || 1,
+              }))
+            }
+          />
+          <p className="mt-2 text-xs text-soft">
+            Une fois ce nombre de « oui » atteint, plus aucune confirmation positive n’est
+            acceptée.
+          </p>
         </div>
 
         <div className="border-t border-line pt-4">

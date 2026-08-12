@@ -29,6 +29,13 @@ export function isRsvpDeadlinePassed(rsvpDeadline: string, now = new Date()) {
   return now.getTime() > deadline.getTime();
 }
 
+/** True si une date d’ouverture est définie et que l’instant n’est pas encore atteint. */
+export function isRsvpNotYetOpen(rsvpOpensAt: string, now = new Date()) {
+  const opens = parseLocalDateTime(rsvpOpensAt);
+  if (!opens) return false;
+  return now.getTime() < opens.getTime();
+}
+
 export function formatRsvpDeadlineLabel(rsvpDeadline: string, locale: Locale) {
   const deadline = parseLocalDateTime(rsvpDeadline);
   if (!deadline) return rsvpDeadline;
@@ -37,6 +44,10 @@ export function formatRsvpDeadlineLabel(rsvpDeadline: string, locale: Locale) {
     month: "long",
     year: "numeric",
   });
+}
+
+export function formatRsvpOpensAtLabel(rsvpOpensAt: string, locale: Locale) {
+  return formatRsvpDeadlineLabel(rsvpOpensAt, locale);
 }
 
 /** Normalise une date optionnelle (vide si absente / invalide). */

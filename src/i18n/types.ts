@@ -57,6 +57,7 @@ export type Dictionary = {
     eyebrow: string;
     title: string;
     deadlinePrefix: string;
+    opensPrefix: string;
     contact: string;
     name: string;
     namePlaceholder: string;
@@ -80,10 +81,13 @@ export type Dictionary = {
     whatsappCta: string;
     closedTitle: string;
     closedMessage: string;
+    notYetOpenTitle: string;
+    notYetOpenMessage: string;
     error: string;
     errorPhoneTaken: string;
     errorPhoneInvalid: string;
     errorDeadlinePassed: string;
+    errorNotYetOpen: string;
     errorCapacityFull: string;
     capacityFullTitle: string;
     capacityFullMessage: string;
