@@ -27,7 +27,7 @@ type Copy = {
 };
 
 /**
- * Bannière soft mobile pour installer la PWA.
+ * Barre minimale mobile pour installer la PWA.
  * Différée (temps + scroll), mémorise « plus tard » / « ne plus demander ».
  */
 export function PwaInstallPrompt({ copy }: { copy: Copy }) {
@@ -107,64 +107,57 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] flex justify-center px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 md:hidden"
       role="presentation"
     >
       <aside
         role="dialog"
         aria-modal="false"
         aria-labelledby={titleId}
-        className="pwa-install-sheet pointer-events-auto w-full max-w-md border border-line/40 bg-ivory/35 p-4 shadow-[0_-6px_24px_rgba(59,36,22,0.06)] backdrop-blur-[2px] supports-[backdrop-filter]:bg-ivory/28"
+        aria-describedby={showIosHint ? `${titleId}-hint` : undefined}
+        className="pwa-install-sheet pointer-events-auto w-full max-w-sm border border-line/30 bg-ivory/30 px-3 py-2 shadow-[0_-4px_18px_rgba(59,36,22,0.05)] backdrop-blur-[1.5px] supports-[backdrop-filter]:bg-ivory/22"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p id={titleId} className="text-sm font-medium leading-snug text-mist">
-              {copy.title}
-            </p>
-            <p className="mt-1.5 text-xs leading-relaxed text-soft">{copy.body}</p>
-          </div>
-          <button
-            type="button"
-            onClick={closeLater}
-            className="shrink-0 px-1 text-lg leading-none text-soft hover:text-mist"
-            aria-label={copy.closeAria}
+        <div className="flex min-w-0 items-center gap-2.5">
+          <p
+            id={titleId}
+            className="min-w-0 flex-1 truncate text-[0.72rem] leading-none text-mist"
+            title={copy.body}
           >
-            ×
-          </button>
-        </div>
-
-        {showIosHint ? (
-          <p className="mt-3 border border-line/50 bg-white/40 px-3 py-2 text-xs leading-relaxed text-mist">
-            {copy.iosHint}
+            {copy.title}
           </p>
-        ) : null}
-
-        <div className="mt-4 flex flex-col gap-2">
           <button
             type="button"
             onClick={() => void onInstall()}
             disabled={busy}
-            className="btn-primary w-full !px-3 !py-2.5 text-[0.68rem] disabled:opacity-60"
+            className="shrink-0 text-[0.62rem] tracking-[0.16em] text-champagne uppercase hover:text-mist disabled:opacity-50"
           >
             {busy ? "…" : copy.install}
           </button>
-          <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
-            <button
-              type="button"
-              onClick={closeLater}
-              className="text-[0.65rem] tracking-[0.14em] text-soft uppercase hover:text-champagne"
-            >
-              {copy.later}
-            </button>
-            <button
-              type="button"
-              onClick={closeNever}
-              className="text-[0.65rem] tracking-[0.14em] text-soft uppercase hover:text-champagne"
-            >
-              {copy.never}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={closeLater}
+            className="shrink-0 text-[0.62rem] tracking-[0.12em] text-soft uppercase hover:text-mist"
+          >
+            {copy.later}
+          </button>
+          <button
+            type="button"
+            onClick={closeNever}
+            className="shrink-0 text-[0.58rem] tracking-[0.1em] text-soft/65 uppercase hover:text-soft"
+            title={copy.never}
+          >
+            {copy.never}
+          </button>
         </div>
+
+        {showIosHint ? (
+          <p
+            id={`${titleId}-hint`}
+            className="mt-1.5 truncate text-[0.65rem] leading-snug text-soft"
+          >
+            {copy.iosHint}
+          </p>
+        ) : null}
       </aside>
     </div>
   );

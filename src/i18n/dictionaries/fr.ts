@@ -106,12 +106,12 @@ const fr: Dictionary = {
     installApp: "Installer l’app",
   },
   pwaInstall: {
-    title: "Gardez l’invitation à portée de main",
+    title: "Sur l’écran d’accueil ?",
     body: "Ajoutez-la à votre écran d’accueil pour la retrouver facilement le jour J.",
-    install: "Installer",
-    later: "Plus tard",
-    never: "Ne plus me demander",
-    iosHint: "Sur iPhone : touchez Partager, puis « Sur l’écran d’accueil ».",
+    install: "Oui",
+    later: "Non",
+    never: "Ne plus",
+    iosHint: "iPhone : Partager → Sur l’écran d’accueil",
     closeAria: "Fermer",
   },
 };
