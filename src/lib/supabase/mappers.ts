@@ -6,8 +6,8 @@ import type {
   Rsvp,
   RsvpStatus,
   GuestOf,
-  Role,
 } from "@/lib/types";
+import { normalizeRole } from "@/lib/roles";
 
 export type DbPhoto = {
   id: string;
@@ -133,7 +133,7 @@ export function mapAdminUser(row: DbAdminUser): AdminUser {
     id: row.id,
     name: row.name,
     email: row.email,
-    role: row.role as Role,
+    role: normalizeRole(row.role),
     passwordHash: row.password_hash,
     active: row.active,
     createdAt: row.created_at,
@@ -147,7 +147,7 @@ export function toDbAdminUser(user: AdminUser): DbAdminUser {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role,
+    role: normalizeRole(user.role),
     password_hash: user.passwordHash,
     active: user.active,
     created_at: user.createdAt,
@@ -163,7 +163,7 @@ export function mapAudit(row: DbAudit): AuditEntry {
     userId: row.user_id || "",
     userName: row.user_name,
     userEmail: row.user_email,
-    role: row.role as Role,
+    role: normalizeRole(row.role),
     action: row.action,
     resource: row.resource,
     details: row.details || undefined,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { roleLabels } from "@/lib/roles";
+import { roleLabel } from "@/lib/roles";
 import type { AuditEntry } from "@/lib/types";
 
 const AUDIT_PAGE_SIZE = 5;
@@ -32,7 +32,7 @@ export function AdminAuditLog({ initialEntries }: { initialEntries: AuditEntry[]
     const q = query.trim().toLowerCase();
     if (!q) return entries;
     return entries.filter((e) =>
-      [e.userName, e.userEmail, e.action, e.resource, e.details || "", roleLabels[e.role]]
+      [e.userName, e.userEmail, e.action, e.resource, e.details || "", roleLabel(e.role)]
         .join(" ")
         .toLowerCase()
         .includes(q),
@@ -109,7 +109,7 @@ export function AdminAuditLog({ initialEntries }: { initialEntries: AuditEntry[]
                     <div className="text-mist">{entry.userName}</div>
                     <div className="text-xs text-soft">{entry.userEmail}</div>
                   </td>
-                  <td className="px-4 py-3 text-champagne">{roleLabels[entry.role]}</td>
+                  <td className="px-4 py-3 text-champagne">{roleLabel(entry.role)}</td>
                   <td className="px-4 py-3 text-mist">{entry.action}</td>
                   <td className="px-4 py-3 text-soft">{entry.resource}</td>
                   <td className="max-w-xs px-4 py-3 text-soft">{entry.details || "—"}</td>

@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { hashPassword } from "@/lib/password";
-import type { Role } from "@/lib/roles";
+import { normalizeRole, type Role } from "@/lib/roles";
 import {
   mapAdminUser,
   toDbAdminUser,
@@ -22,10 +22,15 @@ function toPublic(user: AdminUser): AdminUserPublic {
   return rest;
 }
 
+function normalizeUser(user: AdminUser): AdminUser {
+  return { ...user, role: normalizeRole(user.role) };
+}
+
 async function readUsersFile(): Promise<AdminUser[]> {
   try {
     const raw = await fs.readFile(usersFile, "utf8");
-    return JSON.parse(raw) as AdminUser[];
+    const users = JSON.parse(raw) as AdminUser[];
+    return users.map(normalizeUser);
   } catch {
     return [];
   }
@@ -77,8 +82,8 @@ export async function ensureSeedAdmin() {
   const password = process.env.ADMIN_PASSWORD || "wedding2026";
   const admin: AdminUser = {
     id: crypto.randomUUID(),
-    name: "Couple",
-    email: (process.env.ADMIN_EMAIL || "admin@couple.local").toLowerCase(),
+    name: "Organisateur",
+    email: (process.env.ADMIN_EMAIL || "admin@event.local").toLowerCase(),
     role: "admin",
     passwordHash: hashPassword(password),
     active: true,

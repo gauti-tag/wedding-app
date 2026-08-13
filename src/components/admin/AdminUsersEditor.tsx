@@ -100,11 +100,11 @@ export function AdminUsersEditor({
       <div>
         <h2 className="section-title text-3xl text-mist">Utilisateurs & profils</h2>
         <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-          Gérez les accès selon le rôle : admin, éditeur, coordinateur ou scanneur.
+          Profils : Propriétaire, Éditeur site, Gestion invités, Lecteur, Accueil / scan.
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {ROLES.map((role) => (
           <article key={role} className="border border-line bg-white p-4">
             <p className="text-xs tracking-[0.16em] text-champagne uppercase">

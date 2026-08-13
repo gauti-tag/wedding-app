@@ -20,7 +20,7 @@ import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
 import { formatOptionalDatetimeLabel } from "@/lib/rsvp-deadline";
 import { formatSeatingLabel } from "@/lib/seating";
-import { hasPermission, roleLabels, type Permission } from "@/lib/roles";
+import { hasPermission, roleLabel, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
   AuditEntry,
@@ -492,7 +492,7 @@ export function AdminPanel({
           <p className="eyebrow">Espace couple</p>
           <h1 className="section-title mt-3 text-4xl text-mist md:text-5xl">Administration</h1>
           <p className="mt-3 max-w-xl text-sm font-normal text-soft">
-            Connecté : {currentUser.name} · {roleLabels[currentUser.role]}
+            Connecté : {currentUser.name} · {roleLabel(currentUser.role)}
           </p>
         </div>
         <div className="flex gap-3">

@@ -84,3 +84,16 @@ grant all on table public.admin_users to postgres, service_role;
 grant all on table public.audit_log to postgres, service_role;
 
 grant all on all sequences in schema public to postgres, service_role;
+
+-- --- Profils admin (coordinator → guests, + reader) ---------------------------
+update public.admin_users
+set role = 'guests'
+where role = 'coordinator';
+
+alter table public.admin_users
+  drop constraint if exists admin_users_role_check;
+
+alter table public.admin_users
+  add constraint admin_users_role_check
+  check (role in ('admin', 'editor', 'guests', 'reader', 'scanner'));
+

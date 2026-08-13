@@ -14,6 +14,7 @@ Ordre d’exécution dans **SQL Editor** (ou `supabase db push`).
 | `20260812100007_rsvp_seating.sql` | Colonnes `table_label` / `seat_label` (idempotent) |
 | `20260812100008_seating_plan.sql` | Clé `seating-plan` (idempotent) |
 | **`20260812100009_schema_complete.sql`** | **Sync Vercel** — à rejouer si le schéma est incomplet |
+| `20260813100010_admin_roles.sql` | Profils : `guests` / `reader` (remplace `coordinator`) |
 
 ## Projet déjà déployé sur Vercel
 
@@ -21,6 +22,12 @@ Exécuter surtout :
 
 ```text
 20260812100009_schema_complete.sql
+```
+
+Puis, si besoin uniquement des rôles :
+
+```text
+20260813100010_admin_roles.sql
 ```
 
 Cela ajoute les colonnes / clés manquantes sans écraser les données.
