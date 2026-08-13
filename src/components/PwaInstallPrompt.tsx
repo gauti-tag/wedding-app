@@ -115,7 +115,7 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
         aria-modal="false"
         aria-labelledby={titleId}
         aria-describedby={showIosHint ? `${titleId}-hint` : undefined}
-        className="pwa-install-sheet pointer-events-auto w-full max-w-sm border border-line/30 bg-ivory/30 px-3 py-2 shadow-[0_-4px_18px_rgba(59,36,22,0.05)] backdrop-blur-[1.5px] supports-[backdrop-filter]:bg-ivory/22"
+        className="pwa-install-sheet pointer-events-auto w-full max-w-sm border border-line/55 bg-ivory/80 px-3 py-2.5 shadow-[0_-4px_20px_rgba(59,36,22,0.08)] backdrop-blur-sm supports-[backdrop-filter]:bg-ivory/70"
       >
         <div className="flex min-w-0 items-center gap-2.5">
           <p
