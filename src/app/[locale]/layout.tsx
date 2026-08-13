@@ -4,7 +4,7 @@ import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { ThemeStyles } from "@/components/ThemeStyles";
 import { isLocale, locales, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
-import { coupleLabel } from "@/lib/site";
+import { eventLabel, resolveDictionary } from "@/lib/site";
 import { getSiteContent } from "@/lib/storage";
 
 type Props = {
@@ -20,9 +20,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: raw } = await params;
   if (!isLocale(raw)) return {};
 
-  const dict = getDictionary(raw);
   const siteContent = await getSiteContent();
-  const names = coupleLabel(siteContent);
+  const dict = resolveDictionary(getDictionary(raw), siteContent.vocabulary, raw);
+  const names = eventLabel(siteContent, raw);
   const title = `${names} — ${dict.meta.titleSuffix}`;
   const description = dict.meta.description;
   const ogLocale = raw === "fr" ? "fr_FR" : "en_US";

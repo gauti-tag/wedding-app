@@ -9,7 +9,7 @@ import {
   isRsvpDeadlinePassed,
   isRsvpNotYetOpen,
 } from "@/lib/rsvp-deadline";
-import { coupleLabel } from "@/lib/site";
+import { t } from "@/lib/localized";
 import type { SiteContent } from "@/lib/types";
 import { CI_PHONE_PATTERN, isValidCiPhone } from "@/lib/validation";
 import { phoneToWhatsAppDigits } from "@/lib/whatsapp";
@@ -33,13 +33,18 @@ export function RsvpForm({
     SiteContent,
     | "partnerOne"
     | "partnerTwo"
+    | "eventTitle"
     | "rsvpOpensAt"
     | "rsvpDeadline"
     | "contactPhone"
     | "guestCapacity"
+    | "rsvpConfig"
   >;
   capacityFull?: boolean;
 }) {
+  const rsvpConfig = siteContent.rsvpConfig;
+  const messagePlaceholder =
+    t(rsvpConfig.messagePlaceholder, locale).trim() || dict.rsvp.messagePlaceholder;
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [whatsapp, setWhatsapp] = useState<WhatsAppPayload | null>(null);
@@ -97,7 +102,9 @@ export function RsvpForm({
       name: String(form.get("name") || ""),
       phone: String(form.get("phone") || ""),
       status: String(form.get("status") || (capacityFull ? "maybe" : "yes")),
-      guestOf: String(form.get("guestOf") || "both"),
+      guestOf: String(
+        form.get("guestOf") || rsvpConfig.guestOfOptions[0]?.id || "both",
+      ),
       message: String(form.get("message") || ""),
       locale,
     };
@@ -252,7 +259,9 @@ export function RsvpForm({
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div
+              className={`grid gap-5 ${rsvpConfig.showGuestOf ? "sm:grid-cols-2" : ""}`}
+            >
               <div>
                 <label className="label" htmlFor="status">
                   {dict.rsvp.status}
@@ -261,38 +270,68 @@ export function RsvpForm({
                   id="status"
                   name="status"
                   className="field"
-                  defaultValue={capacityFull ? "maybe" : "yes"}
+                  defaultValue={
+                    capacityFull
+                      ? rsvpConfig.showMaybe
+                        ? "maybe"
+                        : "no"
+                      : "yes"
+                  }
                   required
                 >
                   {!capacityFull ? <option value="yes">{dict.rsvp.statusYes}</option> : null}
-                  <option value="maybe">{dict.rsvp.statusMaybe}</option>
+                  {rsvpConfig.showMaybe ? (
+                    <option value="maybe">{dict.rsvp.statusMaybe}</option>
+                  ) : null}
                   <option value="no">{dict.rsvp.statusNo}</option>
                 </select>
               </div>
-              <div>
-                <label className="label" htmlFor="guestOf">
-                  {dict.rsvp.guestOf}
-                </label>
-                <select id="guestOf" name="guestOf" className="field" defaultValue="both" required>
-                  <option value="gautier">{siteContent.partnerOne}</option>
-                  <option value="francybel">{siteContent.partnerTwo}</option>
-                  <option value="both">{coupleLabel(siteContent)}</option>
-                </select>
-              </div>
+              {rsvpConfig.showGuestOf ? (
+                <div>
+                  <label className="label" htmlFor="guestOf">
+                    {dict.rsvp.guestOf}
+                  </label>
+                  <select
+                    id="guestOf"
+                    name="guestOf"
+                    className="field"
+                    defaultValue={
+                      rsvpConfig.guestOfOptions.find((o) => o.id === "both")?.id ||
+                      rsvpConfig.guestOfOptions[0]?.id ||
+                      "both"
+                    }
+                    required
+                  >
+                    {rsvpConfig.guestOfOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {t(option.label, locale) || option.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <input
+                  type="hidden"
+                  name="guestOf"
+                  value={rsvpConfig.guestOfOptions[0]?.id || "both"}
+                />
+              )}
             </div>
 
-            <div>
-              <label className="label" htmlFor="message">
-                {dict.rsvp.message}
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                rows={4}
-                className="field resize-y"
-                placeholder={dict.rsvp.messagePlaceholder}
-              />
-            </div>
+            {rsvpConfig.showMessage ? (
+              <div>
+                <label className="label" htmlFor="message">
+                  {dict.rsvp.message}
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows={4}
+                  className="field resize-y"
+                  placeholder={messagePlaceholder}
+                />
+              </div>
+            ) : null}
 
             <button
               type="submit"

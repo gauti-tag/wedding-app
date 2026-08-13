@@ -12,7 +12,8 @@ export type Photo = {
 
 export type RsvpStatus = "yes" | "no" | "maybe";
 
-export type GuestOf = "francybel" | "gautier" | "both";
+/** Identifiant d’option « invité de » (configurable ; legacy : gautier | francybel | both). */
+export type GuestOf = string;
 
 export type Rsvp = {
   id: string;
@@ -191,6 +192,41 @@ export type SiteFeatures = {
 
 export type SiteButtonRadius = "square" | "soft" | "pill";
 
+export type EventType =
+  | "wedding"
+  | "birthday"
+  | "concert"
+  | "baptism"
+  | "ceremony"
+  | "custom";
+
+export type RsvpGuestOfOption = {
+  id: string;
+  label: LocalizedText;
+};
+
+/** Champs du formulaire RSVP activables selon le type d’événement. */
+export type RsvpConfig = {
+  showGuestOf: boolean;
+  showMessage: boolean;
+  showMaybe: boolean;
+  guestOfOptions: RsvpGuestOfOption[];
+  /** Surcharge du placeholder message (vide = dictionnaire). */
+  messagePlaceholder: LocalizedText;
+};
+
+/** Textes d’interface surchargés (FR/EN) selon le type d’événement. */
+export type EventVocabulary = {
+  metaTitleSuffix: LocalizedText;
+  metaDescription: LocalizedText;
+  rsvpEyebrow: LocalizedText;
+  rsvpTitle: LocalizedText;
+  messagePlaceholder: LocalizedText;
+  guestOfLabel: LocalizedText;
+  adminSpaceLabel: LocalizedText;
+  galleryPhotoAlt: LocalizedText;
+};
+
 /** Apparence du site public (couleurs, polices, boutons). */
 export type SiteTheme = {
   colors: {
@@ -221,6 +257,13 @@ export type SiteTheme = {
 
 /** Identité du couple, date (countdown) et textes du hero. */
 export type SiteContent = {
+  /** Type d’événement (pilote presets + vocabulaire). */
+  eventType: EventType;
+  /**
+   * Titre affiché (ex. « Anniversaire de Léa », « Concert Jazz »).
+   * Vide = noms des hôtes (partnerOne [& partnerTwo]).
+   */
+  eventTitle: LocalizedText;
   partnerOne: string;
   partnerTwo: string;
   /** Date/heure cible du compte à rebours (ISO local, ex. 2026-10-31T16:00:00). */
@@ -242,6 +285,10 @@ export type SiteContent = {
   features: SiteFeatures;
   /** Couleurs, polices et forme des boutons. */
   theme: SiteTheme;
+  /** Vocabulaire FR/EN adapté au type d’événement. */
+  vocabulary: EventVocabulary;
+  /** Champs RSVP visibles / options « invité de ». */
+  rsvpConfig: RsvpConfig;
   hero: {
     weddingDateLabel: LocalizedText;
     tagline: LocalizedText;

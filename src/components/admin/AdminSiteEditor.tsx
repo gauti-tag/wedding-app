@@ -4,6 +4,17 @@ import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import {
+  applyEventPreset,
+  defaultEventVocabulary,
+  defaultRsvpConfig,
+  EVENT_TYPES,
+  hostFieldLabels,
+  normalizeEventType,
+  normalizeEventVocabulary,
+  normalizeRsvpConfig,
+  syncGuestOfLabelsFromHosts,
+} from "@/lib/event-presets";
+import {
   defaultSiteFeatures,
   normalizeSiteFeatures,
   SITE_BODY_ORDER_KEYS,
@@ -18,6 +29,7 @@ import {
   THEME_FONT_OPTIONS,
 } from "@/lib/site-theme";
 import type {
+  EventType,
   HeroCarouselEffect,
   LocalizedText,
   SiteButtonRadius,
@@ -94,28 +106,68 @@ export function AdminSiteEditor({
   initialSite: SiteContent;
   onSaved?: (site: SiteContent) => void;
 }) {
-  const [content, setContent] = useState<SiteContent>(() => ({
-    ...initialSite,
-    rsvpOpensAt: initialSite.rsvpOpensAt || "",
-    rsvpDeadline: initialSite.rsvpDeadline || "2026-09-01T23:59:00",
-    contactPhone: initialSite.contactPhone || "+2250708345891",
-    guestCapacity: initialSite.guestCapacity || 100,
-    whatsappReminders: normalizeWhatsAppReminders(initialSite.whatsappReminders, {
-      j7: (initialSite as { whatsappReminderJ7?: string }).whatsappReminderJ7,
-      j1: (initialSite as { whatsappReminderJ1?: string }).whatsappReminderJ1,
-    }),
-    hero: {
-      weddingDateLabel: initialSite.hero?.weddingDateLabel ?? { fr: "", en: "" },
-      tagline: initialSite.hero?.tagline ?? { fr: "", en: "" },
-      ctaRsvp: initialSite.hero?.ctaRsvp ?? { fr: "", en: "" },
-      ctaSchedule: initialSite.hero?.ctaSchedule ?? { fr: "", en: "" },
-    },
-    heroCarousel: normalizeHeroCarousel(initialSite.heroCarousel),
-    features: normalizeSiteFeatures(initialSite.features ?? defaultSiteFeatures()),
-    theme: normalizeSiteTheme(initialSite.theme ?? defaultSiteTheme()),
-  }));
+  const [content, setContent] = useState<SiteContent>(() => {
+    const partnerOne = initialSite.partnerOne || "Gautier";
+    const partnerTwo = initialSite.partnerTwo ?? "Francybel";
+    return {
+      ...initialSite,
+      eventType: normalizeEventType(initialSite.eventType),
+      eventTitle: initialSite.eventTitle ?? { fr: "", en: "" },
+      partnerOne,
+      partnerTwo,
+      rsvpOpensAt: initialSite.rsvpOpensAt || "",
+      rsvpDeadline: initialSite.rsvpDeadline || "2026-09-01T23:59:00",
+      contactPhone: initialSite.contactPhone || "+2250708345891",
+      guestCapacity: initialSite.guestCapacity || 100,
+      whatsappReminders: normalizeWhatsAppReminders(initialSite.whatsappReminders, {
+        j7: (initialSite as { whatsappReminderJ7?: string }).whatsappReminderJ7,
+        j1: (initialSite as { whatsappReminderJ1?: string }).whatsappReminderJ1,
+      }),
+      hero: {
+        weddingDateLabel: initialSite.hero?.weddingDateLabel ?? { fr: "", en: "" },
+        tagline: initialSite.hero?.tagline ?? { fr: "", en: "" },
+        ctaRsvp: initialSite.hero?.ctaRsvp ?? { fr: "", en: "" },
+        ctaSchedule: initialSite.hero?.ctaSchedule ?? { fr: "", en: "" },
+      },
+      heroCarousel: normalizeHeroCarousel(initialSite.heroCarousel),
+      features: normalizeSiteFeatures(initialSite.features ?? defaultSiteFeatures()),
+      theme: normalizeSiteTheme(initialSite.theme ?? defaultSiteTheme()),
+      vocabulary: normalizeEventVocabulary(
+        initialSite.vocabulary ?? defaultEventVocabulary(),
+      ),
+      rsvpConfig: syncGuestOfLabelsFromHosts(
+        normalizeRsvpConfig(initialSite.rsvpConfig ?? defaultRsvpConfig(partnerOne, partnerTwo), {
+          partnerOne,
+          partnerTwo,
+        }),
+        partnerOne,
+        partnerTwo,
+      ),
+    };
+  });
   const [busy, setBusy] = useState(false);
+  const [presetType, setPresetType] = useState<EventType>(content.eventType);
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
+  const hostLabels = hostFieldLabels(content.eventType);
+
+  function applyPreset() {
+    setContent((prev) => {
+      const next = applyEventPreset({ ...prev, eventType: presetType }, presetType);
+      return next;
+    });
+    showSuccess(
+      `Modèle « ${EVENT_TYPES.find((t) => t.id === presetType)?.label || presetType} » appliqué. Enregistrez pour publier.`,
+    );
+  }
+
+  function updatePartners(partnerOne: string, partnerTwo: string) {
+    setContent((prev) => ({
+      ...prev,
+      partnerOne,
+      partnerTwo,
+      rsvpConfig: syncGuestOfLabelsFromHosts(prev.rsvpConfig, partnerOne, partnerTwo),
+    }));
+  }
 
   function setThemeColor(key: keyof SiteTheme["colors"], value: string) {
     setContent((prev) => ({
@@ -231,7 +283,7 @@ export function AdminSiteEditor({
       }
       setContent(data.site);
       onSaved?.(data.site);
-      showSuccess("Identité & hero enregistrés.");
+      showSuccess("Événement & site enregistrés.");
     } catch {
       showError("Enregistrement impossible.");
     } finally {
@@ -244,11 +296,10 @@ export function AdminSiteEditor({
       {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="section-title text-3xl text-mist">Couple & hero</h2>
+          <h2 className="section-title text-3xl text-mist">Événement & site</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Noms des futurs mariés, sections visibles, apparence (couleurs / polices / boutons),
-            date du compte à rebours, fenêtre RSVP, rappels WhatsApp, téléphone de contact,
-            carrousel hero et textes (FR/EN).
+            Type d’événement, identité, sections, apparence, RSVP, rappels WhatsApp et textes
+            hero (FR/EN).
           </p>
         </div>
         <button
@@ -259,6 +310,46 @@ export function AdminSiteEditor({
         >
           {busy ? "Enregistrement…" : "Enregistrer"}
         </button>
+      </div>
+
+      <div className="space-y-4 border border-line bg-white p-5">
+        <div>
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+            Type d’événement
+          </p>
+          <p className="mt-2 text-sm font-normal text-soft">
+            Choisissez un modèle pour préremplir sections, vocabulaire et champs RSVP. Vous
+            pourrez tout ajuster ensuite.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[14rem] flex-1">
+            <label className="label" htmlFor="eventTypePreset">
+              Modèle
+            </label>
+            <select
+              id="eventTypePreset"
+              className="field"
+              value={presetType}
+              onChange={(e) => setPresetType(e.target.value as EventType)}
+            >
+              {EVENT_TYPES.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button type="button" className="btn-primary" onClick={applyPreset}>
+            Appliquer le modèle
+          </button>
+        </div>
+        <p className="text-xs text-soft">
+          Type actuel enregistré :{" "}
+          <span className="text-mist">
+            {EVENT_TYPES.find((t) => t.id === content.eventType)?.label || content.eventType}
+          </span>
+        </p>
       </div>
 
       <div className="space-y-4 border border-line bg-white p-5">
@@ -489,35 +580,277 @@ export function AdminSiteEditor({
       </div>
 
       <div className="space-y-4 border border-line bg-white p-5">
-        <p className="text-xs tracking-[0.16em] text-champagne uppercase">Futurs mariés</p>
+        <div>
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+            Formulaire RSVP
+          </p>
+          <p className="mt-2 text-sm font-normal text-soft">
+            Activez les champs selon votre type d’événement. Les options « invité de » sont
+            synchronisées avec les noms des hôtes pour les clés legacy.
+          </p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {(
+            [
+              { key: "showGuestOf" as const, label: "Champ « invité de »" },
+              { key: "showMessage" as const, label: "Message libre" },
+              { key: "showMaybe" as const, label: "Statut « peut-être »" },
+            ] as const
+          ).map((item) => (
+            <label
+              key={item.key}
+              className="flex min-h-11 cursor-pointer items-center gap-3 border border-line px-3 py-2.5"
+            >
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
+                checked={content.rsvpConfig[item.key]}
+                onChange={(e) =>
+                  setContent((prev) => ({
+                    ...prev,
+                    rsvpConfig: { ...prev.rsvpConfig, [item.key]: e.target.checked },
+                  }))
+                }
+              />
+              <span className="text-sm text-mist">{item.label}</span>
+            </label>
+          ))}
+        </div>
+        {content.rsvpConfig.showGuestOf ? (
+          <div className="space-y-3 border-t border-line pt-4">
+            <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+              Options « invité de »
+            </p>
+            {content.rsvpConfig.guestOfOptions.map((option, index) => (
+              <div
+                key={option.id}
+                className="grid gap-3 border border-line p-3 sm:grid-cols-[7rem_1fr_1fr_auto]"
+              >
+                <div>
+                  <label className="label">Id</label>
+                  <input className="field font-mono text-xs" value={option.id} readOnly />
+                </div>
+                <div>
+                  <label className="label">Libellé FR</label>
+                  <input
+                    className="field"
+                    value={option.label.fr}
+                    onChange={(e) =>
+                      setContent((prev) => {
+                        const guestOfOptions = [...prev.rsvpConfig.guestOfOptions];
+                        guestOfOptions[index] = {
+                          ...option,
+                          label: { ...option.label, fr: e.target.value },
+                        };
+                        return {
+                          ...prev,
+                          rsvpConfig: { ...prev.rsvpConfig, guestOfOptions },
+                        };
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="label">Libellé EN</label>
+                  <input
+                    className="field"
+                    value={option.label.en}
+                    onChange={(e) =>
+                      setContent((prev) => {
+                        const guestOfOptions = [...prev.rsvpConfig.guestOfOptions];
+                        guestOfOptions[index] = {
+                          ...option,
+                          label: { ...option.label, en: e.target.value },
+                        };
+                        return {
+                          ...prev,
+                          rsvpConfig: { ...prev.rsvpConfig, guestOfOptions },
+                        };
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    className="btn-ghost !px-3 !py-2 text-xs disabled:opacity-40"
+                    disabled={content.rsvpConfig.guestOfOptions.length <= 1}
+                    onClick={() =>
+                      setContent((prev) => ({
+                        ...prev,
+                        rsvpConfig: {
+                          ...prev.rsvpConfig,
+                          guestOfOptions: prev.rsvpConfig.guestOfOptions.filter(
+                            (_, i) => i !== index,
+                          ),
+                        },
+                      }))
+                    }
+                  >
+                    Retirer
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn-ghost !px-3 !py-2 text-xs"
+              disabled={content.rsvpConfig.guestOfOptions.length >= 12}
+              onClick={() =>
+                setContent((prev) => ({
+                  ...prev,
+                  rsvpConfig: {
+                    ...prev.rsvpConfig,
+                    guestOfOptions: [
+                      ...prev.rsvpConfig.guestOfOptions,
+                      {
+                        id: `option_${Date.now().toString(36)}`,
+                        label: { fr: "Nouvelle option", en: "New option" },
+                      },
+                    ],
+                  },
+                }))
+              }
+            >
+              Ajouter une option
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="space-y-4 border border-line bg-white p-5">
+        <div>
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+            Vocabulaire (FR / EN)
+          </p>
+          <p className="mt-2 text-sm font-normal text-soft">
+            Surcharge les textes d’interface. Laissez vide pour garder les libellés par défaut
+            du dictionnaire.
+          </p>
+        </div>
+        <LocalizedFields
+          label="Suffixe titre SEO"
+          value={content.vocabulary.metaTitleSuffix}
+          onChange={(metaTitleSuffix) =>
+            setContent((prev) => ({
+              ...prev,
+              vocabulary: { ...prev.vocabulary, metaTitleSuffix },
+            }))
+          }
+        />
+        <LocalizedFields
+          label="Description SEO"
+          value={content.vocabulary.metaDescription}
+          onChange={(metaDescription) =>
+            setContent((prev) => ({
+              ...prev,
+              vocabulary: { ...prev.vocabulary, metaDescription },
+            }))
+          }
+          multiline
+        />
+        <LocalizedFields
+          label="RSVP — surtitre"
+          value={content.vocabulary.rsvpEyebrow}
+          onChange={(rsvpEyebrow) =>
+            setContent((prev) => ({
+              ...prev,
+              vocabulary: { ...prev.vocabulary, rsvpEyebrow },
+            }))
+          }
+        />
+        <LocalizedFields
+          label="RSVP — titre"
+          value={content.vocabulary.rsvpTitle}
+          onChange={(rsvpTitle) =>
+            setContent((prev) => ({
+              ...prev,
+              vocabulary: { ...prev.vocabulary, rsvpTitle },
+            }))
+          }
+        />
+        <LocalizedFields
+          label="Libellé « invité de »"
+          value={content.vocabulary.guestOfLabel}
+          onChange={(guestOfLabel) =>
+            setContent((prev) => ({
+              ...prev,
+              vocabulary: { ...prev.vocabulary, guestOfLabel },
+            }))
+          }
+        />
+        <LocalizedFields
+          label="Placeholder message"
+          value={content.vocabulary.messagePlaceholder}
+          onChange={(messagePlaceholder) =>
+            setContent((prev) => ({
+              ...prev,
+              vocabulary: { ...prev.vocabulary, messagePlaceholder },
+            }))
+          }
+        />
+        <LocalizedFields
+          label="Lien admin (pied de page)"
+          value={content.vocabulary.adminSpaceLabel}
+          onChange={(adminSpaceLabel) =>
+            setContent((prev) => ({
+              ...prev,
+              vocabulary: { ...prev.vocabulary, adminSpaceLabel },
+            }))
+          }
+        />
+        <LocalizedFields
+          label="Alt photos galerie"
+          value={content.vocabulary.galleryPhotoAlt}
+          onChange={(galleryPhotoAlt) =>
+            setContent((prev) => ({
+              ...prev,
+              vocabulary: { ...prev.vocabulary, galleryPhotoAlt },
+            }))
+          }
+        />
+      </div>
+
+      <div className="space-y-4 border border-line bg-white p-5">
+        <p className="text-xs tracking-[0.16em] text-champagne uppercase">{hostLabels.section}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="label" htmlFor="partnerOne">
-              Prénom 1
+              {hostLabels.one}
             </label>
             <input
               id="partnerOne"
               className="field"
               value={content.partnerOne}
-              onChange={(e) => setContent((prev) => ({ ...prev, partnerOne: e.target.value }))}
+              onChange={(e) => updatePartners(e.target.value, content.partnerTwo)}
             />
           </div>
           <div>
             <label className="label" htmlFor="partnerTwo">
-              Prénom 2
+              {hostLabels.two}
             </label>
             <input
               id="partnerTwo"
               className="field"
               value={content.partnerTwo}
-              onChange={(e) => setContent((prev) => ({ ...prev, partnerTwo: e.target.value }))}
+              onChange={(e) => updatePartners(content.partnerOne, e.target.value)}
+              placeholder={hostLabels.twoOptional ? "Optionnel" : undefined}
             />
           </div>
         </div>
 
+        <LocalizedFields
+          label="Titre de l’événement (optionnel)"
+          value={content.eventTitle}
+          onChange={(eventTitle) => setContent((prev) => ({ ...prev, eventTitle }))}
+        />
+        <p className="text-xs text-soft">
+          Si renseigné, ce titre remplace les noms sur le site (ex. « Anniversaire de Léa »).
+        </p>
+
         <div>
           <label className="label" htmlFor="weddingDate">
-            Date & heure (compte à rebours)
+            Date & heure de l’événement (compte à rebours)
           </label>
           <input
             id="weddingDate"
@@ -610,7 +943,7 @@ export function AdminSiteEditor({
           </p>
           <p className="mt-2 text-xs text-soft">
             Ajoutez autant de rappels que nécessaire. Les raccourcis J-7 / J-1 calculent la date
-            automatiquement à partir de la date du mariage.
+            automatiquement à partir de la date de l’événement.
           </p>
 
           <div className="mt-3 space-y-3">

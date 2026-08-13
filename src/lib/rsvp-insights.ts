@@ -22,7 +22,7 @@ export type RsvpInsights = {
   capacity: number;
   seatsRemaining: number;
   capacityPct: number;
-  byGuestOf: Record<GuestOf, { total: number; yes: number }>;
+  byGuestOf: Record<string, { total: number; yes: number }>;
   statusBars: { key: "yes" | "no" | "maybe"; count: number; pct: number }[];
   guestOfYesBars: { key: GuestOf; count: number; pct: number }[];
   followUps: FollowUpItem[];
@@ -53,7 +53,7 @@ export function followUpReasonLabel(reason: FollowUpReason): string {
 
 export function computeRsvpInsights(
   rsvps: Rsvp[],
-  site: Pick<SiteContent, "guestCapacity">,
+  site: Pick<SiteContent, "guestCapacity" | "rsvpConfig">,
 ): RsvpInsights {
   const capacity = normalizeGuestCapacity(site.guestCapacity);
   const yes = rsvps.filter((r) => r.status === "yes").length;
@@ -65,14 +65,18 @@ export function computeRsvpInsights(
   const seatsRemaining = Math.max(0, capacity - seatsTaken);
   const capacityPct = capacity > 0 ? Math.min(100, Math.round((seatsTaken / capacity) * 100)) : 0;
 
-  const byGuestOf: RsvpInsights["byGuestOf"] = {
-    gautier: { total: 0, yes: 0 },
-    francybel: { total: 0, yes: 0 },
-    both: { total: 0, yes: 0 },
-  };
+  const optionIds =
+    site.rsvpConfig?.guestOfOptions?.map((o) => o.id) ??
+    (["gautier", "francybel", "both"] as string[]);
+  const byGuestOf: RsvpInsights["byGuestOf"] = {};
+  for (const id of optionIds) {
+    byGuestOf[id] = { total: 0, yes: 0 };
+  }
   for (const r of rsvps) {
-    byGuestOf[r.guestOf].total += 1;
-    if (r.status === "yes") byGuestOf[r.guestOf].yes += 1;
+    const key = r.guestOf || "both";
+    if (!byGuestOf[key]) byGuestOf[key] = { total: 0, yes: 0 };
+    byGuestOf[key].total += 1;
+    if (r.status === "yes") byGuestOf[key].yes += 1;
   }
 
   const statusBars = (["yes", "no", "maybe"] as const).map((key) => {
@@ -85,10 +89,10 @@ export function computeRsvpInsights(
   });
 
   const yesTotal = yes || 1;
-  const guestOfYesBars = (["gautier", "francybel", "both"] as const).map((key) => ({
+  const guestOfYesBars = Object.keys(byGuestOf).map((key) => ({
     key,
-    count: byGuestOf[key].yes,
-    pct: Math.round((byGuestOf[key].yes / yesTotal) * 100),
+    count: byGuestOf[key]!.yes,
+    pct: Math.round((byGuestOf[key]!.yes / yesTotal) * 100),
   }));
 
   const followUps: FollowUpItem[] = [];
@@ -105,8 +109,8 @@ export function computeRsvpInsights(
   }
 
   followUps.sort((a, b) => {
-    const pa = followUpPriority.indexOf(a.reasons[0]);
-    const pb = followUpPriority.indexOf(b.reasons[0]);
+    const pa = followUpPriority.indexOf(a.reasons[0]!);
+    const pb = followUpPriority.indexOf(b.reasons[0]!);
     if (pa !== pb) return pa - pb;
     return a.rsvp.name.localeCompare(b.rsvp.name, "fr");
   });

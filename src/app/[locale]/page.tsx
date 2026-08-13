@@ -5,7 +5,7 @@ import { SiteSections } from "@/components/SiteSections";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { isGuestCapacityFull } from "@/lib/guest-capacity";
-import { coupleLabel } from "@/lib/site";
+import { eventLabel, resolveDictionary } from "@/lib/site";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import {
   getDesserts,
@@ -29,7 +29,7 @@ export default async function Home({ params }: Props) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
 
-  const dict = getDictionary(raw);
+  const baseDict = getDictionary(raw);
   const [photos, siteContent, story, schedule, menu, drinks, desserts, rsvps] =
     await Promise.all([
       getPhotos(),
@@ -41,11 +41,12 @@ export default async function Home({ params }: Props) {
       getDesserts(),
       getRsvps(),
     ]);
+  const dict = resolveDictionary(baseDict, siteContent.vocabulary, raw);
   const heroPhotos = photos
     .filter((photo) => photo.album === "hero")
     .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
     .slice(0, MAX_HERO_PHOTOS);
-  const names = coupleLabel(siteContent);
+  const names = eventLabel(siteContent, raw);
   const capacityFull = isGuestCapacityFull(siteContent.guestCapacity, rsvps);
   const features = siteContent.features;
 

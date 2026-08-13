@@ -3,6 +3,12 @@ import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { normalizeGuestCapacity } from "@/lib/guest-capacity";
+import {
+  normalizeEventType,
+  normalizeEventVocabulary,
+  normalizeRsvpConfig,
+  syncGuestOfLabelsFromHosts,
+} from "@/lib/event-presets";
 import { parseLocalDateTime } from "@/lib/rsvp-deadline";
 import { normalizeSiteFeatures } from "@/lib/site-features";
 import { normalizeSiteTheme } from "@/lib/site-theme";
@@ -10,6 +16,7 @@ import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
 import { formatCiWhatsAppPhone } from "@/lib/whatsapp";
 import { serializeWhatsAppReminders } from "@/lib/whatsapp-reminders";
+import { eventLabel } from "@/lib/site";
 
 const localizedSchema = z.object({
   fr: z.string().trim().max(500),
@@ -57,6 +64,33 @@ const themeSchema = z.object({
   }),
 });
 
+const vocabularySchema = z.object({
+  metaTitleSuffix: localizedSchema,
+  metaDescription: localizedSchema,
+  rsvpEyebrow: localizedSchema,
+  rsvpTitle: localizedSchema,
+  messagePlaceholder: localizedSchema,
+  guestOfLabel: localizedSchema,
+  adminSpaceLabel: localizedSchema,
+  galleryPhotoAlt: localizedSchema,
+});
+
+const rsvpConfigSchema = z.object({
+  showGuestOf: z.boolean(),
+  showMessage: z.boolean(),
+  showMaybe: z.boolean(),
+  guestOfOptions: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).max(80),
+        label: localizedSchema,
+      }),
+    )
+    .min(1)
+    .max(12),
+  messagePlaceholder: localizedSchema,
+});
+
 const navSectionSchema = z.enum(["story", "schedule", "menu", "gallery", "rsvp"]);
 
 const featuresSchema = z.object({
@@ -99,8 +133,13 @@ function withSeconds(value: string) {
 }
 
 const siteSchema = z.object({
+  eventType: z
+    .enum(["wedding", "birthday", "concert", "baptism", "ceremony", "custom"])
+    .optional()
+    .default("wedding"),
+  eventTitle: localizedSchema.optional().default({ fr: "", en: "" }),
   partnerOne: z.string().trim().min(1).max(80),
-  partnerTwo: z.string().trim().min(1).max(80),
+  partnerTwo: z.string().trim().max(80).optional().default(""),
   weddingDate: datetimeLocalSchema,
   rsvpOpensAt: optionalDatetimeLocalSchema.optional().default(""),
   rsvpDeadline: datetimeLocalSchema,
@@ -138,6 +177,8 @@ const siteSchema = z.object({
   }),
   features: featuresSchema.optional(),
   theme: themeSchema.optional(),
+  vocabulary: vocabularySchema.optional(),
+  rsvpConfig: rsvpConfigSchema.optional(),
 });
 
 export async function GET() {
@@ -188,8 +229,14 @@ export async function PUT(request: Request) {
       }
     }
 
+    const partnerOne = parsed.data.partnerOne.trim();
+    const partnerTwo = (parsed.data.partnerTwo || "").trim();
     const content = {
       ...parsed.data,
+      partnerOne,
+      partnerTwo,
+      eventType: normalizeEventType(parsed.data.eventType),
+      eventTitle: parsed.data.eventTitle ?? { fr: "", en: "" },
       weddingDate: withSeconds(parsed.data.weddingDate),
       rsvpOpensAt,
       rsvpDeadline: withSeconds(parsed.data.rsvpDeadline),
@@ -199,10 +246,17 @@ export async function PUT(request: Request) {
       heroCarousel: normalizeHeroCarousel(parsed.data.heroCarousel),
       features: normalizeSiteFeatures(parsed.data.features),
       theme: normalizeSiteTheme(parsed.data.theme),
+      vocabulary: normalizeEventVocabulary(parsed.data.vocabulary),
+      rsvpConfig: syncGuestOfLabelsFromHosts(
+        normalizeRsvpConfig(parsed.data.rsvpConfig, { partnerOne, partnerTwo }),
+        partnerOne,
+        partnerTwo,
+      ),
     };
     await saveSiteContent(content);
-    await auditAs(user, "update", "site", `${content.partnerOne} & ${content.partnerTwo}`);
-    return NextResponse.json({ ok: true, site: content });
+    const site = await getSiteContent();
+    await auditAs(user, "update", "site", eventLabel(site));
+    return NextResponse.json({ ok: true, site });
   } catch {
     return NextResponse.json(
       { error: "Impossible d’enregistrer les informations du site." },

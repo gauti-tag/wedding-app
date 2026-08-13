@@ -21,7 +21,7 @@ const schema = z.object({
     .trim()
     .refine(isValidCiPhone, { message: "phone_invalid" }),
   status: z.enum(["yes", "no", "maybe"]),
-  guestOf: z.enum(["francybel", "gautier", "both"]),
+  guestOf: z.string().trim().max(80).optional().default("both"),
   message: z.string().trim().max(1000).optional().default(""),
   locale: z.enum(["fr", "en"]).optional().default("fr"),
 });
@@ -92,6 +92,29 @@ export async function POST(request: Request) {
       );
     }
 
+    const rsvpConfig = siteContent.rsvpConfig;
+    let status = parsed.data.status;
+    if (!rsvpConfig.showMaybe && status === "maybe") {
+      return NextResponse.json(
+        { error: "Le statut « peut-être » n’est pas disponible.", code: "invalid" },
+        { status: 400 },
+      );
+    }
+
+    const optionIds = rsvpConfig.guestOfOptions.map((o) => o.id);
+    let guestOf = parsed.data.guestOf || "both";
+    if (!rsvpConfig.showGuestOf) {
+      guestOf = optionIds[0] || "both";
+    } else if (!optionIds.includes(guestOf)) {
+      return NextResponse.json(
+        { error: "Option « invité de » invalide.", code: "invalid" },
+        { status: 400 },
+      );
+    }
+
+    let message = parsed.data.message || "";
+    if (!rsvpConfig.showMessage) message = "";
+
     const rsvps = await getRsvps();
 
     if (rsvps.some((r) => normalizeCiPhone(r.phone) === nationalPhone)) {
@@ -101,7 +124,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (wouldExceedGuestCapacity(siteContent.guestCapacity, rsvps, parsed.data.status)) {
+    if (wouldExceedGuestCapacity(siteContent.guestCapacity, rsvps, status)) {
       return NextResponse.json(
         {
           error:
@@ -112,10 +135,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const { locale, ...rsvpFields } = parsed.data;
+    const locale = parsed.data.locale;
     const entry: Rsvp = {
       id: crypto.randomUUID(),
-      ...rsvpFields,
+      name: parsed.data.name,
+      status,
+      guestOf,
+      message,
       email: guestEmailFromPhone(nationalPhone),
       phone,
       createdAt: new Date().toISOString(),

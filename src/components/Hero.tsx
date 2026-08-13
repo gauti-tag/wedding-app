@@ -6,7 +6,7 @@ import { ParallaxMedia } from "@/components/motion/ParallaxMedia";
 import type { Locale } from "@/i18n/config";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { t } from "@/lib/localized";
-import { coupleLabel } from "@/lib/site";
+import { eventLabel } from "@/lib/site";
 import type { Photo, SiteContent } from "@/lib/types";
 
 const luxuryEase = [0.16, 1, 0.3, 1] as const;
@@ -21,7 +21,7 @@ export function Hero({
   locale: Locale;
 }) {
   const reduceMotion = useReducedMotion();
-  const names = coupleLabel(siteContent);
+  const names = eventLabel(siteContent, locale);
   const carousel = normalizeHeroCarousel(siteContent.heroCarousel);
   const features = siteContent.features;
 

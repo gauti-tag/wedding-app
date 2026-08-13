@@ -3,7 +3,7 @@ import { PwaInstallButton } from "@/components/PwaInstallButton";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
 import { t } from "@/lib/localized";
-import { coupleLabel } from "@/lib/site";
+import { eventLabel } from "@/lib/site";
 import type { SiteContent } from "@/lib/types";
 
 export function SiteFooter({
@@ -19,7 +19,9 @@ export function SiteFooter({
     <footer className="border-t border-line py-12">
       <div className="section-shell flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
         <div>
-          <p className="couple-name text-3xl text-mist">{coupleLabel(siteContent)}</p>
+          <p className="couple-name text-3xl text-mist">
+            {eventLabel(siteContent, locale)}
+          </p>
           <div className="mt-2 flex flex-wrap items-end gap-x-5 gap-y-2">
             <p className="meta-date text-sm text-soft">
               {t(siteContent.hero.weddingDateLabel, locale)}

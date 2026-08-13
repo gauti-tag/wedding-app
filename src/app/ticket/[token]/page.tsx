@@ -3,7 +3,7 @@ import { ThemeStyles } from "@/components/ThemeStyles";
 import { TicketBlocked } from "@/components/TicketBlocked";
 import { TicketInvitationClient } from "@/components/TicketInvitationClient";
 import { getSessionUser } from "@/lib/auth";
-import { coupleLabel } from "@/lib/site";
+import { eventLabel } from "@/lib/site";
 import { getRsvps, getSiteContent, recordTicketView } from "@/lib/storage";
 import { generateTicketQrDataUrl } from "@/lib/tickets";
 
@@ -25,7 +25,7 @@ export default async function TicketPage({ params, searchParams }: Props) {
   const rsvp = rsvps.find((r) => r.ticketToken === token);
   if (!rsvp || rsvp.status === "no") notFound();
 
-  const names = coupleLabel(siteContent);
+  const names = eventLabel(siteContent);
   const isAdminPreview = preview === "1";
   const isStaff = Boolean(sessionUser);
 

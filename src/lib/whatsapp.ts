@@ -125,14 +125,16 @@ export function buildTicketWhatsAppMessage(input: {
 
 export function ticketWhatsAppForRsvp(
   rsvp: Pick<Rsvp, "name" | "phone" | "ticketToken">,
-  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo" | "hero">,
+  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo" | "hero"> & {
+    eventTitle?: SiteContent["eventTitle"];
+  },
   options?: { locale?: "fr" | "en"; toGuest?: boolean },
 ) {
   const locale = options?.locale || "fr";
   const ticketUrl = ticketPageUrl(rsvp.ticketToken);
   const message = buildTicketWhatsAppMessage({
     guestName: rsvp.name,
-    coupleNames: coupleLabel(siteContent),
+    coupleNames: coupleLabel(siteContent, locale),
     ticketUrl,
     dateLabel:
       locale === "en"
@@ -197,7 +199,9 @@ export function buildReminderWhatsAppMessage(input: {
 
 export function reminderWhatsAppForRsvp(
   rsvp: Pick<Rsvp, "name" | "phone" | "ticketToken">,
-  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo" | "hero">,
+  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo" | "hero"> & {
+    eventTitle?: SiteContent["eventTitle"];
+  },
   reminderLabel: string,
   options?: { locale?: "fr" | "en" },
 ) {
@@ -206,7 +210,7 @@ export function reminderWhatsAppForRsvp(
   const message = buildReminderWhatsAppMessage({
     label: reminderLabel,
     guestName: rsvp.name,
-    coupleNames: coupleLabel(siteContent),
+    coupleNames: coupleLabel(siteContent, locale),
     ticketUrl,
     dateLabel:
       locale === "en"
@@ -273,7 +277,9 @@ export function buildSeatingWhatsAppMessage(input: {
 /** Message WhatsApp dédié table/siège — null si placement incomplet ou numéro invalide (envoi invité). */
 export function seatingWhatsAppForRsvp(
   rsvp: Pick<Rsvp, "name" | "phone" | "tableLabel" | "seatLabel">,
-  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo">,
+  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo"> & {
+    eventTitle?: SiteContent["eventTitle"];
+  },
   options?: { locale?: "fr" | "en"; toGuest?: boolean },
 ) {
   const tableLabel = (rsvp.tableLabel || "").trim();
@@ -287,7 +293,7 @@ export function seatingWhatsAppForRsvp(
 
   const message = buildSeatingWhatsAppMessage({
     guestName: rsvp.name,
-    coupleNames: coupleLabel(siteContent),
+    coupleNames: coupleLabel(siteContent, locale),
     tableLabel,
     seatLabel,
     locale,

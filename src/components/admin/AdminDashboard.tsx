@@ -6,12 +6,12 @@ import {
   followUpReasonLabel,
   type FollowUpReason,
 } from "@/lib/rsvp-insights";
-import type { GuestOf, Rsvp, SiteContent } from "@/lib/types";
+import type { Rsvp, SiteContent } from "@/lib/types";
 
 type Props = {
   rsvps: Rsvp[];
-  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "guestCapacity">;
-  guestOfLabels: Record<GuestOf, string>;
+  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "guestCapacity" | "rsvpConfig">;
+  guestOfLabels: Record<string, string>;
   onExportCsv: () => void;
   canExport: boolean;
 };
@@ -104,6 +104,7 @@ export function AdminDashboard({
           </div>
         </div>
 
+        {site.rsvpConfig?.showGuestOf !== false ? (
         <div className="border border-line bg-white p-5">
           <p className="text-xs tracking-[0.16em] text-champagne uppercase">
             Confirmations « oui » par côté
@@ -112,19 +113,20 @@ export function AdminDashboard({
             {insights.guestOfYesBars.map((bar) => (
               <BarRow
                 key={bar.key}
-                label={guestOfLabels[bar.key]}
+                label={guestOfLabels[bar.key] || bar.key}
                 count={bar.count}
                 pct={bar.pct}
               />
             ))}
           </div>
           <p className="mt-4 text-xs text-soft">
-            Totaux (toutes réponses) : {site.partnerOne}{" "}
-            {insights.byGuestOf.gautier.total + insights.byGuestOf.both.total} ·{" "}
-            {site.partnerTwo}{" "}
-            {insights.byGuestOf.francybel.total + insights.byGuestOf.both.total}
+            Totaux (toutes réponses) :{" "}
+            {Object.entries(insights.byGuestOf)
+              .map(([key, value]) => `${guestOfLabels[key] || key} ${value.total}`)
+              .join(" · ")}
           </p>
         </div>
+        ) : null}
       </div>
 
       <div className="border border-line bg-white p-5">

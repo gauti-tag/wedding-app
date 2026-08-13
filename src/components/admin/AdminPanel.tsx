@@ -26,7 +26,6 @@ import type {
   AuditEntry,
   DessertsContent,
   DrinksContent,
-  GuestOf,
   McRundownContent,
   MenuContent,
   Photo,
@@ -90,14 +89,19 @@ function scrollToAdminSection(hash: string) {
   requestAnimationFrame(step);
 }
 
-/** Clés RSVP historiques : gautier = prénom 1, francybel = prénom 2. */
+/** Libellés « invité de » depuis la config RSVP (fallback hôtes). */
 function guestOfLabelsFromSite(
-  site: Pick<SiteContent, "partnerOne" | "partnerTwo">,
-): Record<GuestOf, string> {
+  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig" | "eventTitle">,
+): Record<string, string> {
+  const fromConfig: Record<string, string> = {};
+  for (const option of site.rsvpConfig?.guestOfOptions || []) {
+    fromConfig[option.id] = option.label.fr || option.label.en || option.id;
+  }
+  if (Object.keys(fromConfig).length) return fromConfig;
   return {
     gautier: site.partnerOne,
     francybel: site.partnerTwo,
-    both: `${site.partnerOne} & ${site.partnerTwo}`,
+    both: `${site.partnerOne}${site.partnerTwo ? ` & ${site.partnerTwo}` : ""}`,
   };
 }
 
@@ -128,7 +132,7 @@ const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-dashboard", label: "Tableau de bord", permission: "view_dashboard" },
   { href: "#admin-invite-qr", label: "QR invitation", permission: "manage_content" },
   { href: "#admin-photos", label: "Photos", permission: "manage_photos" },
-  { href: "#admin-site", label: "Couple & sections", permission: "manage_content" },
+  { href: "#admin-site", label: "Événement & site", permission: "manage_content" },
   { href: "#admin-story", label: "Histoire", permission: "manage_content" },
   { href: "#admin-schedule", label: "Programme", permission: "manage_content" },
   { href: "#admin-mc-rundown", label: "Feuille MC", permission: "manage_content" },

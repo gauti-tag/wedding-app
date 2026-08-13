@@ -10,6 +10,14 @@ import { normalizeOptionalDatetime } from "@/lib/rsvp-deadline";
 import { emptySeatingPlan, normalizeSeatingPlan } from "@/lib/seating";
 import { defaultSiteFeatures, normalizeSiteFeatures } from "@/lib/site-features";
 import { defaultSiteTheme, normalizeSiteTheme } from "@/lib/site-theme";
+import {
+  defaultEventVocabulary,
+  defaultRsvpConfig,
+  normalizeEventType,
+  normalizeEventVocabulary,
+  normalizeRsvpConfig,
+  syncGuestOfLabelsFromHosts,
+} from "@/lib/event-presets";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -71,6 +79,8 @@ const emptySchedule: ScheduleContent = {
 };
 
 const emptySite: SiteContent = {
+  eventType: "wedding",
+  eventTitle: { fr: "", en: "" },
   partnerOne: "Gautier",
   partnerTwo: "Francybel",
   weddingDate: "2026-10-31T16:00:00",
@@ -81,6 +91,8 @@ const emptySite: SiteContent = {
   whatsappReminders: [],
   features: defaultSiteFeatures(),
   theme: defaultSiteTheme(),
+  vocabulary: defaultEventVocabulary(),
+  rsvpConfig: defaultRsvpConfig("Gautier", "Francybel"),
   hero: {
     weddingDateLabel: { fr: "", en: "" },
     tagline: { fr: "", en: "" },
@@ -379,9 +391,25 @@ export async function saveSeatingPlan(plan: SeatingPlanContent) {
 
 export async function getSiteContent(): Promise<SiteContent> {
   const raw = await getContent<Partial<SiteContent>>("site", emptySite);
+  const partnerOne = raw.partnerOne || emptySite.partnerOne;
+  const partnerTwo = raw.partnerTwo ?? emptySite.partnerTwo;
+  const eventTitle = {
+    fr: "",
+    en: "",
+    ...(raw.eventTitle ?? {}),
+  };
+  const rsvpConfig = syncGuestOfLabelsFromHosts(
+    normalizeRsvpConfig(raw.rsvpConfig, { partnerOne, partnerTwo }),
+    partnerOne,
+    partnerTwo,
+  );
   return {
     ...emptySite,
     ...raw,
+    eventType: normalizeEventType(raw.eventType),
+    eventTitle,
+    partnerOne,
+    partnerTwo,
     hero: {
       ...emptySite.hero,
       ...(raw.hero ?? {}),
@@ -389,6 +417,8 @@ export async function getSiteContent(): Promise<SiteContent> {
     heroCarousel: normalizeHeroCarousel(raw.heroCarousel),
     features: normalizeSiteFeatures(raw.features),
     theme: normalizeSiteTheme(raw.theme),
+    vocabulary: normalizeEventVocabulary(raw.vocabulary),
+    rsvpConfig,
     rsvpOpensAt: normalizeOptionalDatetime(
       (raw as { rsvpOpensAt?: string }).rsvpOpensAt,
     ),
@@ -406,10 +436,25 @@ export async function getSiteContent(): Promise<SiteContent> {
 }
 
 export async function saveSiteContent(content: SiteContent) {
+  const partnerOne = content.partnerOne?.trim() || emptySite.partnerOne;
+  const partnerTwo = (content.partnerTwo ?? "").trim();
   await saveContent("site", {
     ...content,
+    partnerOne,
+    partnerTwo,
+    eventType: normalizeEventType(content.eventType),
+    eventTitle: {
+      fr: content.eventTitle?.fr ?? "",
+      en: content.eventTitle?.en ?? "",
+    },
     features: normalizeSiteFeatures(content.features),
     theme: normalizeSiteTheme(content.theme),
+    vocabulary: normalizeEventVocabulary(content.vocabulary),
+    rsvpConfig: syncGuestOfLabelsFromHosts(
+      normalizeRsvpConfig(content.rsvpConfig, { partnerOne, partnerTwo }),
+      partnerOne,
+      partnerTwo,
+    ),
     heroCarousel: normalizeHeroCarousel(content.heroCarousel),
   });
 }
