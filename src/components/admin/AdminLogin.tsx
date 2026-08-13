@@ -33,7 +33,7 @@ export function AdminLogin() {
         className="w-full max-w-md space-y-5 border border-line bg-white p-8 shadow-[0_16px_48px_rgba(59,36,22,0.08)]"
       >
         <p className="eyebrow">Privé</p>
-        <h1 className="section-title text-4xl text-mist">Espace couple</h1>
+        <h1 className="section-title text-4xl text-mist">Administration</h1>
         {/*<p className="text-sm font-normal text-soft">
           Compte admin initial : <code className="text-champagne">admin@couple.local</code> /{" "}
           <code className="text-champagne">wedding2026</code>
