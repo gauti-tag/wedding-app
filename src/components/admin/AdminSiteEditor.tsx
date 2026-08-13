@@ -3,7 +3,30 @@
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
-import type { HeroCarouselEffect, LocalizedText, SiteContent, WhatsAppReminderPlan } from "@/lib/types";
+import {
+  defaultSiteFeatures,
+  normalizeSiteFeatures,
+  SITE_BODY_ORDER_KEYS,
+  SITE_SECTION_KEYS,
+  SITE_SECTION_LABELS_FR,
+} from "@/lib/site-features";
+import {
+  BUTTON_RADIUS_OPTIONS,
+  defaultSiteTheme,
+  normalizeSiteTheme,
+  THEME_COLOR_FIELDS,
+  THEME_FONT_OPTIONS,
+} from "@/lib/site-theme";
+import type {
+  HeroCarouselEffect,
+  LocalizedText,
+  SiteButtonRadius,
+  SiteContent,
+  SiteNavSectionKey,
+  SiteSectionKey,
+  SiteTheme,
+  WhatsAppReminderPlan,
+} from "@/lib/types";
 import {
   createReminderId,
   normalizeWhatsAppReminders,
@@ -88,9 +111,79 @@ export function AdminSiteEditor({
       ctaSchedule: initialSite.hero?.ctaSchedule ?? { fr: "", en: "" },
     },
     heroCarousel: normalizeHeroCarousel(initialSite.heroCarousel),
+    features: normalizeSiteFeatures(initialSite.features ?? defaultSiteFeatures()),
+    theme: normalizeSiteTheme(initialSite.theme ?? defaultSiteTheme()),
   }));
   const [busy, setBusy] = useState(false);
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
+
+  function setThemeColor(key: keyof SiteTheme["colors"], value: string) {
+    setContent((prev) => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        colors: { ...prev.theme.colors, [key]: value },
+      },
+    }));
+  }
+
+  function setThemeFont(key: keyof SiteTheme["fonts"], value: string) {
+    setContent((prev) => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        fonts: { ...prev.theme.fonts, [key]: value },
+      },
+    }));
+  }
+
+  function setButtonRadius(radius: SiteButtonRadius) {
+    setContent((prev) => ({
+      ...prev,
+      theme: {
+        ...prev.theme,
+        button: { ...prev.theme.button, radius },
+      },
+    }));
+  }
+
+  function resetTheme() {
+    setContent((prev) => ({ ...prev, theme: defaultSiteTheme() }));
+  }
+
+  function setSectionEnabled(key: SiteSectionKey, enabled: boolean) {
+    setContent((prev) => ({
+      ...prev,
+      features: {
+        ...prev.features,
+        enabled: { ...prev.features.enabled, [key]: enabled },
+      },
+    }));
+  }
+
+  function moveSection(key: SiteNavSectionKey, direction: -1 | 1) {
+    setContent((prev) => {
+      const order = [...prev.features.order];
+      const index = order.indexOf(key);
+      const next = index + direction;
+      if (index < 0 || next < 0 || next >= order.length) return prev;
+      [order[index], order[next]] = [order[next], order[index]];
+      return {
+        ...prev,
+        features: { ...prev.features, order },
+      };
+    });
+  }
+
+  function setNavLabel(key: SiteNavSectionKey, next: LocalizedText) {
+    setContent((prev) => ({
+      ...prev,
+      features: {
+        ...prev.features,
+        navLabels: { ...prev.features.navLabels, [key]: next },
+      },
+    }));
+  }
 
   function updateReminder(id: string, patch: Partial<WhatsAppReminderPlan>) {
     setContent((prev) => ({
@@ -153,8 +246,9 @@ export function AdminSiteEditor({
         <div>
           <h2 className="section-title text-3xl text-mist">Couple & hero</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Noms des futurs mariés, date du compte à rebours, fenêtre RSVP, rappels WhatsApp
-            dynamiques, téléphone de contact, carrousel hero et textes (FR/EN).
+            Noms des futurs mariés, sections visibles, apparence (couleurs / polices / boutons),
+            date du compte à rebours, fenêtre RSVP, rappels WhatsApp, téléphone de contact,
+            carrousel hero et textes (FR/EN).
           </p>
         </div>
         <button
@@ -165,6 +259,233 @@ export function AdminSiteEditor({
         >
           {busy ? "Enregistrement…" : "Enregistrer"}
         </button>
+      </div>
+
+      <div className="space-y-4 border border-line bg-white p-5">
+        <div>
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+            Sections du site
+          </p>
+          <p className="mt-2 text-sm font-normal text-soft">
+            Activez ou masquez chaque bloc du site public, réordonnez-les et personnalisez les
+            libellés de navigation (FR/EN). Les contenus restent éditables même si la section est
+            masquée.
+          </p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {SITE_SECTION_KEYS.map((key) => (
+            <label
+              key={key}
+              className="flex min-h-11 cursor-pointer items-center gap-3 border border-line px-3 py-2.5"
+            >
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
+                checked={content.features.enabled[key]}
+                onChange={(e) => setSectionEnabled(key, e.target.checked)}
+              />
+              <span className="text-sm text-mist">{SITE_SECTION_LABELS_FR[key]}</span>
+            </label>
+          ))}
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 border border-line px-3 py-2.5 sm:col-span-2">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
+              checked={content.features.countdown}
+              onChange={(e) =>
+                setContent((prev) => ({
+                  ...prev,
+                  features: { ...prev.features, countdown: e.target.checked },
+                }))
+              }
+            />
+            <span className="text-sm text-mist">Compte à rebours (pied de page)</span>
+          </label>
+        </div>
+
+        <div className="space-y-3 border-t border-line pt-4">
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+            Ordre d’affichage
+          </p>
+          <ul className="space-y-2">
+            {content.features.order.map((key, index) => (
+              <li
+                key={key}
+                className="flex flex-wrap items-center justify-between gap-2 border border-line px-3 py-2"
+              >
+                <span className="text-sm text-mist">
+                  {index + 1}. {SITE_SECTION_LABELS_FR[key === "menu" ? "menu" : key]}
+                  {key === "menu" ? " (+ boissons / desserts si actifs)" : ""}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="btn-ghost !px-3 !py-1.5 text-xs disabled:opacity-40"
+                    disabled={index === 0}
+                    onClick={() => moveSection(key, -1)}
+                  >
+                    Monter
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost !px-3 !py-1.5 text-xs disabled:opacity-40"
+                    disabled={index === content.features.order.length - 1}
+                    onClick={() => moveSection(key, 1)}
+                  >
+                    Descendre
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-y-4 border-t border-line pt-4">
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+            Libellés de navigation (optionnel)
+          </p>
+          <p className="text-xs text-soft">
+            Laissez vide pour utiliser les libellés par défaut du site (FR/EN).
+          </p>
+          {SITE_BODY_ORDER_KEYS.map((key) => (
+            <LocalizedFields
+              key={key}
+              label={SITE_SECTION_LABELS_FR[key === "menu" ? "menu" : key]}
+              value={content.features.navLabels[key]}
+              onChange={(next) => setNavLabel(key, next)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-4 border border-line bg-white p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs tracking-[0.16em] text-champagne uppercase">Apparence</p>
+            <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
+              Couleurs, polices (texte, titres, liens/boutons) et forme des boutons du site
+              public.
+            </p>
+          </div>
+          <button type="button" className="btn-ghost !px-3 !py-1.5 text-xs" onClick={resetTheme}>
+            Réinitialiser
+          </button>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {THEME_COLOR_FIELDS.map((field) => (
+            <div key={field.key}>
+              <label className="label" htmlFor={`theme-color-${field.key}`}>
+                {field.label}
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  id={`theme-color-${field.key}`}
+                  type="color"
+                  className="h-11 w-14 shrink-0 cursor-pointer border border-line bg-white p-1"
+                  value={content.theme.colors[field.key]}
+                  onChange={(e) => setThemeColor(field.key, e.target.value)}
+                />
+                <input
+                  className="field font-mono text-sm uppercase"
+                  value={content.theme.colors[field.key]}
+                  onChange={(e) => {
+                    const next = e.target.value.trim();
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(next)) {
+                      setThemeColor(field.key, next.length === 7 ? next.toLowerCase() : next);
+                    }
+                  }}
+                  onBlur={() => {
+                    const value = content.theme.colors[field.key];
+                    if (!/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                      setThemeColor(field.key, defaultSiteTheme().colors[field.key]);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+          {(
+            [
+              { key: "display" as const, label: "Police des noms (couple)" },
+              { key: "body" as const, label: "Police du texte" },
+              { key: "title" as const, label: "Police des titres" },
+              { key: "ui" as const, label: "Police liens & boutons" },
+            ] as const
+          ).map((field) => (
+            <div key={field.key}>
+              <label className="label" htmlFor={`theme-font-${field.key}`}>
+                {field.label}
+              </label>
+              <select
+                id={`theme-font-${field.key}`}
+                className="field"
+                value={content.theme.fonts[field.key]}
+                onChange={(e) => setThemeFont(field.key, e.target.value)}
+              >
+                {THEME_FONT_OPTIONS.map((font) => (
+                  <option key={font.id} value={font.id}>
+                    {font.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3 border-t border-line pt-4">
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">Forme des boutons</p>
+          <div className="flex flex-wrap gap-2">
+            {BUTTON_RADIUS_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`border px-4 py-2.5 text-xs tracking-[0.14em] uppercase transition-colors ${
+                  content.theme.button.radius === option.id
+                    ? "border-cacao bg-cacao text-ivory"
+                    : "border-line text-mist hover:border-champagne"
+                }`}
+                style={{ borderRadius: option.css }}
+                onClick={() => setButtonRadius(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
+              checked={content.theme.button.uppercase}
+              onChange={(e) =>
+                setContent((prev) => ({
+                  ...prev,
+                  theme: {
+                    ...prev.theme,
+                    button: { ...prev.theme.button, uppercase: e.target.checked },
+                  },
+                }))
+              }
+            />
+            <span className="text-sm text-mist">Boutons en majuscules</span>
+          </label>
+          <div className="flex flex-wrap gap-3 pt-1">
+            <span className="btn-primary pointer-events-none" style={{
+              borderRadius:
+                BUTTON_RADIUS_OPTIONS.find((o) => o.id === content.theme.button.radius)?.css,
+              textTransform: content.theme.button.uppercase ? "uppercase" : "none",
+              background: content.theme.colors.buttonBg,
+              color: content.theme.colors.buttonText,
+              borderColor: content.theme.colors.buttonBg,
+            }}>
+              Aperçu bouton
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4 border border-line bg-white p-5">

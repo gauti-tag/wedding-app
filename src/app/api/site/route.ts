@@ -4,6 +4,8 @@ import { auditAs, requirePermission } from "@/lib/auth";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { normalizeGuestCapacity } from "@/lib/guest-capacity";
 import { parseLocalDateTime } from "@/lib/rsvp-deadline";
+import { normalizeSiteFeatures } from "@/lib/site-features";
+import { normalizeSiteTheme } from "@/lib/site-theme";
 import { getSiteContent, saveSiteContent } from "@/lib/storage";
 import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
 import { formatCiWhatsAppPhone } from "@/lib/whatsapp";
@@ -12,6 +14,71 @@ import { serializeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 const localizedSchema = z.object({
   fr: z.string().trim().max(500),
   en: z.string().trim().max(500),
+});
+
+const hexColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#[0-9A-Fa-f]{6}$/, "Couleur invalide.");
+
+const themeFontSchema = z.enum([
+  "great-vibes",
+  "parisienne",
+  "pinyon-script",
+  "cormorant",
+  "playfair",
+  "poppins",
+  "montserrat",
+  "lato",
+  "dm-sans",
+  "source-sans",
+]);
+
+const themeSchema = z.object({
+  colors: z.object({
+    background: hexColorSchema,
+    surface: hexColorSchema,
+    text: hexColorSchema,
+    accent: hexColorSchema,
+    gold: hexColorSchema,
+    muted: hexColorSchema,
+    buttonBg: hexColorSchema,
+    buttonText: hexColorSchema,
+  }),
+  fonts: z.object({
+    display: themeFontSchema,
+    body: themeFontSchema,
+    title: themeFontSchema,
+    ui: themeFontSchema,
+  }),
+  button: z.object({
+    radius: z.enum(["square", "soft", "pill"]),
+    uppercase: z.boolean(),
+  }),
+});
+
+const navSectionSchema = z.enum(["story", "schedule", "menu", "gallery", "rsvp"]);
+
+const featuresSchema = z.object({
+  enabled: z.object({
+    hero: z.boolean(),
+    story: z.boolean(),
+    schedule: z.boolean(),
+    menu: z.boolean(),
+    drinks: z.boolean(),
+    desserts: z.boolean(),
+    gallery: z.boolean(),
+    rsvp: z.boolean(),
+  }),
+  order: z.array(navSectionSchema).min(1).max(5),
+  navLabels: z.object({
+    story: localizedSchema,
+    schedule: localizedSchema,
+    menu: localizedSchema,
+    gallery: localizedSchema,
+    rsvp: localizedSchema,
+  }),
+  countdown: z.boolean(),
 });
 
 const datetimeLocalSchema = z
@@ -69,6 +136,8 @@ const siteSchema = z.object({
     kenBurns: z.boolean(),
     pauseOnHover: z.boolean(),
   }),
+  features: featuresSchema.optional(),
+  theme: themeSchema.optional(),
 });
 
 export async function GET() {
@@ -87,7 +156,7 @@ export async function PUT(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Données du site invalides. Vérifiez noms, dates, rappels WhatsApp, téléphone de contact, carrousel et textes FR/EN.",
+            "Données du site invalides. Vérifiez noms, dates, apparence, rappels WhatsApp, téléphone de contact, carrousel et textes FR/EN.",
         },
         { status: 400 },
       );
@@ -128,6 +197,8 @@ export async function PUT(request: Request) {
       guestCapacity: normalizeGuestCapacity(parsed.data.guestCapacity),
       whatsappReminders: serializeWhatsAppReminders(parsed.data.whatsappReminders),
       heroCarousel: normalizeHeroCarousel(parsed.data.heroCarousel),
+      features: normalizeSiteFeatures(parsed.data.features),
+      theme: normalizeSiteTheme(parsed.data.theme),
     };
     await saveSiteContent(content);
     await auditAs(user, "update", "site", `${content.partnerOne} & ${content.partnerTwo}`);

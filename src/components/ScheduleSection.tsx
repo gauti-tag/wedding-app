@@ -10,11 +10,13 @@ export function ScheduleSection({
   weddingDate,
   locale,
   dict,
+  showCountdown = true,
 }: {
   schedule: ScheduleContent;
   weddingDate: string;
   locale: Locale;
   dict: Dictionary;
+  showCountdown?: boolean;
 }) {
   return (
     <section id="schedule" className="border-y border-line bg-forest/80 py-24 md:py-32">
@@ -27,9 +29,11 @@ export function ScheduleSection({
           <p className="mt-5 whitespace-pre-line text-base font-normal leading-7 text-soft">
             {t(schedule.dressCode, locale)}
           </p>
-          <div className="mt-8 max-w-md border-t border-line pt-6">
-            <Countdown targetDate={weddingDate} labels={dict.countdown} />
-          </div>
+          {showCountdown ? (
+            <div className="mt-8 max-w-md border-t border-line pt-6">
+              <Countdown targetDate={weddingDate} labels={dict.countdown} />
+            </div>
+          ) : null}
         </Reveal>
 
         <div className="mt-12 grid gap-6 md:grid-cols-2">

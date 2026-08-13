@@ -20,6 +20,14 @@
   --line: rgba(59, 36, 22, 0.14);
   --background: var(--ivory);
   --foreground: var(--cacao);
+  --font-title: var(--font-sans-body);
+  --font-ui: var(--font-sans-body);
+  --btn-radius: 0px;
+  --btn-text-transform: uppercase;
+  --btn-bg: var(--cacao);
+  --btn-bg-hover: #4a2c1a;
+  --btn-text: var(--ivory);
+  --btn-border: var(--cacao);
 }
 
 @theme inline {
@@ -95,9 +103,9 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(1000px 600px at 85% -5%, rgba(166, 124, 82, 0.12), transparent 55%),
-    radial-gradient(800px 500px at 5% 30%, rgba(107, 62, 42, 0.06), transparent 50%),
-    linear-gradient(180deg, #f7f4f0 0%, #ffffff 40%, #f7f4f0 100%);
+    radial-gradient(1000px 600px at 85% -5%, color-mix(in srgb, var(--caramel) 20%, transparent), transparent 55%),
+    radial-gradient(800px 500px at 5% 30%, color-mix(in srgb, var(--velvet) 10%, transparent), transparent 50%),
+    linear-gradient(180deg, var(--ivory) 0%, #ffffff 40%, var(--ivory) 100%);
   color: var(--foreground);
   font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-weight: 400;
@@ -150,28 +158,28 @@ img {
   line-height: 1.15;
 }
 
-/* Titres de sections — Poppins 600/700 */
+/* Titres de sections */
 .section-title {
-  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  font-family: var(--font-title), var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
-/* Dates / heures — Poppins 500 */
+/* Dates / heures */
 .meta-date {
-  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  font-family: var(--font-ui), var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-weight: 500;
 }
 
-/* Navigation — Poppins 500 */
+/* Navigation */
 .nav-link {
-  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  font-family: var(--font-ui), var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-weight: 500;
 }
 
 .eyebrow {
-  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  font-family: var(--font-ui), var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.28em;
@@ -191,13 +199,14 @@ img {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.95rem 1.6rem;
-  border: 1px solid var(--cacao);
-  background: linear-gradient(180deg, #4a2c1a 0%, #3b2416 100%);
-  color: var(--ivory);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--btn-radius);
+  background: linear-gradient(180deg, var(--btn-bg-hover) 0%, var(--btn-bg) 100%);
+  color: var(--btn-text);
   text-decoration: none;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  text-transform: var(--btn-text-transform);
+  font-family: var(--font-ui), var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
   transition:
@@ -208,7 +217,7 @@ img {
 }
 
 .btn-primary:hover {
-  background: linear-gradient(180deg, #5a3824 0%, #4a2c1a 100%);
+  background: linear-gradient(180deg, var(--btn-bg-hover) 0%, var(--btn-bg-hover) 100%);
   border-color: var(--velvet);
   transform: translateY(-1px);
   box-shadow: 0 8px 24px rgba(59, 36, 22, 0.18);
@@ -220,11 +229,12 @@ img {
   justify-content: center;
   padding: 0.95rem 1.4rem;
   border: 1px solid rgba(59, 36, 22, 0.28);
+  border-radius: var(--btn-radius);
   color: var(--velvet);
   text-decoration: none;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  text-transform: var(--btn-text-transform);
+  font-family: var(--font-ui), var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
   background: transparent;
@@ -243,11 +253,12 @@ img {
   justify-content: center;
   padding: 0.95rem 1.4rem;
   border: 1px solid rgba(247, 244, 240, 0.55);
+  border-radius: var(--btn-radius);
   color: #f7f4f0;
   text-decoration: none;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  text-transform: var(--btn-text-transform);
+  font-family: var(--font-ui), var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
   background: transparent;
@@ -267,12 +278,13 @@ img {
   gap: 0.5rem;
   padding: 0.95rem 1.6rem;
   border: 1px solid rgba(247, 244, 240, 0.85);
+  border-radius: var(--btn-radius);
   background: rgba(247, 244, 240, 0.95);
   color: var(--cacao);
   text-decoration: none;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  text-transform: var(--btn-text-transform);
+  font-family: var(--font-ui), var(--font-sans-body), "Poppins", system-ui, sans-serif;
   font-size: 0.78rem;
   font-weight: 600;
   transition: background 200ms ease, transform 200ms ease;

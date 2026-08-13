@@ -23,6 +23,7 @@ export function Hero({
   const reduceMotion = useReducedMotion();
   const names = coupleLabel(siteContent);
   const carousel = normalizeHeroCarousel(siteContent.heroCarousel);
+  const features = siteContent.features;
 
   function fadeUp(delay: number) {
     return {
@@ -35,7 +36,7 @@ export function Hero({
   }
 
   return (
-    <section id="top" className="relative h-dvh min-h-svh w-full overflow-hidden">
+    <section id="top" className="relative h-dvh min-h-svh w-full overflow-hidden scroll-mt-0">
       <div className="absolute inset-0 overflow-hidden bg-cacao">
         <ParallaxMedia className="absolute inset-0 size-full" strength={10}>
           <HeroCarouselBackground
@@ -68,12 +69,16 @@ export function Hero({
           {t(siteContent.hero.tagline, locale)}
         </motion.p>
         <motion.div className="mt-8 flex flex-wrap items-center gap-3" {...fadeUp(0.54)}>
-          <a href="#rsvp" className="btn-primary-light">
-            {t(siteContent.hero.ctaRsvp, locale)}
-          </a>
-          <a href="#schedule" className="btn-ghost-light">
-            {t(siteContent.hero.ctaSchedule, locale)}
-          </a>
+          {features.enabled.rsvp ? (
+            <a href="#rsvp" className="btn-primary-light">
+              {t(siteContent.hero.ctaRsvp, locale)}
+            </a>
+          ) : null}
+          {features.enabled.schedule ? (
+            <a href="#schedule" className="btn-ghost-light">
+              {t(siteContent.hero.ctaSchedule, locale)}
+            </a>
+          ) : null}
         </motion.div>
       </div>
     </section>

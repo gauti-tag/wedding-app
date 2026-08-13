@@ -36,6 +36,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const siteContent = await getSiteContent();
+    if (!siteContent.features.enabled.rsvp) {
+      return NextResponse.json(
+        {
+          error: "La confirmation de présence n’est pas disponible sur ce site.",
+          code: "rsvp_disabled",
+        },
+        { status: 403 },
+      );
+    }
     if (isRsvpNotYetOpen(siteContent.rsvpOpensAt)) {
       return NextResponse.json(
         {

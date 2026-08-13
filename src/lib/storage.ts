@@ -8,6 +8,8 @@ import { emptyMcRundown, normalizeMcRundown } from "@/lib/mc-rundown";
 import { normalizePhotos, requirePersistentStorage } from "@/lib/photo-urls";
 import { normalizeOptionalDatetime } from "@/lib/rsvp-deadline";
 import { emptySeatingPlan, normalizeSeatingPlan } from "@/lib/seating";
+import { defaultSiteFeatures, normalizeSiteFeatures } from "@/lib/site-features";
+import { defaultSiteTheme, normalizeSiteTheme } from "@/lib/site-theme";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -77,6 +79,8 @@ const emptySite: SiteContent = {
   contactPhone: "+2250708345891",
   guestCapacity: 100,
   whatsappReminders: [],
+  features: defaultSiteFeatures(),
+  theme: defaultSiteTheme(),
   hero: {
     weddingDateLabel: { fr: "", en: "" },
     tagline: { fr: "", en: "" },
@@ -383,6 +387,8 @@ export async function getSiteContent(): Promise<SiteContent> {
       ...(raw.hero ?? {}),
     },
     heroCarousel: normalizeHeroCarousel(raw.heroCarousel),
+    features: normalizeSiteFeatures(raw.features),
+    theme: normalizeSiteTheme(raw.theme),
     rsvpOpensAt: normalizeOptionalDatetime(
       (raw as { rsvpOpensAt?: string }).rsvpOpensAt,
     ),
@@ -400,7 +406,12 @@ export async function getSiteContent(): Promise<SiteContent> {
 }
 
 export async function saveSiteContent(content: SiteContent) {
-  await saveContent("site", content);
+  await saveContent("site", {
+    ...content,
+    features: normalizeSiteFeatures(content.features),
+    theme: normalizeSiteTheme(content.theme),
+    heroCarousel: normalizeHeroCarousel(content.heroCarousel),
+  });
 }
 
 export async function saveUpload(

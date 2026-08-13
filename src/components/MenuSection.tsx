@@ -49,81 +49,111 @@ export function MenuSection({
   menu,
   drinks,
   desserts,
+  showMenu = true,
+  showDrinks = true,
+  showDesserts = true,
 }: {
   dict: Dictionary;
   locale: Locale;
   menu: MenuContent;
   drinks: DrinksContent;
   desserts: DessertsContent;
+  showMenu?: boolean;
+  showDrinks?: boolean;
+  showDesserts?: boolean;
 }) {
   const subtitle = t(menu.subtitle, locale);
   const note = t(menu.note, locale);
   const hasFood = menu.cuisines.some((cuisine) => cuisine.dishes.length > 0);
+  if (!showMenu && !showDrinks && !showDesserts) return null;
 
   return (
     <section id="menu" className="py-24 md:py-32">
       <div className="section-shell">
-        <Reveal className="max-w-2xl">
-          <p className="eyebrow">{dict.menu.eyebrow}</p>
-          <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">{dict.menu.title}</h2>
-          {subtitle ? (
-            <p className="mt-5 text-base font-normal leading-7 text-soft">{subtitle}</p>
-          ) : null}
-        </Reveal>
+        {showMenu ? (
+          <>
+            <Reveal className="max-w-2xl">
+              <p className="eyebrow">{dict.menu.eyebrow}</p>
+              <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
+                {dict.menu.title}
+              </h2>
+              {subtitle ? (
+                <p className="mt-5 text-base font-normal leading-7 text-soft">{subtitle}</p>
+              ) : null}
+            </Reveal>
 
-        {!hasFood ? (
-          <Reveal delay={0.08}>
-            <p className="mt-12 text-base font-normal text-soft">{dict.menu.empty}</p>
-          </Reveal>
-        ) : (
-          <div className="mt-14 grid gap-10 lg:grid-cols-2 lg:gap-14">
-            {menu.cuisines.map((cuisine, index) => (
-              <Reveal key={cuisine.id} delay={index * 0.1}>
-                <div className="border-t border-line pt-8">
-                  <p className="meta-date text-xs tracking-[0.22em] text-gold uppercase">
-                    {t(cuisine.origin, locale)}
-                  </p>
-                  <h3 className="section-title mt-3 text-2xl text-mist md:text-3xl">
-                    {t(cuisine.region, locale)}
-                  </h3>
-                  <ul className="mt-8 space-y-6">
-                    {cuisine.dishes.map((dish) => (
-                      <li
-                        key={dish.id}
-                        className="border-b border-line/70 pb-5 last:border-b-0 last:pb-0"
-                      >
-                        <p className="text-lg font-medium text-champagne">{t(dish.name, locale)}</p>
-                        <p className="mt-1.5 text-sm font-normal leading-6 text-soft">
-                          {t(dish.description, locale)}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            {!hasFood ? (
+              <Reveal delay={0.08}>
+                <p className="mt-12 text-base font-normal text-soft">{dict.menu.empty}</p>
               </Reveal>
-            ))}
-          </div>
+            ) : (
+              <div className="mt-14 grid gap-10 lg:grid-cols-2 lg:gap-14">
+                {menu.cuisines.map((cuisine, index) => (
+                  <Reveal key={cuisine.id} delay={index * 0.1}>
+                    <div className="border-t border-line pt-8">
+                      <p className="meta-date text-xs tracking-[0.22em] text-gold uppercase">
+                        {t(cuisine.origin, locale)}
+                      </p>
+                      <h3 className="section-title mt-3 text-2xl text-mist md:text-3xl">
+                        {t(cuisine.region, locale)}
+                      </h3>
+                      <ul className="mt-8 space-y-6">
+                        {cuisine.dishes.map((dish) => (
+                          <li
+                            key={dish.id}
+                            className="border-b border-line/70 pb-5 last:border-b-0 last:pb-0"
+                          >
+                            <p className="text-lg font-medium text-champagne">
+                              {t(dish.name, locale)}
+                            </p>
+                            <p className="mt-1.5 text-sm font-normal leading-6 text-soft">
+                              {t(dish.description, locale)}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <Reveal className="max-w-2xl">
+            <p className="eyebrow">{dict.menu.eyebrow}</p>
+            <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
+              {showDesserts && !showDrinks
+                ? dict.desserts.title
+                : showDrinks && !showDesserts
+                  ? dict.drinks.title
+                  : dict.menu.title}
+            </h2>
+          </Reveal>
         )}
 
-        <UniversalList
-          eyebrow={dict.desserts.eyebrow}
-          title={dict.desserts.title}
-          subtitle={dict.desserts.subtitle}
-          empty={dict.desserts.empty}
-          items={desserts.items}
-          locale={locale}
-        />
+        {showDesserts ? (
+          <UniversalList
+            eyebrow={dict.desserts.eyebrow}
+            title={dict.desserts.title}
+            subtitle={dict.desserts.subtitle}
+            empty={dict.desserts.empty}
+            items={desserts.items}
+            locale={locale}
+          />
+        ) : null}
 
-        <UniversalList
-          eyebrow={dict.drinks.eyebrow}
-          title={dict.drinks.title}
-          subtitle={dict.drinks.subtitle}
-          empty={dict.drinks.empty}
-          items={drinks.items}
-          locale={locale}
-        />
+        {showDrinks ? (
+          <UniversalList
+            eyebrow={dict.drinks.eyebrow}
+            title={dict.drinks.title}
+            subtitle={dict.drinks.subtitle}
+            empty={dict.drinks.empty}
+            items={drinks.items}
+            locale={locale}
+          />
+        ) : null}
 
-        {note ? (
+        {showMenu && note ? (
           <Reveal delay={0.15}>
             <p className="mt-12 max-w-xl text-sm font-normal italic text-soft/80">{note}</p>
           </Reveal>

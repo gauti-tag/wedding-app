@@ -24,11 +24,13 @@ export function SiteFooter({
             <p className="meta-date text-sm text-soft">
               {t(siteContent.hero.weddingDateLabel, locale)}
             </p>
-            <Countdown
-              targetDate={siteContent.weddingDate}
-              labels={dict.countdown}
-              compact
-            />
+            {siteContent.features.countdown ? (
+              <Countdown
+                targetDate={siteContent.weddingDate}
+                labels={dict.countdown}
+                compact
+              />
+            ) : null}
           </div>
         </div>
         <div className="flex flex-col items-start gap-3 md:items-end">

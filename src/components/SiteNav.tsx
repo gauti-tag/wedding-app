@@ -5,27 +5,33 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { WeddingRingIcon } from "@/components/icons/WeddingRingIcon";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
+import {
+  isSectionEnabled,
+  navLabelFor,
+  orderedEnabledSections,
+} from "@/lib/site-features";
+import type { SiteFeatures } from "@/lib/types";
 
 export function SiteNav({
   locale,
   dict,
   coupleName,
+  features,
 }: {
   locale: Locale;
   dict: Dictionary;
   coupleName: string;
+  features: SiteFeatures;
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuId = useId();
 
-  const links = [
-    { href: "#story", label: dict.nav.story },
-    { href: "#schedule", label: dict.nav.schedule },
-    { href: "#menu", label: dict.nav.menu },
-    { href: "#gallery", label: dict.nav.gallery },
-    { href: "#rsvp", label: dict.nav.rsvp },
-  ];
+  const links = orderedEnabledSections(features).map((key) => ({
+    href: `#${key}`,
+    label: navLabelFor(features, key, locale, dict),
+  }));
+  const showRsvpCta = isSectionEnabled(features, "rsvp");
 
   const nameParts = coupleName.split(/\s*&\s*/);
   const initialOne = (nameParts[0] || coupleName).trim().charAt(0).toUpperCase();
@@ -63,7 +69,7 @@ export function SiteNav({
     };
   }, [menuOpen]);
 
-  const solid = scrolled || menuOpen;
+  const solid = scrolled || menuOpen || !features.enabled.hero;
 
   return (
     <header
@@ -114,15 +120,19 @@ export function SiteNav({
             <LanguageSwitcher locale={locale} />
           </div>
 
-          <a
-            href="#rsvp"
-            className={`hidden !px-4 !py-2.5 text-[0.68rem] touch-manipulation md:inline-flex ${
-              solid ? "btn-primary" : "btn-primary-light"
-            }`}
-            onClick={() => setMenuOpen(false)}
-          >
-            {dict.nav.confirm}
-          </a>
+          {showRsvpCta ? (
+            <a
+              href="#rsvp"
+              className={`hidden !px-4 !py-2.5 text-[0.68rem] touch-manipulation md:inline-flex ${
+                solid ? "btn-primary" : "btn-primary-light"
+              }`}
+              onClick={() => setMenuOpen(false)}
+            >
+              {navLabelFor(features, "rsvp", locale, dict) === dict.nav.rsvp
+                ? dict.nav.confirm
+                : navLabelFor(features, "rsvp", locale, dict)}
+            </a>
+          ) : null}
 
           <button
             type="button"
@@ -181,13 +191,17 @@ export function SiteNav({
                 </li>
               ))}
             </ul>
-            <a
-              href="#rsvp"
-              className="btn-primary mt-5 inline-flex w-full justify-center touch-manipulation"
-              onClick={() => setMenuOpen(false)}
-            >
-              {dict.nav.confirm}
-            </a>
+            {showRsvpCta ? (
+              <a
+                href="#rsvp"
+                className="btn-primary mt-5 inline-flex w-full justify-center touch-manipulation"
+                onClick={() => setMenuOpen(false)}
+              >
+                {navLabelFor(features, "rsvp", locale, dict) === dict.nav.rsvp
+                  ? dict.nav.confirm
+                  : navLabelFor(features, "rsvp", locale, dict)}
+              </a>
+            ) : null}
           </nav>
         </div>
       </div>

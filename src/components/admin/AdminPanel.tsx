@@ -128,7 +128,7 @@ const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-dashboard", label: "Tableau de bord", permission: "view_dashboard" },
   { href: "#admin-invite-qr", label: "QR invitation", permission: "manage_content" },
   { href: "#admin-photos", label: "Photos", permission: "manage_photos" },
-  { href: "#admin-site", label: "Couple & hero", permission: "manage_content" },
+  { href: "#admin-site", label: "Couple & sections", permission: "manage_content" },
   { href: "#admin-story", label: "Histoire", permission: "manage_content" },
   { href: "#admin-schedule", label: "Programme", permission: "manage_content" },
   { href: "#admin-mc-rundown", label: "Feuille MC", permission: "manage_content" },

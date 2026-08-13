@@ -165,6 +165,60 @@ export type HeroCarouselSettings = {
   pauseOnHover: boolean;
 };
 
+/** Sections publiques activables / réordonnables depuis l’espace couple. */
+export type SiteSectionKey =
+  | "hero"
+  | "story"
+  | "schedule"
+  | "menu"
+  | "drinks"
+  | "desserts"
+  | "gallery"
+  | "rsvp";
+
+/** Sections présentes dans la navigation (le bloc menu regroupe carte + boissons + desserts). */
+export type SiteNavSectionKey = "story" | "schedule" | "menu" | "gallery" | "rsvp";
+
+export type SiteFeatures = {
+  enabled: Record<SiteSectionKey, boolean>;
+  /** Ordre d’affichage des blocs principaux (hors hero). */
+  order: SiteNavSectionKey[];
+  /** Libellés de navigation personnalisés (vide = dictionnaire i18n). */
+  navLabels: Record<SiteNavSectionKey, LocalizedText>;
+  /** Compte à rebours dans le pied de page. */
+  countdown: boolean;
+};
+
+export type SiteButtonRadius = "square" | "soft" | "pill";
+
+/** Apparence du site public (couleurs, polices, boutons). */
+export type SiteTheme = {
+  colors: {
+    background: string;
+    surface: string;
+    text: string;
+    accent: string;
+    gold: string;
+    muted: string;
+    buttonBg: string;
+    buttonText: string;
+  };
+  fonts: {
+    /** Noms du couple (script / display). */
+    display: string;
+    /** Corps de texte. */
+    body: string;
+    /** Titres de sections. */
+    title: string;
+    /** Liens de nav + boutons. */
+    ui: string;
+  };
+  button: {
+    radius: SiteButtonRadius;
+    uppercase: boolean;
+  };
+};
+
 /** Identité du couple, date (countdown) et textes du hero. */
 export type SiteContent = {
   partnerOne: string;
@@ -184,6 +238,10 @@ export type SiteContent = {
   guestCapacity: number;
   /** Rappels WhatsApp planifiés (liste dynamique : libellé + date). */
   whatsappReminders: WhatsAppReminderPlan[];
+  /** Visibilité, ordre et libellés des sections du site public. */
+  features: SiteFeatures;
+  /** Couleurs, polices et forme des boutons. */
+  theme: SiteTheme;
   hero: {
     weddingDateLabel: LocalizedText;
     tagline: LocalizedText;

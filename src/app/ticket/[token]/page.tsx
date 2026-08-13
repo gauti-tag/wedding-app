@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { ThemeStyles } from "@/components/ThemeStyles";
 import { TicketBlocked } from "@/components/TicketBlocked";
 import { TicketInvitationClient } from "@/components/TicketInvitationClient";
 import { getSessionUser } from "@/lib/auth";
@@ -29,7 +30,12 @@ export default async function TicketPage({ params, searchParams }: Props) {
   const isStaff = Boolean(sessionUser);
 
   if (rsvp.blockedAt && !isAdminPreview && !isStaff) {
-    return <TicketBlocked coupleNames={names} />;
+    return (
+      <>
+        <ThemeStyles theme={siteContent.theme} />
+        <TicketBlocked coupleNames={names} />
+      </>
+    );
   }
 
   // Compte les vues invité (pas l’aperçu admin explicite ni session couple).
@@ -42,6 +48,7 @@ export default async function TicketPage({ params, searchParams }: Props) {
 
   return (
     <>
+      <ThemeStyles theme={siteContent.theme} />
       {rsvp.blockedAt ? (
         <div className="border-b border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-800">
           RSVP bloqué — non autorisé à l’événement (aperçu staff).

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
+import { ThemeStyles } from "@/components/ThemeStyles";
 import { isLocale, locales, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { coupleLabel } from "@/lib/site";
@@ -29,6 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
+    themeColor: siteContent.theme.colors.text,
     alternates: {
       canonical: `/${raw}`,
       languages: {
@@ -67,9 +69,11 @@ export default async function LocaleLayout({ children, params }: Props) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
   const locale = raw as Locale;
+  const siteContent = await getSiteContent();
 
   return (
     <SmoothScroll>
+      <ThemeStyles theme={siteContent.theme} />
       <div lang={locale} className="contents">
         {children}
       </div>
