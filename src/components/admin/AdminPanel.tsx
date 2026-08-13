@@ -485,17 +485,17 @@ export function AdminPanel({
   }
 
   return (
-    <div className="section-shell py-10 md:py-14">
+    <div className="section-shell max-w-full overflow-x-clip py-10 md:py-14">
       {AlertDialog}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="eyebrow">Espace couple</p>
           <h1 className="section-title mt-3 text-4xl text-mist md:text-5xl">Administration</h1>
           <p className="mt-3 max-w-xl text-sm font-normal text-soft">
             Connecté : {currentUser.name} · {roleLabel(currentUser.role)}
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <a href="/" className="btn-ghost">
             Voir le site
           </a>
@@ -508,9 +508,9 @@ export function AdminPanel({
       {navItems.length > 0 ? (
         <nav
           aria-label="Rubriques de l’espace couple"
-          className="sticky top-0 z-30 -mx-4 mt-8 border-y border-line bg-ivory/95 px-4 py-3 backdrop-blur-md md:-mx-0 md:px-0"
+          className="sticky top-0 z-30 mt-8 w-full max-w-full border-y border-line bg-ivory/95 py-2.5 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90 sm:py-3"
         >
-          <ul className="flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="flex max-w-full gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {navItems.map((item) => (
               <li key={item.href} className="shrink-0">
                 <a
