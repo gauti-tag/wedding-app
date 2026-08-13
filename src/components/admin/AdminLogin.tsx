@@ -27,10 +27,10 @@ export function AdminLogin() {
   }
 
   return (
-    <div className="section-shell flex min-h-[100svh] items-center justify-center py-16">
+    <div className="section-shell flex min-h-[100svh] w-full max-w-full min-w-0 items-center justify-center py-16">
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-md space-y-5 border border-line bg-white p-8 shadow-[0_16px_48px_rgba(59,36,22,0.08)]"
+        className="w-full max-w-md space-y-5 border border-line bg-white p-6 shadow-[0_16px_48px_rgba(59,36,22,0.08)] sm:p-8"
       >
         <p className="eyebrow">Privé</p>
         <h1 className="section-title text-4xl text-mist">Administration</h1>

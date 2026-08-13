@@ -149,7 +149,7 @@ export function AdminCheckIn({
   }
 
   return (
-    <section id="admin-checkin" className="mt-14 scroll-mt-28 space-y-6">
+    <section id="admin-checkin" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-6">
       {AlertDialog}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -172,9 +172,9 @@ export function AdminCheckIn({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <div className="border border-line bg-white p-4">
-          <div id="admin-qr-reader" className="overflow-hidden rounded-sm bg-forest" />
+          <div id="admin-qr-reader" className="w-full min-w-0 max-w-full overflow-hidden rounded-sm bg-forest [&_video]:max-w-full [&_img]:max-w-full" />
           {!scanning ? (
             <p className="mt-3 text-center text-sm text-soft">
               La caméra affichera ici le flux de scan.

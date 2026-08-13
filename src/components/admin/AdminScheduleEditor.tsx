@@ -120,7 +120,7 @@ export function AdminScheduleEditor({
   }
 
   return (
-    <section id="admin-schedule" className="mt-14 scroll-mt-28 space-y-6">
+    <section id="admin-schedule" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-6">
       {AlertDialog}
       <AdminStickyHeader
         title="Programme"

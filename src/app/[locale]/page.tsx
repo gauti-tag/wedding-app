@@ -1,4 +1,5 @@
 import { Hero } from "@/components/Hero";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteSections } from "@/components/SiteSections";
@@ -76,6 +77,7 @@ export default async function Home({ params }: Props) {
         />
       </main>
       <SiteFooter dict={dict} siteContent={siteContent} locale={raw} />
+      <PwaInstallPrompt copy={dict.pwaInstall} />
     </>
   );
 }

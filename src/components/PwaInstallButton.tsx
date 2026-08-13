@@ -1,55 +1,53 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  promptNativeInstall,
+  useDeferredInstallPrompt,
+} from "@/lib/pwa-deferred-prompt";
+import {
+  dismissPwaInstallNever,
+  isIosDevice,
+  isMobileViewport,
+  isStandaloneDisplay,
+} from "@/lib/pwa-install";
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
-
-export function PwaInstallButton({ label }: { label: string }) {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
+export function PwaInstallButton({
+  label,
+  iosHint,
+}: {
+  label: string;
+  iosHint?: string;
+}) {
+  const deferred = useDeferredInstallPrompt();
   const [visible, setVisible] = useState(false);
-  const [iosHint, setIosHint] = useState(false);
+  const [ios, setIos] = useState(false);
 
   useEffect(() => {
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      ("standalone" in navigator &&
-        Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
-
-    if (isStandalone) return;
-
-    const ua = window.navigator.userAgent;
-    const isIos = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    if (isIos) {
-      setIosHint(true);
-      setVisible(true);
+    if (isStandaloneDisplay()) {
+      setVisible(false);
       return;
     }
-
-    function onBeforeInstall(event: Event) {
-      event.preventDefault();
-      setDeferred(event as BeforeInstallPromptEvent);
+    const iosDevice = isIosDevice();
+    setIos(iosDevice);
+    // Footer : toujours proposé hors mode installé (même après « ne plus demander »).
+    if (iosDevice || isMobileViewport() || deferred) {
       setVisible(true);
     }
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
-    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
-  }, []);
+  }, [deferred]);
 
   async function onInstall() {
-    if (iosHint) {
-      window.alert(
-        "Sur iPhone / iPad : ouvrez le menu Partager de Safari, puis « Sur l’écran d’accueil ».",
-      );
+    if (ios && !deferred) {
+      window.alert(iosHint || "Sur iPhone / iPad : Partager → Sur l’écran d’accueil.");
       return;
     }
-    if (!deferred) return;
-    await deferred.prompt();
-    await deferred.userChoice;
-    setDeferred(null);
-    setVisible(false);
+    const outcome = await promptNativeInstall();
+    if (outcome === "accepted") {
+      dismissPwaInstallNever();
+      setVisible(false);
+    } else if (outcome === "unavailable" && ios) {
+      window.alert(iosHint || "Sur iPhone / iPad : Partager → Sur l’écran d’accueil.");
+    }
   }
 
   if (!visible) return null;

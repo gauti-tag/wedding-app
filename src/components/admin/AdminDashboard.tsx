@@ -32,7 +32,7 @@ export function AdminDashboard({
   const insights = useMemo(() => computeRsvpInsights(rsvps, site), [rsvps, site]);
 
   return (
-    <section id="admin-dashboard" className="mt-10 scroll-mt-28 space-y-6">
+    <section id="admin-dashboard" className="mt-10 min-w-0 max-w-full scroll-mt-28 space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="section-title text-3xl text-mist">Tableau de bord</h2>
@@ -52,7 +52,7 @@ export function AdminDashboard({
         ) : null}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Réponses", value: String(insights.total) },
           {
@@ -73,7 +73,7 @@ export function AdminDashboard({
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-2">
         <div className="border border-line bg-white p-5">
           <p className="text-xs tracking-[0.16em] text-champagne uppercase">
             Présence (oui / non / peut-être)

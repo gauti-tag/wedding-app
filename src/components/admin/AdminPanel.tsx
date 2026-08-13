@@ -485,21 +485,27 @@ export function AdminPanel({
   }
 
   return (
-    <div className="section-shell max-w-full overflow-x-clip py-10 md:py-14">
+    <div className="admin-panel min-w-0">
       {AlertDialog}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 max-w-full flex-1 basis-[min(100%,16rem)]">
           <p className="eyebrow">Espace couple</p>
-          <h1 className="section-title mt-3 text-4xl text-mist md:text-5xl">Administration</h1>
-          <p className="mt-3 max-w-xl text-sm font-normal text-soft">
+          <h1 className="section-title mt-3 break-words text-3xl text-mist sm:text-4xl md:text-5xl">
+            Administration
+          </h1>
+          <p className="mt-3 max-w-xl break-words text-sm font-normal text-soft">
             Connecté : {currentUser.name} · {roleLabel(currentUser.role)}
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <a href="/" className="btn-ghost">
+        <div className="flex min-w-0 flex-wrap gap-2 sm:gap-3">
+          <a href="/" className="btn-ghost !px-3 !py-2.5 text-[0.65rem] sm:!px-4 sm:text-[0.72rem]">
             Voir le site
           </a>
-          <button type="button" onClick={onLogout} className="btn-primary">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="btn-primary !px-3 !py-2.5 text-[0.65rem] sm:!px-4 sm:text-[0.72rem]"
+          >
             Déconnexion
           </button>
         </div>
@@ -508,9 +514,9 @@ export function AdminPanel({
       {navItems.length > 0 ? (
         <nav
           aria-label="Rubriques de l’espace couple"
-          className="sticky top-0 z-30 mt-8 w-full max-w-full border-y border-line bg-ivory/95 py-2.5 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90 sm:py-3"
+          className="sticky top-0 z-30 mt-8 w-full min-w-0 max-w-full border-y border-line bg-ivory/95 py-2.5 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90 sm:py-3"
         >
-          <ul className="flex max-w-full gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {navItems.map((item) => (
               <li key={item.href} className="shrink-0">
                 <a
@@ -546,10 +552,9 @@ export function AdminPanel({
 
       {can("manage_photos") ? (
       <section
-        id="admin-photos"
-        className="mt-12 grid scroll-mt-28 gap-10 lg:grid-cols-[0.9fr_1.1fr]"
+        id="admin-photos" className="mt-12 grid min-w-0 scroll-mt-28 gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
       >
-        <form onSubmit={onUpload} className="space-y-4 border border-line bg-white p-6">
+        <form onSubmit={onUpload} className="min-w-0 space-y-4 border border-line bg-white p-4 sm:p-6">
           <h2 className="section-title text-3xl text-mist">Ajouter une photo</h2>
           <div>
             <label className="label" htmlFor="album">
@@ -674,7 +679,7 @@ export function AdminPanel({
       ) : null}
 
       {can("view_rsvp") ? (
-      <section id="admin-rsvp" className="mt-14 scroll-mt-28">
+      <section id="admin-rsvp" className="mt-14 min-w-0 max-w-full scroll-mt-28">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 className="section-title text-3xl font-semibold text-mist">RSVP</h2>
           <button type="button" onClick={exportCsv} className="btn-ghost" disabled={!rsvps.length}>
@@ -744,8 +749,154 @@ export function AdminPanel({
           ) : null}
         </div>
 
-        <div className="overflow-x-auto border border-line">
-          <table className="min-w-full text-left text-sm">
+        {/* Mobile : cartes (évite min-width tableau qui élargit la page) */}
+        <div className="space-y-3 md:hidden">
+          {rsvps.length === 0 ? (
+            <p className="border border-line px-3 py-5 text-sm text-soft">
+              Aucune réponse pour l’instant.
+            </p>
+          ) : filteredRsvps.length === 0 ? (
+            <p className="border border-line px-3 py-5 text-sm text-soft">
+              Aucun résultat pour « {rsvpQuery.trim()} ».
+            </p>
+          ) : (
+            pagedRsvps.map((rsvp) => {
+              const revealed = canRevealPii && Boolean(revealedRsvpIds[rsvp.id]);
+              const displayName = revealed ? rsvp.name : maskName(rsvp.name);
+              const displayPhone = revealed
+                ? rsvp.phone || "—"
+                : maskPhone(rsvp.phone || "");
+
+              return (
+                <article key={rsvp.id} className="min-w-0 space-y-3 border border-line bg-white p-3">
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="break-words font-medium text-mist">{displayName}</p>
+                      <p className="mt-0.5 break-all text-sm text-soft">{displayPhone}</p>
+                    </div>
+                    <span className="shrink-0 text-xs tracking-[0.12em] text-champagne uppercase">
+                      {rsvp.status}
+                    </span>
+                  </div>
+                  {canRevealPii ? (
+                    <button
+                      type="button"
+                      className="text-left text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist"
+                      onClick={() =>
+                        setRevealedRsvpIds((prev) => {
+                          const next = { ...prev };
+                          if (next[rsvp.id]) delete next[rsvp.id];
+                          else next[rsvp.id] = true;
+                          return next;
+                        })
+                      }
+                    >
+                      {revealed ? "Masquer" : "Afficher"}
+                    </button>
+                  ) : null}
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-soft">
+                    <div>
+                      <dt className="tracking-[0.12em] uppercase">Invité(e) de</dt>
+                      <dd className="mt-0.5 break-words text-mist">
+                        {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="tracking-[0.12em] uppercase">Table</dt>
+                      <dd className="mt-0.5 break-words text-mist">
+                        {formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "—"}
+                      </dd>
+                    </div>
+                    <div className="col-span-2" suppressHydrationWarning>
+                      <dt className="tracking-[0.12em] uppercase">Check-in</dt>
+                      <dd className="mt-0.5">
+                        {rsvp.checkedInAt ? formatAdminDate(rsvp.checkedInAt, true) : "—"}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="flex flex-wrap gap-x-3 gap-y-2 border-t border-line pt-2">
+                    {rsvp.status !== "no" ? (
+                      <>
+                        <a
+                          href={`/ticket/${rsvp.ticketToken}?preview=1`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs tracking-[0.12em] text-champagne uppercase no-underline hover:text-mist"
+                        >
+                          Carte
+                        </a>
+                        {can("manage_rsvp") ? (
+                          <button
+                            type="button"
+                            disabled={resendBusyId === rsvp.id}
+                            onClick={() => void onWhatsAppTicket(rsvp.id)}
+                            className="text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
+                          >
+                            {resendBusyId === rsvp.id ? "Ouverture…" : "WhatsApp"}
+                          </button>
+                        ) : null}
+                        {can("manage_rsvp") &&
+                        rsvp.status === "yes" &&
+                        !rsvp.blockedAt &&
+                        site.whatsappReminders.length > 0
+                          ? site.whatsappReminders.map((reminder) => (
+                              <button
+                                key={reminder.id}
+                                type="button"
+                                disabled={resendBusyId === `${rsvp.id}:${reminder.id}`}
+                                onClick={() =>
+                                  void onWhatsAppReminder(rsvp.id, reminder.id, reminder.label)
+                                }
+                                className="text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
+                              >
+                                {resendBusyId === `${rsvp.id}:${reminder.id}`
+                                  ? "Ouverture…"
+                                  : `Rappel ${reminder.label}`}
+                              </button>
+                            ))
+                          : null}
+                      </>
+                    ) : null}
+                    {canBlockRsvp ? (
+                      <button
+                        type="button"
+                        disabled={blockBusyId === rsvp.id}
+                        onClick={() =>
+                          void onToggleBlockRsvp(rsvp.id, rsvp.name, Boolean(rsvp.blockedAt))
+                        }
+                        className={`text-xs tracking-[0.12em] uppercase disabled:opacity-50 ${
+                          rsvp.blockedAt
+                            ? "text-champagne hover:text-mist"
+                            : "text-red-700 hover:text-red-900"
+                        }`}
+                      >
+                        {blockBusyId === rsvp.id
+                          ? "…"
+                          : rsvp.blockedAt
+                            ? "Débloquer"
+                            : "Bloquer"}
+                      </button>
+                    ) : null}
+                    {can("manage_rsvp") ? (
+                      <button
+                        type="button"
+                        disabled={deleteBusyId === rsvp.id}
+                        onClick={() => void onDeleteRsvp(rsvp.id, rsvp.name)}
+                        className="text-xs tracking-[0.12em] text-red-700 uppercase hover:text-red-900 disabled:opacity-50"
+                      >
+                        {deleteBusyId === rsvp.id ? "Suppression…" : "Supprimer"}
+                      </button>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop / tablette : tableau */}
+        <div className="admin-scroll-x hidden border border-line md:block">
+          <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="bg-forest text-xs tracking-[0.14em] text-soft uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Nom</th>

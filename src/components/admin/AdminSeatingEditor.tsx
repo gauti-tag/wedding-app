@@ -208,7 +208,7 @@ export function AdminSeatingEditor({
   }
 
   return (
-    <section id="admin-seating" className="mt-14 scroll-mt-28 space-y-5 md:space-y-6">
+    <section id="admin-seating" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-5 md:space-y-6">
       {AlertDialog}
       <div>
         <h2 className="section-title text-2xl text-mist sm:text-3xl">Plan de table</h2>
@@ -224,7 +224,7 @@ export function AdminSeatingEditor({
         </p>
 
         {canEdit ? (
-          <div className="grid gap-3 sm:grid-cols-[0.8fr_1.2fr_auto]">
+          <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto]">
             <div>
               <label className="label" htmlFor="new-table-label">
                 Nouvelle table
@@ -328,7 +328,7 @@ export function AdminSeatingEditor({
         )}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-6">
         <div className="space-y-4 border border-line bg-white p-4 md:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
             <div className="min-w-0 flex-1">
@@ -473,8 +473,8 @@ export function AdminSeatingEditor({
           </div>
 
           {/* Desktop / tablette : tableau */}
-          <div className="-mx-4 hidden overflow-x-auto border-y border-line md:mx-0 md:block md:border">
-            <table className="min-w-full text-left text-sm">
+          <div className="admin-scroll-x hidden border border-line md:block">
+            <table className="w-full min-w-0 text-left text-sm">
               <thead className="bg-forest text-xs tracking-[0.14em] text-soft uppercase">
                 <tr>
                   <th className="px-3 py-2 font-medium">Invité</th>

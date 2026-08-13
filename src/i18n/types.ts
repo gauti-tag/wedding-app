@@ -96,4 +96,13 @@ export type Dictionary = {
     coupleSpace: string;
     installApp: string;
   };
+  pwaInstall: {
+    title: string;
+    body: string;
+    install: string;
+    later: string;
+    never: string;
+    iosHint: string;
+    closeAria: string;
+  };
 };

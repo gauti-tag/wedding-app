@@ -52,7 +52,7 @@ export function AdminAuditLog({ initialEntries }: { initialEntries: AuditEntry[]
   }, [query]);
 
   return (
-    <section id="admin-audit" className="mt-14 scroll-mt-28 space-y-6">
+    <section id="admin-audit" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-6">
       <div>
         <h2 className="section-title text-3xl text-mist">Piste d’audit</h2>
         <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
@@ -74,8 +74,39 @@ export function AdminAuditLog({ initialEntries }: { initialEntries: AuditEntry[]
         />
       </div>
 
-      <div className="overflow-x-auto border border-line">
-        <table className="min-w-full text-left text-sm">
+      <div className="space-y-3 md:hidden">
+        {!mounted ? (
+          <p className="border border-line px-3 py-5 text-sm text-soft">Chargement…</p>
+        ) : pageEntries.length === 0 ? (
+          <p className="border border-line px-3 py-5 text-sm text-soft">
+            Aucune entrée d’audit.
+          </p>
+        ) : (
+          pageEntries.map((entry, index) => (
+            <article
+              key={`${entry.id}-${entry.at}-${index}`}
+              className="min-w-0 space-y-2 border border-line bg-white p-3 text-sm"
+            >
+              <p className="text-xs text-soft">{formatAuditDate(entry.at)}</p>
+              <p className="break-words text-mist">{entry.userName}</p>
+              <p className="break-all text-xs text-soft">{entry.userEmail}</p>
+              <p className="text-xs tracking-[0.12em] text-champagne uppercase">
+                {roleLabel(entry.role)}
+              </p>
+              <p className="break-words">
+                <span className="text-mist">{entry.action}</span>
+                <span className="text-soft"> · {entry.resource}</span>
+              </p>
+              {entry.details ? (
+                <p className="break-words text-xs text-soft">{entry.details}</p>
+              ) : null}
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="admin-scroll-x hidden border border-line md:block">
+        <table className="w-full min-w-[40rem] text-left text-sm">
           <thead className="bg-forest text-xs tracking-[0.14em] text-soft uppercase">
             <tr>
               <th className="px-4 py-3 font-medium">Date</th>

@@ -121,7 +121,7 @@ export function AdminDessertsEditor({
   }
 
   return (
-    <section id="admin-desserts" className="mt-14 scroll-mt-28 space-y-6">
+    <section id="admin-desserts" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-6">
       {AlertDialog}
       <AdminStickyHeader
         title="Desserts"

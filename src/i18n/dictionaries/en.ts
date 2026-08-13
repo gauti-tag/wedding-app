@@ -105,6 +105,15 @@ const en: Dictionary = {
     coupleSpace: "Couple space",
     installApp: "Install app",
   },
+  pwaInstall: {
+    title: "Keep the invitation handy",
+    body: "Add it to your home screen so you can find it easily on the day.",
+    install: "Install",
+    later: "Not now",
+    never: "Don’t ask again",
+    iosHint: "On iPhone: tap Share, then “Add to Home Screen”.",
+    closeAria: "Close",
+  },
 };
 
 export default en;

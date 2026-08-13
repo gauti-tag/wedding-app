@@ -141,7 +141,7 @@ export function AdminInviteQr({ partnerOne, partnerTwo, weddingDateLabel }: Prop
   }
 
   return (
-    <section id="admin-invite-qr" className="mt-14 scroll-mt-28">
+    <section id="admin-invite-qr" className="mt-14 min-w-0 max-w-full scroll-mt-28">
       <div className="mb-5">
         <h2 className="section-title text-3xl text-mist">QR invitation (site)</h2>
         <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
@@ -175,7 +175,7 @@ export function AdminInviteQr({ partnerOne, partnerTwo, weddingDateLabel }: Prop
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_minmax(220px,280px)]">
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,280px)]">
           <div className="space-y-4">
             <p className="text-xs tracking-[0.16em] text-champagne uppercase">Options & actions</p>
 

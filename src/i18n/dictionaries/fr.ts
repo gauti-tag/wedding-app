@@ -105,6 +105,15 @@ const fr: Dictionary = {
     coupleSpace: "Espace couple",
     installApp: "Installer l’app",
   },
+  pwaInstall: {
+    title: "Gardez l’invitation à portée de main",
+    body: "Ajoutez-la à votre écran d’accueil pour la retrouver facilement le jour J.",
+    install: "Installer",
+    later: "Plus tard",
+    never: "Ne plus me demander",
+    iosHint: "Sur iPhone : touchez Partager, puis « Sur l’écran d’accueil ».",
+    closeAria: "Fermer",
+  },
 };
 
 export default fr;

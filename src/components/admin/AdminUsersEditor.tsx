@@ -95,7 +95,7 @@ export function AdminUsersEditor({
   }
 
   return (
-    <section id="admin-users" className="mt-14 scroll-mt-28 space-y-6">
+    <section id="admin-users" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-6">
       {AlertDialog}
       <div>
         <h2 className="section-title text-3xl text-mist">Utilisateurs & profils</h2>
@@ -181,8 +181,62 @@ export function AdminUsersEditor({
         </button>
       </div>
 
-      <div className="overflow-x-auto border border-line">
-        <table className="min-w-full text-left text-sm">
+      <div className="space-y-3 md:hidden">
+        {users.map((user) => (
+          <article key={user.id} className="min-w-0 space-y-3 border border-line bg-white p-3">
+            <div>
+              <p className="break-words font-medium text-mist">{user.name}</p>
+              <p className="mt-0.5 break-all text-xs text-soft">{user.email}</p>
+            </div>
+            <div>
+              <label className="label" htmlFor={`user-role-m-${user.id}`}>
+                Profil
+              </label>
+              <select
+                id={`user-role-m-${user.id}`}
+                className="field !py-2"
+                value={user.role}
+                disabled={user.id === currentUserId}
+                onChange={(e) => void onChangeRole(user, e.target.value as Role)}
+              >
+                {ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {roleLabels[role]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="text-xs text-soft">
+              {user.active ? "Actif" : "Inactif"}
+              {" · "}
+              {user.lastLoginAt
+                ? new Date(user.lastLoginAt).toLocaleString("fr-FR")
+                : "Jamais connecté"}
+            </p>
+            <div className="flex flex-wrap gap-3 border-t border-line pt-2">
+              <button
+                type="button"
+                disabled={user.id === currentUserId}
+                onClick={() => void onToggleActive(user)}
+                className="text-xs tracking-[0.12em] text-champagne uppercase disabled:opacity-40"
+              >
+                {user.active ? "Désactiver" : "Activer"}
+              </button>
+              <button
+                type="button"
+                disabled={user.id === currentUserId}
+                onClick={() => void onDelete(user)}
+                className="text-xs tracking-[0.12em] text-red-700 uppercase disabled:opacity-40"
+              >
+                Supprimer
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="admin-scroll-x hidden border border-line md:block">
+        <table className="w-full min-w-[36rem] text-left text-sm">
           <thead className="bg-forest text-xs tracking-[0.14em] text-soft uppercase">
             <tr>
               <th className="px-4 py-3 font-medium">Utilisateur</th>

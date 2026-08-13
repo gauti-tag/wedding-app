@@ -293,7 +293,7 @@ export function AdminSiteEditor({
   }
 
   return (
-    <section id="admin-site" className="mt-14 scroll-mt-28 space-y-6">
+    <section id="admin-site" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-6">
       {AlertDialog}
       <AdminStickyHeader
         title="Événement & site"
@@ -320,8 +320,8 @@ export function AdminSiteEditor({
             pourrez tout ajuster ensuite.
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-[14rem] flex-1">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="min-w-0 w-full flex-1 sm:min-w-[12rem]">
             <label className="label" htmlFor="eventTypePreset">
               Modèle
             </label>
@@ -338,7 +338,7 @@ export function AdminSiteEditor({
               ))}
             </select>
           </div>
-          <button type="button" className="btn-primary" onClick={applyPreset}>
+          <button type="button" className="btn-primary w-full sm:w-auto" onClick={applyPreset}>
             Appliquer le modèle
           </button>
         </div>
@@ -468,7 +468,7 @@ export function AdminSiteEditor({
               <label className="label" htmlFor={`theme-color-${field.key}`}>
                 {field.label}
               </label>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <input
                   id={`theme-color-${field.key}`}
                   type="color"
@@ -477,7 +477,7 @@ export function AdminSiteEditor({
                   onChange={(e) => setThemeColor(field.key, e.target.value)}
                 />
                 <input
-                  className="field font-mono text-sm uppercase"
+                  className="field min-w-0 flex-1 font-mono text-sm uppercase"
                   value={content.theme.colors[field.key]}
                   onChange={(e) => {
                     const next = e.target.value.trim();
@@ -622,7 +622,7 @@ export function AdminSiteEditor({
             {content.rsvpConfig.guestOfOptions.map((option, index) => (
               <div
                 key={option.id}
-                className="grid gap-3 border border-line p-3 sm:grid-cols-[7rem_1fr_1fr_auto]"
+                className="grid min-w-0 gap-3 border border-line p-3 md:grid-cols-[minmax(0,7rem)_minmax(0,1fr)_minmax(0,1fr)_auto]"
               >
                 <div>
                   <label className="label">Id</label>

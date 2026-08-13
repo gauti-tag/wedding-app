@@ -179,7 +179,7 @@ export function AdminMcRundownEditor({
       : null;
 
   return (
-    <section id="admin-mc-rundown" className="mt-14 scroll-mt-28 space-y-6">
+    <section id="admin-mc-rundown" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-6">
       {AlertDialog}
       {fullscreen}
       <AdminStickyHeader
@@ -213,7 +213,7 @@ export function AdminMcRundownEditor({
         }
       />
 
-      <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)]">
+      <div className="grid min-w-0 items-start gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
         <div className="space-y-4">
           <div className="space-y-4 border border-line bg-white p-5">
             <div>
@@ -287,7 +287,7 @@ export function AdminMcRundownEditor({
                   </div>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-[1.2fr_0.7fr_0.5fr_0.8fr]">
+                <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,0.5fr)_minmax(0,0.8fr)]">
                   <div>
                     <label className="label" htmlFor={`mc-label-${cue.id}`}>
                       Libellé
