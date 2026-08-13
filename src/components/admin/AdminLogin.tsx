@@ -34,10 +34,10 @@ export function AdminLogin() {
       >
         <p className="eyebrow">Privé</p>
         <h1 className="section-title text-4xl text-mist">Espace couple</h1>
-        <p className="text-sm font-normal text-soft">
+        {/*<p className="text-sm font-normal text-soft">
           Compte admin initial : <code className="text-champagne">admin@couple.local</code> /{" "}
           <code className="text-champagne">wedding2026</code>
-        </p>
+        </p>*/}
         <div>
           <label className="label" htmlFor="email">
             Email
