@@ -105,13 +105,13 @@ const fr: Dictionary = {
     coupleSpace: "Espace couple",
     installApp: "Installer l’app",
     installPrompt: {
-      title: "Gardez l’invitation à portée",
-      body: "Ajoutez-la à votre écran d’accueil pour la retrouver facilement le jour J.",
-      install: "Installer",
+      title: "Sur l’écran d’accueil ?",
+      body: "Pour rouvrir l’invitation en un tap.",
+      install: "Oui",
       later: "Plus tard",
-      never: "Ne plus me demander",
+      never: "Ne plus demander",
       iosHint:
-        "Sur iPhone : touchez Partager dans Safari, puis « Sur l’écran d’accueil ».",
+        "Safari → Partager → « Sur l’écran d’accueil ».",
       close: "Fermer",
     },
   },
