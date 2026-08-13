@@ -104,15 +104,15 @@ const en: Dictionary = {
   footer: {
     coupleSpace: "Couple space",
     installApp: "Install app",
-  },
-  pwaInstall: {
-    title: "Add to Home Screen?",
-    body: "Add it to your home screen so you can find it easily on the day.",
-    install: "Yes",
-    later: "No",
-    never: "Never",
-    iosHint: "iPhone: Share → Add to Home Screen",
-    closeAria: "Close",
+    installPrompt: {
+      title: "Keep the invitation handy",
+      body: "Add it to your home screen so you can open it quickly on the day.",
+      install: "Install",
+      later: "Later",
+      never: "Don’t ask again",
+      iosHint: "On iPhone: tap Share in Safari, then “Add to Home Screen”.",
+      close: "Close",
+    },
   },
 };
 

@@ -1,18 +1,50 @@
-/** Préférences + détection pour l’invite d’installation PWA. */
-
-export const PWA_INSTALL_PREF_KEY = "pwa-install-pref";
-export const PWA_LATER_MS = 7 * 24 * 60 * 60 * 1000;
-
-export type PwaInstallPref =
-  | { status: "never" }
-  | { status: "later"; until: number };
+/** Gestion partagée de l’invitation d’installation PWA (prompt + préférences). */
 
 export type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-export function isStandaloneDisplay(): boolean {
+const STORAGE_KEY = "wedding-pwa-install-v1";
+const LATER_MS = 7 * 24 * 60 * 60 * 1000;
+
+export type InstallPref =
+  | { v: 1; status: "never" }
+  | { v: 1; status: "later"; until: number }
+  | { v: 1; status: "installed" };
+
+export const PWA_SUGGEST_EVENT = "pwa-install:suggest";
+
+let deferred: BeforeInstallPromptEvent | null = null;
+const listeners = new Set<() => void>();
+
+function notify() {
+  for (const listener of listeners) listener();
+}
+
+export function subscribePwaInstall(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export function getDeferredInstallPrompt() {
+  return deferred;
+}
+
+export function captureInstallPrompt(event: BeforeInstallPromptEvent) {
+  event.preventDefault();
+  deferred = event;
+  notify();
+}
+
+export function clearDeferredInstallPrompt() {
+  deferred = null;
+  notify();
+}
+
+export function isPwaStandalone() {
   if (typeof window === "undefined") return false;
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -21,7 +53,16 @@ export function isStandaloneDisplay(): boolean {
   );
 }
 
-export function isIosDevice(): boolean {
+/** Mobile / tactile : le prompt soft n’apparaît que dans ces contextes. */
+export function isLikelyMobile() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(max-width: 767px)").matches ||
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
+export function isIosDevice() {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent;
   return (
@@ -30,58 +71,65 @@ export function isIosDevice(): boolean {
   );
 }
 
-/** Mobile / tablette tactile — pas de bannière desktop. */
-export function isMobileViewport(): boolean {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(max-width: 767px)").matches ||
-    window.matchMedia("(pointer: coarse)").matches
-  );
-}
-
-export function readPwaInstallPref(): PwaInstallPref | null {
+export function readInstallPref(): InstallPref | null {
   try {
-    const raw = localStorage.getItem(PWA_INSTALL_PREF_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as PwaInstallPref;
-    if (parsed?.status === "never") return parsed;
-    if (parsed?.status === "later" && typeof parsed.until === "number") return parsed;
-    return null;
+    const parsed = JSON.parse(raw) as InstallPref;
+    if (!parsed || parsed.v !== 1) return null;
+    return parsed;
   } catch {
     return null;
   }
 }
 
-export function writePwaInstallPref(pref: PwaInstallPref): void {
+export function writeInstallPref(pref: InstallPref) {
   try {
-    localStorage.setItem(PWA_INSTALL_PREF_KEY, JSON.stringify(pref));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(pref));
   } catch {
     // private mode / quota
   }
+  notify();
 }
 
-export function clearPwaInstallPref(): void {
-  try {
-    localStorage.removeItem(PWA_INSTALL_PREF_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-/** true si on peut encore proposer l’installation. */
-export function canOfferPwaInstall(): boolean {
-  if (isStandaloneDisplay()) return false;
-  if (!isMobileViewport()) return false;
-  const pref = readPwaInstallPref();
+export function shouldOfferInstallPrompt() {
+  if (typeof window === "undefined") return false;
+  if (isPwaStandalone()) return false;
+  const pref = readInstallPref();
   if (!pref) return true;
-  if (pref.status === "never") return false;
-  return Date.now() >= pref.until;
+  if (pref.status === "never" || pref.status === "installed") return false;
+  if (pref.status === "later") return Date.now() >= pref.until;
+  return true;
 }
 
-export function dismissPwaInstallLater(ms = PWA_LATER_MS): void {
-  writePwaInstallPref({ status: "later", until: Date.now() + ms });
+export function markInstallNever() {
+  writeInstallPref({ v: 1, status: "never" });
 }
 
-export function dismissPwaInstallNever(): void {
-  writePwaInstallPref({ status: "never" });
+export function markInstallLater(ms = LATER_MS) {
+  writeInstallPref({ v: 1, status: "later", until: Date.now() + ms });
+}
+
+export function markInstalled() {
+  writeInstallPref({ v: 1, status: "installed" });
+  clearDeferredInstallPrompt();
+}
+
+/** Demande d’afficher le prompt (ex. après RSVP réussi). */
+export function suggestPwaInstall() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(PWA_SUGGEST_EVENT));
+}
+
+export async function promptNativeInstall() {
+  const event = deferred;
+  if (!event) return "unavailable" as const;
+  await event.prompt();
+  const choice = await event.userChoice;
+  clearDeferredInstallPrompt();
+  if (choice.outcome === "accepted") {
+    markInstalled();
+    return "accepted" as const;
+  }
+  return "dismissed" as const;
 }

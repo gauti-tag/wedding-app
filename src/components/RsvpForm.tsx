@@ -10,6 +10,7 @@ import {
   isRsvpNotYetOpen,
 } from "@/lib/rsvp-deadline";
 import { t } from "@/lib/localized";
+import { suggestPwaInstall } from "@/lib/pwa-install";
 import type { SiteContent } from "@/lib/types";
 import { CI_PHONE_PATTERN, isValidCiPhone } from "@/lib/validation";
 import { phoneToWhatsAppDigits } from "@/lib/whatsapp";
@@ -151,6 +152,8 @@ export function RsvpForm({
       }
       setStatus("success");
       formEl.reset();
+      // Soft suggest d’installer l’app après un RSVP réussi (mobile).
+      window.setTimeout(() => suggestPwaInstall(), 900);
     } catch (err) {
       setStatus("error");
       setError(err instanceof Error ? err.message : dict.rsvp.error);

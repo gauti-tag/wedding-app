@@ -77,7 +77,7 @@ export default async function Home({ params }: Props) {
         />
       </main>
       <SiteFooter dict={dict} siteContent={siteContent} locale={raw} />
-      <PwaInstallPrompt copy={dict.pwaInstall} />
+      <PwaInstallPrompt copy={dict.footer.installPrompt} />
     </>
   );
 }

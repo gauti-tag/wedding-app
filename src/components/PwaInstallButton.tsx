@@ -2,51 +2,61 @@
 
 import { useEffect, useState } from "react";
 import {
-  promptNativeInstall,
-  useDeferredInstallPrompt,
-} from "@/lib/pwa-deferred-prompt";
-import {
-  dismissPwaInstallNever,
+  captureInstallPrompt,
+  getDeferredInstallPrompt,
   isIosDevice,
-  isMobileViewport,
-  isStandaloneDisplay,
+  isPwaStandalone,
+  markInstalled,
+  promptNativeInstall,
+  subscribePwaInstall,
+  type BeforeInstallPromptEvent,
 } from "@/lib/pwa-install";
 
-export function PwaInstallButton({
-  label,
-  iosHint,
-}: {
-  label: string;
-  iosHint?: string;
-}) {
-  const deferred = useDeferredInstallPrompt();
+export function PwaInstallButton({ label }: { label: string }) {
   const [visible, setVisible] = useState(false);
-  const [ios, setIos] = useState(false);
+  const [iosHint, setIosHint] = useState(false);
 
   useEffect(() => {
-    if (isStandaloneDisplay()) {
-      setVisible(false);
-      return;
-    }
-    const iosDevice = isIosDevice();
-    setIos(iosDevice);
-    // Footer : toujours proposé hors mode installé (même après « ne plus demander »).
-    if (iosDevice || isMobileViewport() || deferred) {
-      setVisible(true);
-    }
-  }, [deferred]);
+    if (isPwaStandalone()) return;
+
+    const ios = isIosDevice();
+    setIosHint(ios);
+
+    const sync = () => {
+      if (isPwaStandalone()) {
+        setVisible(false);
+        return;
+      }
+      setVisible(ios || Boolean(getDeferredInstallPrompt()));
+    };
+
+    sync();
+
+    const onBeforeInstall = (event: Event) => {
+      captureInstallPrompt(event as BeforeInstallPromptEvent);
+      sync();
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    const unsub = subscribePwaInstall(sync);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      unsub();
+    };
+  }, []);
 
   async function onInstall() {
-    if (ios && !deferred) {
-      window.alert(iosHint || "Sur iPhone / iPad : Partager → Sur l’écran d’accueil.");
+    if (iosHint) {
+      window.alert(
+        "Sur iPhone / iPad : ouvrez le menu Partager de Safari, puis « Sur l’écran d’accueil ».",
+      );
       return;
     }
-    const outcome = await promptNativeInstall();
-    if (outcome === "accepted") {
-      dismissPwaInstallNever();
+    const result = await promptNativeInstall();
+    if (result === "accepted") {
+      markInstalled();
       setVisible(false);
-    } else if (outcome === "unavailable" && ios) {
-      window.alert(iosHint || "Sur iPhone / iPad : Partager → Sur l’écran d’accueil.");
     }
   }
 

@@ -397,10 +397,6 @@ img {
   }
 }
 
-.rise {
-  animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 @keyframes pwa-sheet-in {
   from {
     opacity: 0;
@@ -412,8 +408,12 @@ img {
   }
 }
 
-.pwa-install-sheet {
+.pwa-sheet-in {
   animation: pwa-sheet-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.rise {
+  animation: rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .rise-delay-1 {
@@ -438,7 +438,7 @@ img {
   .rise-delay-1,
   .rise-delay-2,
   .rise-delay-3,
-  .pwa-install-sheet {
+  .pwa-sheet-in {
     animation: none !important;
   }
 

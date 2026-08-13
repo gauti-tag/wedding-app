@@ -104,15 +104,16 @@ const fr: Dictionary = {
   footer: {
     coupleSpace: "Espace couple",
     installApp: "Installer l’app",
-  },
-  pwaInstall: {
-    title: "Sur l’écran d’accueil ?",
-    body: "Ajoutez-la à votre écran d’accueil pour la retrouver facilement le jour J.",
-    install: "Oui",
-    later: "Non",
-    never: "Ne plus",
-    iosHint: "iPhone : Partager → Sur l’écran d’accueil",
-    closeAria: "Fermer",
+    installPrompt: {
+      title: "Gardez l’invitation à portée",
+      body: "Ajoutez-la à votre écran d’accueil pour la retrouver facilement le jour J.",
+      install: "Installer",
+      later: "Plus tard",
+      never: "Ne plus me demander",
+      iosHint:
+        "Sur iPhone : touchez Partager dans Safari, puis « Sur l’écran d’accueil ».",
+      close: "Fermer",
+    },
   },
 };
 

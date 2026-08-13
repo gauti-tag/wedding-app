@@ -36,7 +36,7 @@ export function SiteFooter({
           </div>
         </div>
         <div className="flex flex-col items-start gap-3 md:items-end">
-          <PwaInstallButton label={dict.footer.installApp} iosHint={dict.pwaInstall.iosHint} />
+          <PwaInstallButton label={dict.footer.installApp} />
           <a
             href="/admin"
             className="text-xs tracking-[0.18em] text-soft uppercase no-underline hover:text-champagne"
