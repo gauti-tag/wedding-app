@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import type { LocalizedText, MenuContent, MenuCuisine, MenuDish } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -156,22 +157,25 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
   return (
     <section id="admin-menu" className="mt-14 scroll-mt-28 space-y-6">
       {AlertDialog}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="section-title text-3xl text-mist">Menu de réception</h2>
-          <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Gérez les cuisines et plats affichés sur le site (FR / EN).
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={addCuisine} className="btn-ghost">
-            + Cuisine
-          </button>
-          <button type="button" onClick={onSave} disabled={busy} className="btn-primary disabled:opacity-60">
-            {busy ? "Enregistrement…" : "Enregistrer le menu"}
-          </button>
-        </div>
-      </div>
+      <AdminStickyHeader
+        title="Menu de réception"
+        description="Gérez les cuisines et plats affichés sur le site (FR / EN)."
+        actions={
+          <>
+            <button type="button" onClick={addCuisine} className="btn-ghost">
+              + Cuisine
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={busy}
+              className="btn-primary disabled:opacity-60"
+            >
+              {busy ? "Enregistrement…" : "Enregistrer le menu"}
+            </button>
+          </>
+        }
+      />
 
       <div className="space-y-4 border border-line bg-white p-6">
         <LocalizedFields

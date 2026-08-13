@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import {
   applyEventPreset,
@@ -294,23 +295,20 @@ export function AdminSiteEditor({
   return (
     <section id="admin-site" className="mt-14 scroll-mt-28 space-y-6">
       {AlertDialog}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="section-title text-3xl text-mist">Événement & site</h2>
-          <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Type d’événement, identité, sections, apparence, RSVP, rappels WhatsApp et textes
-            hero (FR/EN).
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={busy}
-          className="btn-primary disabled:opacity-60"
-        >
-          {busy ? "Enregistrement…" : "Enregistrer"}
-        </button>
-      </div>
+      <AdminStickyHeader
+        title="Événement & site"
+        description="Type d’événement, identité, sections, apparence, RSVP, rappels WhatsApp et textes hero (FR/EN)."
+        actions={
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={busy}
+            className="btn-primary disabled:opacity-60"
+          >
+            {busy ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        }
+      />
 
       <div className="space-y-4 border border-line bg-white p-5">
         <div>

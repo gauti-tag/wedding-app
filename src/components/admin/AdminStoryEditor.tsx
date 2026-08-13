@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import type { LocalizedText, StoryContent } from "@/lib/types";
 
 function LocalizedFields({
@@ -83,23 +84,25 @@ export function AdminStoryEditor({ initialStory }: { initialStory: StoryContent 
   return (
     <section id="admin-story" className="mt-14 scroll-mt-28 space-y-6">
       {AlertDialog}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="section-title text-3xl text-mist">Histoire</h2>
-          <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
+      <AdminStickyHeader
+        title="Histoire"
+        description={
+          <>
             Textes de la section « Notre histoire » (FR/EN). Les photos se gèrent dans l’album
             « Notre histoire » ci-dessus.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={busy}
-          className="btn-primary disabled:opacity-60"
-        >
-          {busy ? "Enregistrement…" : "Enregistrer l’histoire"}
-        </button>
-      </div>
+          </>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={busy}
+            className="btn-primary disabled:opacity-60"
+          >
+            {busy ? "Enregistrement…" : "Enregistrer l’histoire"}
+          </button>
+        }
+      />
 
       <div className="space-y-4 border border-line bg-white p-5">
         <LocalizedFields

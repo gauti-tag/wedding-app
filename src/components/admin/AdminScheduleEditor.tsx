@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import type { LocalizedText, ScheduleContent, ScheduleVenue } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -121,27 +122,25 @@ export function AdminScheduleEditor({
   return (
     <section id="admin-schedule" className="mt-14 scroll-mt-28 space-y-6">
       {AlertDialog}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="section-title text-3xl text-mist">Programme</h2>
-          <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Textes, dress code et étapes du jour J (FR/EN). Ajoutez cérémonie, réception, etc.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={addVenue} className="btn-ghost">
-            + Étape
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={busy}
-            className="btn-primary disabled:opacity-60"
-          >
-            {busy ? "Enregistrement…" : "Enregistrer le programme"}
-          </button>
-        </div>
-      </div>
+      <AdminStickyHeader
+        title="Programme"
+        description="Textes, dress code et étapes du jour J (FR/EN). Ajoutez cérémonie, réception, etc."
+        actions={
+          <>
+            <button type="button" onClick={addVenue} className="btn-ghost">
+              + Étape
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={busy}
+              className="btn-primary disabled:opacity-60"
+            >
+              {busy ? "Enregistrement…" : "Enregistrer le programme"}
+            </button>
+          </>
+        }
+      />
 
       <div className="space-y-4 border border-line bg-white p-5">
         <LocalizedFields

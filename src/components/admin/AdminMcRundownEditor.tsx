@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import { McRundownPreview } from "@/components/admin/McRundownPreview";
 import {
   createEmptyMcCue,
@@ -181,39 +182,36 @@ export function AdminMcRundownEditor({
     <section id="admin-mc-rundown" className="mt-14 scroll-mt-28 space-y-6">
       {AlertDialog}
       {fullscreen}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="section-title text-3xl text-mist">Feuille de route MC</h2>
-          <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Document interne pour le maître de cérémonie. L’aperçu se met à jour en direct.
-            Non publié sur le site.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={addCue} className="btn-ghost">
-            + Passage
-          </button>
-          <button type="button" onClick={() => setPreviewOpen(true)} className="btn-ghost">
-            Aperçu plein écran
-          </button>
-          <button
-            type="button"
-            onClick={() => void onDownload()}
-            disabled={exporting || rundown.cues.length === 0}
-            className="btn-ghost disabled:opacity-60"
-          >
-            {exporting ? "Export…" : "Télécharger PNG"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void onSave()}
-            disabled={busy}
-            className="btn-primary disabled:opacity-60"
-          >
-            {busy ? "Enregistrement…" : "Enregistrer"}
-          </button>
-        </div>
-      </div>
+      <AdminStickyHeader
+        title="Feuille de route MC"
+        description="Document interne pour le maître de cérémonie. L’aperçu se met à jour en direct. Non publié sur le site."
+        actions={
+          <>
+            <button type="button" onClick={addCue} className="btn-ghost">
+              + Passage
+            </button>
+            <button type="button" onClick={() => setPreviewOpen(true)} className="btn-ghost">
+              Aperçu plein écran
+            </button>
+            <button
+              type="button"
+              onClick={() => void onDownload()}
+              disabled={exporting || rundown.cues.length === 0}
+              className="btn-ghost disabled:opacity-60"
+            >
+              {exporting ? "Export…" : "Télécharger PNG"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void onSave()}
+              disabled={busy}
+              className="btn-primary disabled:opacity-60"
+            >
+              {busy ? "Enregistrement…" : "Enregistrer"}
+            </button>
+          </>
+        }
+      />
 
       <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)]">
         <div className="space-y-4">

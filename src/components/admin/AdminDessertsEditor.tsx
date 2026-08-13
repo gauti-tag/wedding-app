@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import type { DessertItem, DessertsContent, LocalizedText } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -122,27 +123,25 @@ export function AdminDessertsEditor({
   return (
     <section id="admin-desserts" className="mt-14 scroll-mt-28 space-y-6">
       {AlertDialog}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="section-title text-3xl text-mist">Desserts</h2>
-          <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Liste universelle affichée dans la section Menu (yaourt, fruits, gâteau…).
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={addDessert} className="btn-ghost">
-            + Dessert
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={busy}
-            className="btn-primary disabled:opacity-60"
-          >
-            {busy ? "Enregistrement…" : "Enregistrer les desserts"}
-          </button>
-        </div>
-      </div>
+      <AdminStickyHeader
+        title="Desserts"
+        description="Liste universelle affichée dans la section Menu (yaourt, fruits, gâteau…)."
+        actions={
+          <>
+            <button type="button" onClick={addDessert} className="btn-ghost">
+              + Dessert
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={busy}
+              className="btn-primary disabled:opacity-60"
+            >
+              {busy ? "Enregistrement…" : "Enregistrer les desserts"}
+            </button>
+          </>
+        }
+      />
 
       {desserts.items.length === 0 ? (
         <p className="text-sm text-soft">

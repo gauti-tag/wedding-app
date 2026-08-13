@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import type { DrinkItem, DrinksContent, LocalizedText } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -118,27 +119,25 @@ export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksCont
   return (
     <section id="admin-drinks" className="mt-14 scroll-mt-28 space-y-6">
       {AlertDialog}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="section-title text-3xl text-mist">Boissons</h2>
-          <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Liste universelle affichée dans la section Menu (vin, bière, softs…).
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={addDrink} className="btn-ghost">
-            + Boisson
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={busy}
-            className="btn-primary disabled:opacity-60"
-          >
-            {busy ? "Enregistrement…" : "Enregistrer les boissons"}
-          </button>
-        </div>
-      </div>
+      <AdminStickyHeader
+        title="Boissons"
+        description="Liste universelle affichée dans la section Menu (vin, bière, softs…)."
+        actions={
+          <>
+            <button type="button" onClick={addDrink} className="btn-ghost">
+              + Boisson
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={busy}
+              className="btn-primary disabled:opacity-60"
+            >
+              {busy ? "Enregistrement…" : "Enregistrer les boissons"}
+            </button>
+          </>
+        }
+      />
 
       {drinks.items.length === 0 ? (
         <p className="text-sm text-soft">
