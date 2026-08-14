@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
+import { AdminPwaBannerPreview } from "@/components/admin/AdminPwaBannerPreview";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
+import {
+  defaultPwaBanner,
+  normalizePwaBanner,
+  PWA_BANNER_HEIGHT_OPTIONS,
+  PWA_BANNER_PLACEMENT_OPTIONS,
+  PWA_BANNER_RADIUS_OPTIONS,
+  PWA_BANNER_WIDTH_OPTIONS,
+} from "@/lib/pwa-banner";
 import {
   applyEventPreset,
   defaultEventVocabulary,
@@ -33,6 +42,10 @@ import type {
   EventType,
   HeroCarouselEffect,
   LocalizedText,
+  PwaBannerHeight,
+  PwaBannerPlacement,
+  PwaBannerRadius,
+  PwaBannerWidth,
   SiteButtonRadius,
   SiteContent,
   SiteNavSectionKey,
@@ -131,6 +144,7 @@ export function AdminSiteEditor({
         ctaSchedule: initialSite.hero?.ctaSchedule ?? { fr: "", en: "" },
       },
       heroCarousel: normalizeHeroCarousel(initialSite.heroCarousel),
+      pwaBanner: normalizePwaBanner(initialSite.pwaBanner),
       features: normalizeSiteFeatures(initialSite.features ?? defaultSiteFeatures()),
       theme: normalizeSiteTheme(initialSite.theme ?? defaultSiteTheme()),
       vocabulary: normalizeEventVocabulary(
@@ -297,7 +311,7 @@ export function AdminSiteEditor({
       {AlertDialog}
       <AdminStickyHeader
         title="Événement & site"
-        description="Type d’événement, identité, sections, apparence, RSVP, rappels WhatsApp et textes hero (FR/EN)."
+        description="Type d’événement, identité, sections, apparence, RSVP, bannière PWA et textes hero (FR/EN)."
         actions={
           <button
             type="button"
@@ -1210,6 +1224,307 @@ export function AdminSiteEditor({
               }
             />
           </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 border border-line bg-white p-5">
+        <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+          Bannière installation PWA
+        </p>
+        <p className="text-sm text-soft">
+          Activez, personnalisez les textes (FR/EN), la forme, la largeur, la hauteur et
+          l’emplacement. L’aperçu reste visible pendant les réglages.
+        </p>
+
+        <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,20rem)]">
+          <div className="min-w-0 space-y-4">
+            <div className="flex flex-wrap gap-4">
+              <label className="inline-flex items-center gap-2 text-sm text-mist">
+                <input
+                  type="checkbox"
+                  checked={content.pwaBanner.enabled}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: { ...prev.pwaBanner, enabled: e.target.checked },
+                    }))
+                  }
+                />
+                Afficher la bannière
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-mist">
+                <input
+                  type="checkbox"
+                  checked={content.pwaBanner.showFooterButton}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: { ...prev.pwaBanner, showFooterButton: e.target.checked },
+                    }))
+                  }
+                />
+                Bouton « Installer » dans le pied de page
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-mist">
+                <input
+                  type="checkbox"
+                  checked={content.pwaBanner.mobileOnly}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: { ...prev.pwaBanner, mobileOnly: e.target.checked },
+                    }))
+                  }
+                />
+                Bannière mobile uniquement
+              </label>
+            </div>
+
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              <div className="min-w-0">
+                <label className="label" htmlFor="pwaPlacement">
+                  Emplacement
+                </label>
+                <select
+                  id="pwaPlacement"
+                  className="field"
+                  value={content.pwaBanner.placement}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: {
+                        ...prev.pwaBanner,
+                        placement: e.target.value as PwaBannerPlacement,
+                      },
+                    }))
+                  }
+                >
+                  {PWA_BANNER_PLACEMENT_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="label" htmlFor="pwaWidth">
+                  Largeur du cadre
+                </label>
+                <select
+                  id="pwaWidth"
+                  className="field"
+                  value={content.pwaBanner.width}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: {
+                        ...prev.pwaBanner,
+                        width: e.target.value as PwaBannerWidth,
+                      },
+                    }))
+                  }
+                >
+                  {PWA_BANNER_WIDTH_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="label" htmlFor="pwaHeight">
+                  Hauteur / longueur
+                </label>
+                <select
+                  id="pwaHeight"
+                  className="field"
+                  value={content.pwaBanner.height}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: {
+                        ...prev.pwaBanner,
+                        height: e.target.value as PwaBannerHeight,
+                      },
+                    }))
+                  }
+                >
+                  {PWA_BANNER_HEIGHT_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="label" htmlFor="pwaCardRadius">
+                  Forme du cadre
+                </label>
+                <select
+                  id="pwaCardRadius"
+                  className="field"
+                  value={content.pwaBanner.cardRadius}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: {
+                        ...prev.pwaBanner,
+                        cardRadius: e.target.value as PwaBannerRadius,
+                      },
+                    }))
+                  }
+                >
+                  {PWA_BANNER_RADIUS_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0 sm:col-span-2">
+                <label className="label" htmlFor="pwaButtonRadius">
+                  Forme du bouton
+                </label>
+                <select
+                  id="pwaButtonRadius"
+                  className="field"
+                  value={content.pwaBanner.buttonRadius}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: {
+                        ...prev.pwaBanner,
+                        buttonRadius: e.target.value as PwaBannerRadius,
+                      },
+                    }))
+                  }
+                >
+                  {PWA_BANNER_RADIUS_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="pwaEngageMs">
+                Délai d’apparition ({Math.round(content.pwaBanner.engageMs / 1000)}s)
+              </label>
+              <input
+                id="pwaEngageMs"
+                type="range"
+                min={5000}
+                max={60000}
+                step={1000}
+                className="w-full"
+                value={content.pwaBanner.engageMs}
+                onChange={(e) =>
+                  setContent((prev) => ({
+                    ...prev,
+                    pwaBanner: {
+                      ...prev.pwaBanner,
+                      engageMs: Number(e.target.value),
+                    },
+                  }))
+                }
+              />
+            </div>
+
+            <LocalizedFields
+              label="Titre"
+              value={content.pwaBanner.copy.title}
+              onChange={(title) =>
+                setContent((prev) => ({
+                  ...prev,
+                  pwaBanner: { ...prev.pwaBanner, copy: { ...prev.pwaBanner.copy, title } },
+                }))
+              }
+            />
+            <LocalizedFields
+              label="Texte"
+              value={content.pwaBanner.copy.body}
+              onChange={(body) =>
+                setContent((prev) => ({
+                  ...prev,
+                  pwaBanner: { ...prev.pwaBanner, copy: { ...prev.pwaBanner.copy, body } },
+                }))
+              }
+              multiline
+            />
+            <LocalizedFields
+              label="Bouton principal"
+              value={content.pwaBanner.copy.install}
+              onChange={(install) =>
+                setContent((prev) => ({
+                  ...prev,
+                  pwaBanner: { ...prev.pwaBanner, copy: { ...prev.pwaBanner.copy, install } },
+                }))
+              }
+            />
+            <LocalizedFields
+              label="Lien « Plus tard »"
+              value={content.pwaBanner.copy.later}
+              onChange={(later) =>
+                setContent((prev) => ({
+                  ...prev,
+                  pwaBanner: { ...prev.pwaBanner, copy: { ...prev.pwaBanner.copy, later } },
+                }))
+              }
+            />
+            <LocalizedFields
+              label="Lien « Ne plus demander »"
+              value={content.pwaBanner.copy.never}
+              onChange={(never) =>
+                setContent((prev) => ({
+                  ...prev,
+                  pwaBanner: { ...prev.pwaBanner, copy: { ...prev.pwaBanner.copy, never } },
+                }))
+              }
+            />
+            <LocalizedFields
+              label="Aide iOS"
+              value={content.pwaBanner.copy.iosHint}
+              onChange={(iosHint) =>
+                setContent((prev) => ({
+                  ...prev,
+                  pwaBanner: { ...prev.pwaBanner, copy: { ...prev.pwaBanner.copy, iosHint } },
+                }))
+              }
+              multiline
+            />
+            <LocalizedFields
+              label="Bouton pied de page"
+              value={content.pwaBanner.copy.footerInstall}
+              onChange={(footerInstall) =>
+                setContent((prev) => ({
+                  ...prev,
+                  pwaBanner: {
+                    ...prev.pwaBanner,
+                    copy: { ...prev.pwaBanner.copy, footerInstall },
+                  },
+                }))
+              }
+            />
+
+            <button
+              type="button"
+              className="btn-ghost !px-3 !py-1.5 text-xs"
+              onClick={() =>
+                setContent((prev) => ({
+                  ...prev,
+                  pwaBanner: defaultPwaBanner(),
+                }))
+              }
+            >
+              Réinitialiser la bannière
+            </button>
+          </div>
+
+          <aside className="order-first sticky top-16 z-10 min-w-0 bg-ivory/95 pb-2 backdrop-blur-sm supports-[backdrop-filter]:bg-ivory/90 lg:order-none lg:top-24 lg:self-start lg:bg-transparent lg:pb-0 lg:backdrop-blur-none">
+            <AdminPwaBannerPreview settings={content.pwaBanner} />
+          </aside>
         </div>
       </div>
     </section>

@@ -8,6 +8,7 @@ import { getDictionary } from "@/i18n/get-dictionary";
 import { isGuestCapacityFull } from "@/lib/guest-capacity";
 import { eventLabel, resolveDictionary } from "@/lib/site";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
+import { resolvePwaBannerCopy } from "@/lib/pwa-banner";
 import {
   getDesserts,
   getDrinks,
@@ -97,7 +98,10 @@ export default async function Home({ params }: Props) {
         />
       </main>
       <SiteFooter dict={dict} siteContent={siteContent} locale={raw} />
-      <PwaInstallPrompt copy={dict.footer.installPrompt} />
+      <PwaInstallPrompt
+        copy={resolvePwaBannerCopy(siteContent.pwaBanner, dict.footer, raw)}
+        settings={siteContent.pwaBanner}
+      />
     </>
   );
 }

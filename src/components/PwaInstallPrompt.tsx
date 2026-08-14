@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { PwaBannerCard } from "@/components/PwaBannerCard";
 import {
   PWA_SUGGEST_EVENT,
   captureInstallPrompt,
@@ -16,25 +17,25 @@ import {
   type BeforeInstallPromptEvent,
   getDeferredInstallPrompt,
 } from "@/lib/pwa-install";
+import {
+  pwaBannerPlacementShellClass,
+  type ResolvedPwaBannerCopy,
+} from "@/lib/pwa-banner";
+import type { PwaBannerSettings } from "@/lib/types";
 
-const ENGAGE_MS = 28_000;
 const ENGAGE_SCROLL_RATIO = 0.42;
 const SHOW_DELAY_MS = 480;
 
-type Copy = {
-  title: string;
-  body: string;
-  install: string;
-  later: string;
-  never: string;
-  iosHint: string;
-  close: string;
-};
-
 /**
- * Bannière PWA compacte (mobile) : peu d’espace, verre soft, 3 choix mémorisés.
+ * Bannière PWA compacte : textes, forme et emplacement pilotés par l’admin.
  */
-export function PwaInstallPrompt({ copy }: { copy: Copy }) {
+export function PwaInstallPrompt({
+  copy,
+  settings,
+}: {
+  copy: ResolvedPwaBannerCopy;
+  settings: PwaBannerSettings;
+}) {
   const titleId = useId();
   const [eligible, setEligible] = useState(false);
   const [open, setOpen] = useState(false);
@@ -45,9 +46,10 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
   const openedOnce = useRef(false);
 
   useEffect(() => {
-    if (isPwaStandalone() || !isLikelyMobile() || !shouldOfferInstallPrompt()) {
-      return;
-    }
+    if (!settings.enabled) return;
+    if (isPwaStandalone()) return;
+    if (settings.mobileOnly && !isLikelyMobile()) return;
+    if (!shouldOfferInstallPrompt()) return;
 
     setEligible(true);
     setIosHint(isIosDevice());
@@ -70,7 +72,7 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       unsub();
     };
-  }, []);
+  }, [settings.enabled, settings.mobileOnly]);
 
   useEffect(() => {
     if (!eligible) return;
@@ -89,7 +91,7 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
       tryOpen();
     };
 
-    const timer = window.setTimeout(onEngage, ENGAGE_MS);
+    const timer = window.setTimeout(onEngage, settings.engageMs);
 
     const onScroll = () => {
       const doc = document.documentElement;
@@ -112,7 +114,7 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener(PWA_SUGGEST_EVENT, onSuggest);
     };
-  }, [eligible]);
+  }, [eligible, settings.engageMs]);
 
   useEffect(() => {
     if (!eligible || !hasDeferred || iosHint) return;
@@ -173,78 +175,29 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  if (!eligible || !open) return null;
+  if (!settings.enabled || !eligible || !open) return null;
 
   const canInstall = iosHint || hasDeferred;
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] px-2.5 pb-[max(0.4rem,env(safe-area-inset-bottom))]"
+      className={pwaBannerPlacementShellClass(settings.placement)}
       role="dialog"
       aria-modal="false"
       aria-labelledby={titleId}
     >
-      <div className="pwa-banner pointer-events-auto relative mx-auto w-full max-w-md pwa-sheet-in">
-        <button
-          type="button"
-          onClick={onLater}
-          className="absolute top-1.5 right-2 z-10 px-1.5 py-1 text-[1.05rem] leading-none text-soft/70 transition-colors hover:text-mist"
-          aria-label={copy.close}
-        >
-          ×
-        </button>
-
-        <div className="flex flex-col items-center px-6 text-center">
-          <span
-            className="mb-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne/70"
-            aria-hidden
-          />
-          <p id={titleId} className="text-[0.8rem] font-medium leading-tight text-mist">
-            {copy.title}
-          </p>
-          {!showIosSteps ? (
-            <p className="mt-0.5 max-w-[18rem] text-[0.68rem] leading-snug text-soft/85">
-              {copy.body}
-            </p>
-          ) : null}
-
-          {canInstall && !showIosSteps ? (
-            <button
-              type="button"
-              onClick={() => void onInstall()}
-              className="mt-2.5 shrink-0 rounded-lg border border-cacao/25 bg-cacao/90 px-3.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.12em] text-ivory uppercase transition-colors hover:bg-cacao"
-            >
-              {copy.install}
-            </button>
-          ) : null}
-
-          {showIosSteps ? (
-            <p className="mt-2 max-w-[20rem] border-t border-line/60 pt-2 text-[0.7rem] leading-snug text-mist/90">
-              {copy.iosHint}
-            </p>
-          ) : null}
-
-          <div className="mt-2 flex items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={onLater}
-              className="text-[0.58rem] tracking-[0.14em] text-soft/75 uppercase transition-colors hover:text-champagne"
-            >
-              {copy.later}
-            </button>
-            <span className="text-soft/35" aria-hidden>
-              ·
-            </span>
-            <button
-              type="button"
-              onClick={onNever}
-              className="text-[0.58rem] tracking-[0.14em] text-soft/75 uppercase transition-colors hover:text-champagne"
-            >
-              {copy.never}
-            </button>
-          </div>
-        </div>
-      </div>
+      <PwaBannerCard
+        copy={copy}
+        settings={settings}
+        showIosSteps={showIosSteps}
+        showInstallButton={canInstall}
+        titleId={titleId}
+        className="pointer-events-auto pwa-sheet-in"
+        onInstall={() => void onInstall()}
+        onLater={onLater}
+        onNever={onNever}
+        onClose={onLater}
+      />
     </div>
   );
 }

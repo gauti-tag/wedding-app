@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
+import { normalizePwaBanner } from "@/lib/pwa-banner";
 import { normalizeGuestCapacity } from "@/lib/guest-capacity";
 import {
   normalizeEventType,
@@ -190,6 +191,32 @@ const siteSchema = z.object({
     kenBurns: z.boolean(),
     pauseOnHover: z.boolean(),
   }),
+  pwaBanner: z
+    .object({
+      enabled: z.boolean(),
+      showFooterButton: z.boolean(),
+      mobileOnly: z.boolean(),
+      placement: z.enum(["bottom-center", "bottom-left", "bottom-right"]),
+      cardRadius: z.enum(["square", "slight", "soft", "round", "pill"]),
+      buttonRadius: z.enum(["square", "slight", "soft", "round", "pill"]),
+      width: z.enum(["narrow", "compact", "medium", "wide", "full"]),
+      height: z.enum(["compact", "comfortable", "tall", "airy"]).optional(),
+      engageMs: z.number().min(5000).max(120000),
+      copy: z.object({
+        title: localizedSchema,
+        body: localizedSchema,
+        install: localizedSchema,
+        later: localizedSchema,
+        never: localizedSchema,
+        iosHint: z.object({
+          fr: z.string().trim().max(800),
+          en: z.string().trim().max(800),
+        }),
+        close: localizedSchema,
+        footerInstall: localizedSchema,
+      }),
+    })
+    .optional(),
   features: featuresSchema.optional(),
   theme: themeSchema.optional(),
   vocabulary: vocabularySchema.optional(),
@@ -259,6 +286,7 @@ export async function PUT(request: Request) {
       guestCapacity: normalizeGuestCapacity(parsed.data.guestCapacity),
       whatsappReminders: serializeWhatsAppReminders(parsed.data.whatsappReminders),
       heroCarousel: normalizeHeroCarousel(parsed.data.heroCarousel),
+      pwaBanner: normalizePwaBanner(parsed.data.pwaBanner),
       features: normalizeSiteFeatures(parsed.data.features),
       theme: normalizeSiteTheme(parsed.data.theme),
       vocabulary: normalizeEventVocabulary(parsed.data.vocabulary),

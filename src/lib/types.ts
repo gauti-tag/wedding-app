@@ -203,6 +203,38 @@ export type SiteFeatures = {
 
 export type SiteButtonRadius = "square" | "soft" | "pill";
 
+export type PwaBannerPlacement = "bottom-center" | "bottom-left" | "bottom-right";
+export type PwaBannerWidth = "narrow" | "compact" | "medium" | "wide" | "full";
+/** Hauteur / densité verticale du cadre. */
+export type PwaBannerHeight = "compact" | "comfortable" | "tall" | "airy";
+/** Arrondis dédiés à la bannière (cadre & bouton). */
+export type PwaBannerRadius = "square" | "slight" | "soft" | "round" | "pill";
+
+export type PwaBannerCopy = {
+  title: LocalizedText;
+  body: LocalizedText;
+  install: LocalizedText;
+  later: LocalizedText;
+  never: LocalizedText;
+  iosHint: LocalizedText;
+  close: LocalizedText;
+  footerInstall: LocalizedText;
+};
+
+/** Bannière d’installation PWA configurable depuis l’admin. */
+export type PwaBannerSettings = {
+  enabled: boolean;
+  showFooterButton: boolean;
+  mobileOnly: boolean;
+  placement: PwaBannerPlacement;
+  cardRadius: PwaBannerRadius;
+  buttonRadius: PwaBannerRadius;
+  width: PwaBannerWidth;
+  height: PwaBannerHeight;
+  engageMs: number;
+  copy: PwaBannerCopy;
+};
+
 export type EventType =
   | "wedding"
   | "birthday"
@@ -307,6 +339,8 @@ export type SiteContent = {
     ctaSchedule: LocalizedText;
   };
   heroCarousel: HeroCarouselSettings;
+  /** Bannière d’installation PWA (bas de page) + bouton footer. */
+  pwaBanner: PwaBannerSettings;
 };
 
 export type WhatsAppReminderPlan = {

@@ -3,6 +3,7 @@ import path from "path";
 import { mapPhoto, mapRsvp, toDbPhoto, toDbRsvp, type DbPhoto, type DbRsvp } from "@/lib/supabase/mappers";
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/server";
 import { defaultHeroCarousel, normalizeHeroCarousel } from "@/lib/hero-carousel";
+import { defaultPwaBanner, normalizePwaBanner } from "@/lib/pwa-banner";
 import { normalizeGuestCapacity } from "@/lib/guest-capacity";
 import { emptyMcRundown, normalizeMcRundown } from "@/lib/mc-rundown";
 import { normalizePhotos, requirePersistentStorage } from "@/lib/photo-urls";
@@ -111,6 +112,7 @@ const emptySite: SiteContent = {
     ctaSchedule: { fr: "", en: "" },
   },
   heroCarousel: { ...defaultHeroCarousel },
+  pwaBanner: defaultPwaBanner(),
 };
 
 async function getContent<T>(key: string, fallback: T): Promise<T> {
@@ -462,6 +464,9 @@ export async function getSiteContent(): Promise<SiteContent> {
       ...(raw.hero ?? {}),
     },
     heroCarousel: normalizeHeroCarousel(raw.heroCarousel),
+    pwaBanner: normalizePwaBanner(
+      (raw as Partial<SiteContent>).pwaBanner,
+    ),
     features: normalizeSiteFeatures(raw.features),
     theme: normalizeSiteTheme(raw.theme),
     vocabulary: normalizeEventVocabulary(raw.vocabulary),
@@ -503,6 +508,7 @@ export async function saveSiteContent(content: SiteContent) {
       partnerTwo,
     ),
     heroCarousel: normalizeHeroCarousel(content.heroCarousel),
+    pwaBanner: normalizePwaBanner(content.pwaBanner),
   });
 }
 

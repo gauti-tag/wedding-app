@@ -3,6 +3,7 @@ import { PwaInstallButton } from "@/components/PwaInstallButton";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
 import { t } from "@/lib/localized";
+import { resolvePwaBannerCopy } from "@/lib/pwa-banner";
 import { eventLabel } from "@/lib/site";
 import type { SiteContent } from "@/lib/types";
 
@@ -15,6 +16,9 @@ export function SiteFooter({
   siteContent: SiteContent;
   locale: Locale;
 }) {
+  const pwa = siteContent.pwaBanner;
+  const pwaCopy = resolvePwaBannerCopy(pwa, dict.footer, locale);
+
   return (
     <footer className="border-t border-line py-12">
       <div className="section-shell flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
@@ -36,7 +40,9 @@ export function SiteFooter({
           </div>
         </div>
         <div className="flex flex-col items-start gap-3 md:items-end">
-          <PwaInstallButton label={dict.footer.installApp} />
+          {pwa.showFooterButton ? (
+            <PwaInstallButton label={pwaCopy.footerInstall} />
+          ) : null}
           <a
             href="/admin"
             className="text-xs tracking-[0.18em] text-soft uppercase no-underline hover:text-champagne"
