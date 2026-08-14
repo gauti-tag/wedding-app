@@ -134,6 +134,7 @@ p {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .admin-panel {
@@ -141,10 +142,10 @@ p {
   max-width: 1120px;
   margin-inline: auto;
   box-sizing: border-box;
-  padding-inline: 0.75rem;
-  padding-block: 2.5rem;
+  padding-inline: 0.65rem;
+  padding-block: 1.75rem;
   min-width: 0;
-  /* Empêche les enfants (tableaux, datetime-local…) d’élargir la page */
+  /* Empêche les enfants d’élargir la page (iOS datetime-local, tableaux…) */
   contain: inline-size;
 }
 
@@ -156,11 +157,18 @@ p {
   }
 }
 
+.admin-panel-body {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: flow-root;
+}
+
 /*
  * Zone de scroll horizontal locale (tableaux).
- * contain:inline-size empêche un enfant min-width d’élargir la page (surtout iOS).
  */
 .admin-scroll-x {
+  display: block;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -170,40 +178,156 @@ p {
   contain: inline-size;
 }
 
-/* Mobile admin : bornes dures sur les contrôles qui ont une largeur intrinsèque */
+/* Verrouillage viewport admin (classe posée dès le layout + AdminViewportLock) */
+html.is-admin {
+  overflow-x: clip;
+  max-width: 100%;
+  width: 100%;
+}
+
+html.is-admin body {
+  overflow-x: clip;
+  max-width: 100%;
+  width: 100%;
+  overscroll-behavior-x: none;
+}
+
+/* Scanner QR : html5-qrcode injecte parfois des largeurs fixes */
+html.is-admin #admin-qr-reader,
+html.is-admin #admin-qr-reader > div,
+html.is-admin #admin-qr-reader video,
+html.is-admin #admin-qr-reader canvas,
+html.is-admin #admin-qr-reader img {
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+html.is-admin #admin-qr-reader > div {
+  width: 100% !important;
+}
+
+/* Mobile admin : responsivité renforcée */
 @media (max-width: 767px) {
+  .admin-panel {
+    padding-inline: 0.55rem;
+    padding-block: 1rem;
+  }
+
+  .admin-panel-body,
+  .admin-panel section,
+  .admin-panel article,
+  .admin-panel form,
+  .admin-panel nav,
+  .admin-panel header,
+  .admin-panel > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /*
+   * Une seule colonne sous 768px : évite datetime-local / champs FR+EN
+   * côte à côte qui forcent l’étirement horizontal (surtout iOS).
+   * Opt-out : style inline ou classe utilitaire avec !important plus spécifique.
+   */
+  .admin-panel .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .admin-panel .admin-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-panel .flex {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .admin-panel input,
   .admin-panel select,
-  .admin-panel textarea {
-    max-width: 100%;
-    min-width: 0;
+  .admin-panel textarea,
+  .admin-panel .field {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
   }
 
   .admin-panel input[type="datetime-local"],
   .admin-panel input[type="date"],
   .admin-panel input[type="time"],
   .admin-panel input[type="file"],
-  .admin-panel input[type="color"] {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
+  .admin-panel input[type="color"],
+  .admin-panel input[type="search"],
+  .admin-panel input[type="email"],
+  .admin-panel input[type="text"],
+  .admin-panel input[type="password"],
+  .admin-panel input[type="number"],
+  .admin-panel input[type="url"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* datetime-local : forcer le wrapping du contrôle natif */
+  .admin-panel input[type="datetime-local"] {
+    display: block;
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   .admin-panel .btn-primary,
-  .admin-panel .btn-ghost {
+  .admin-panel .btn-ghost,
+  .admin-panel a.btn-primary,
+  .admin-panel a.btn-ghost {
     max-width: 100%;
+    width: auto;
     white-space: normal;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     box-sizing: border-box;
+    word-break: break-word;
+    padding-inline: 0.85rem;
+    padding-block: 0.75rem;
+    font-size: 0.68rem;
   }
 
   .admin-panel .nav-link {
-    letter-spacing: 0.1em;
-    padding-inline: 0.55rem;
+    letter-spacing: 0.06em;
+    padding-inline: 0.4rem;
+    font-size: 0.56rem;
   }
 
   .admin-panel .eyebrow {
-    letter-spacing: 0.18em;
+    letter-spacing: 0.14em;
+    font-size: 0.62rem;
+  }
+
+  .admin-panel .section-title {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    font-size: clamp(1.35rem, 7vw, 1.85rem);
+  }
+
+  .admin-panel h1.section-title {
+    font-size: clamp(1.75rem, 9vw, 2.35rem);
+  }
+
+  .admin-panel table {
+    max-width: none; /* scroll interne via .admin-scroll-x */
+  }
+
+  .admin-panel img,
+  .admin-panel video,
+  .admin-panel canvas,
+  .admin-panel svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Cartes : bornes sans forcer un padding unique */
+  .admin-panel .border.bg-white,
+  .admin-panel .border.bg-white\/80 {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
   }
 }
 

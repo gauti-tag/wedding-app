@@ -63,34 +63,34 @@ function LocalizedFields({
   multiline?: boolean;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <div>
+    <div className="grid min-w-0 gap-3 md:grid-cols-2">
+      <div className="min-w-0">
         <label className="label">{label} (FR)</label>
         {multiline ? (
           <textarea
-            className="field min-h-24 resize-y"
+            className="field min-h-24 w-full max-w-full resize-y"
             value={value.fr}
             onChange={(e) => onChange({ ...value, fr: e.target.value })}
           />
         ) : (
           <input
-            className="field"
+            className="field w-full max-w-full"
             value={value.fr}
             onChange={(e) => onChange({ ...value, fr: e.target.value })}
           />
         )}
       </div>
-      <div>
+      <div className="min-w-0">
         <label className="label">{label} (EN)</label>
         {multiline ? (
           <textarea
-            className="field min-h-24 resize-y"
+            className="field min-h-24 w-full max-w-full resize-y"
             value={value.en}
             onChange={(e) => onChange({ ...value, en: e.target.value })}
           />
         ) : (
           <input
-            className="field"
+            className="field w-full max-w-full"
             value={value.en}
             onChange={(e) => onChange({ ...value, en: e.target.value })}
           />
@@ -362,7 +362,7 @@ export function AdminSiteEditor({
           </p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-2 md:grid-cols-2">
           {SITE_SECTION_KEYS.map((key) => (
             <label
               key={key}
@@ -462,9 +462,9 @@ export function AdminSiteEditor({
           </button>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid min-w-0 gap-3 md:grid-cols-2 lg:grid-cols-4">
           {THEME_COLOR_FIELDS.map((field) => (
-            <div key={field.key}>
+            <div key={field.key} className="min-w-0">
               <label className="label" htmlFor={`theme-color-${field.key}`}>
                 {field.label}
               </label>
@@ -472,7 +472,7 @@ export function AdminSiteEditor({
                 <input
                   id={`theme-color-${field.key}`}
                   type="color"
-                  className="h-11 w-14 shrink-0 cursor-pointer border border-line bg-white p-1"
+                  className="h-11 w-12 shrink-0 cursor-pointer border border-line bg-white p-1"
                   value={content.theme.colors[field.key]}
                   onChange={(e) => setThemeColor(field.key, e.target.value)}
                 />
@@ -497,7 +497,7 @@ export function AdminSiteEditor({
           ))}
         </div>
 
-        <div className="grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-3 border-t border-line pt-4 md:grid-cols-2">
           {(
             [
               { key: "display" as const, label: "Police des noms (couple)" },
@@ -811,8 +811,8 @@ export function AdminSiteEditor({
 
       <div className="space-y-4 border border-line bg-white p-5">
         <p className="text-xs tracking-[0.16em] text-champagne uppercase">{hostLabels.section}</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
+        <div className="grid min-w-0 gap-3 md:grid-cols-2">
+          <div className="min-w-0">
             <label className="label" htmlFor="partnerOne">
               {hostLabels.one}
             </label>
@@ -823,7 +823,7 @@ export function AdminSiteEditor({
               onChange={(e) => updatePartners(e.target.value, content.partnerTwo)}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="label" htmlFor="partnerTwo">
               {hostLabels.two}
             </label>
@@ -862,8 +862,8 @@ export function AdminSiteEditor({
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div>
+        <div className="grid min-w-0 gap-3 md:grid-cols-2">
+          <div className="min-w-0">
             <label className="label" htmlFor="rsvpOpensAt">
               Ouverture des confirmations RSVP
             </label>
@@ -892,7 +892,7 @@ export function AdminSiteEditor({
               ) : null}
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="label" htmlFor="rsvpDeadline">
               Date limite RSVP
             </label>
@@ -1163,7 +1163,7 @@ export function AdminSiteEditor({
           </select>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2">
           <div>
             <label className="label" htmlFor="heroCarouselInterval">
               Délai entre slides ({Math.round(content.heroCarousel.intervalMs / 100) / 10}s)

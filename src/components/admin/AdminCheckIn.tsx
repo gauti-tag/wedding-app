@@ -66,12 +66,17 @@ export function AdminCheckIn({
 
   async function startScanner() {
     try {
+      const reader = document.getElementById("admin-qr-reader");
+      const box = Math.max(
+        160,
+        Math.min(240, Math.floor(((reader?.clientWidth || 280) * 0.72) / 2) * 2),
+      );
       const scanner = new Html5Qrcode("admin-qr-reader");
       scannerRef.current = scanner;
       setScanning(true);
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 8, qrbox: { width: 240, height: 240 } },
+        { fps: 8, qrbox: { width: box, height: box }, aspectRatio: 1 },
         (decoded) => {
           if (decoded === lastScanRef.current || busy) return;
           lastScanRef.current = decoded;

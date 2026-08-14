@@ -67,8 +67,8 @@ export default async function RootLayout({
   const lang = headerLocale && isLocale(headerLocale) ? headerLocale : defaultLocale;
 
   return (
-    <html lang={lang} className={`${display.variable} ${sans.variable} h-full`}>
-      <body className="min-h-full touch-manipulation antialiased">
+    <html lang={lang} className={`${display.variable} ${sans.variable} h-full`} suppressHydrationWarning>
+      <body className="min-h-full touch-manipulation antialiased" suppressHydrationWarning>
         {children}
         <PwaRegister />
       </body>

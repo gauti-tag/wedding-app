@@ -104,7 +104,7 @@ export function AdminUsersEditor({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid min-w-0 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {ROLES.map((role) => (
           <article key={role} className="border border-line bg-white p-4">
             <p className="text-xs tracking-[0.16em] text-champagne uppercase">
@@ -117,7 +117,7 @@ export function AdminUsersEditor({
 
       <div className="space-y-3 border border-line bg-white p-5">
         <p className="text-xs tracking-[0.16em] text-champagne uppercase">Nouvel utilisateur</p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-3 md:grid-cols-2">
           <div>
             <label className="label" htmlFor="user-name">
               Nom

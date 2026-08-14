@@ -139,24 +139,24 @@ const albumLabels: Record<PhotoAlbum, string> = {
 };
 
 const adminNav: { href: string; label: string; permission: Permission }[] = [
-  { href: "#admin-dashboard", label: "Tableau de bord", permission: "view_dashboard" },
-  { href: "#admin-invite-qr", label: "QR invitation", permission: "manage_content" },
+  { href: "#admin-dashboard", label: "Synthèse", permission: "view_dashboard" },
+  { href: "#admin-invite-qr", label: "QR", permission: "manage_content" },
   { href: "#admin-photos", label: "Photos", permission: "manage_photos" },
-  { href: "#admin-site", label: "Événement & site", permission: "manage_content" },
+  { href: "#admin-site", label: "Site", permission: "manage_content" },
   { href: "#admin-story", label: "Histoire", permission: "manage_content" },
   { href: "#admin-schedule", label: "Programme", permission: "manage_content" },
-  { href: "#admin-mc-rundown", label: "Feuille MC", permission: "manage_content" },
+  { href: "#admin-mc-rundown", label: "MC", permission: "manage_content" },
   { href: "#admin-menu", label: "Menu", permission: "manage_content" },
   { href: "#admin-desserts", label: "Desserts", permission: "manage_content" },
   { href: "#admin-drinks", label: "Boissons", permission: "manage_content" },
-  { href: "#admin-info", label: "FAQ & carte", permission: "manage_content" },
+  { href: "#admin-info", label: "FAQ", permission: "manage_content" },
   { href: "#admin-guestbook", label: "Livre d’or", permission: "manage_content" },
-  { href: "#admin-guest-album", label: "Album invités", permission: "manage_content" },
+  { href: "#admin-guest-album", label: "Album", permission: "manage_content" },
   { href: "#admin-pdf", label: "PDF", permission: "view_rsvp" },
   { href: "#admin-rsvp", label: "RSVP", permission: "view_rsvp" },
-  { href: "#admin-seating", label: "Plan de table", permission: "view_rsvp" },
+  { href: "#admin-seating", label: "Tables", permission: "view_rsvp" },
   { href: "#admin-checkin", label: "Check-in", permission: "check_in" },
-  { href: "#admin-users", label: "Utilisateurs", permission: "manage_users" },
+  { href: "#admin-users", label: "Users", permission: "manage_users" },
   { href: "#admin-audit", label: "Audit", permission: "view_audit" },
 ];
 
@@ -533,13 +533,13 @@ export function AdminPanel({
           aria-label="Rubriques de l’espace couple"
           className="sticky top-0 z-30 mt-8 w-full min-w-0 max-w-full border-y border-line bg-ivory/95 py-2.5 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90 sm:py-3"
         >
-          <ul className="flex w-full min-w-0 max-w-full gap-0.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="flex w-full min-w-0 max-w-full gap-0.5 overflow-x-auto overscroll-x-contain pb-1 touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {navItems.map((item) => (
               <li key={item.href} className="shrink-0">
                 <a
                   href={item.href}
                   onClick={(event) => onAdminNavClick(event, item.href)}
-                  className="nav-link inline-block px-2.5 py-2 text-[0.62rem] tracking-[0.12em] text-champagne uppercase no-underline transition-colors duration-300 hover:text-mist sm:px-3 sm:text-[0.68rem] sm:tracking-[0.16em]"
+                  className="nav-link inline-block whitespace-nowrap px-2 py-2 text-[0.58rem] tracking-[0.1em] text-champagne uppercase no-underline transition-colors duration-300 hover:text-mist sm:px-3 sm:text-[0.68rem] sm:tracking-[0.16em]"
                 >
                   {item.label}
                 </a>
@@ -647,7 +647,7 @@ export function AdminPanel({
 
         <div className="space-y-4">
           <h2 className="section-title text-3xl text-mist">Photos ({photos.length})</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 gap-3 md:grid-cols-2">
             {photos.length === 0 ? (
               <p className="text-sm text-soft">Aucune photo pour le moment.</p>
             ) : (
@@ -824,7 +824,7 @@ export function AdminPanel({
                       {revealed ? "Masquer" : "Afficher"}
                     </button>
                   ) : null}
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-soft">
+                  <dl className="admin-grid-2 grid gap-x-3 gap-y-2 text-xs text-soft">
                     <div>
                       <dt className="tracking-[0.12em] uppercase">Invité(e) de</dt>
                       <dd className="mt-0.5 break-words text-mist">

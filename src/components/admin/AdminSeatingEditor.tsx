@@ -387,7 +387,7 @@ export function AdminSeatingEditor({
                   <article key={rsvp.id} className="space-y-3 border border-line p-3">
                     <p className="font-medium text-mist">{rsvp.name}</p>
                     {canEdit ? (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="admin-grid-2 grid gap-2">
                         <div>
                           <label className="label" htmlFor={`table-m-${rsvp.id}`}>
                             Table

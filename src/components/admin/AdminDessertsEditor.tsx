@@ -25,7 +25,7 @@ function LocalizedFields({
   multiline?: boolean;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid min-w-0 gap-3 md:grid-cols-2">
       <div>
         <label className="label">{label} (FR)</label>
         {multiline ? (

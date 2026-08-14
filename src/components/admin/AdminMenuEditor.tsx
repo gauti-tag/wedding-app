@@ -25,7 +25,7 @@ function LocalizedFields({
   multiline?: boolean;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid min-w-0 gap-3 md:grid-cols-2">
       <div>
         <label className="label">{label} (FR)</label>
         {multiline ? (
@@ -177,7 +177,7 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
         }
       />
 
-      <div className="space-y-4 border border-line bg-white p-6">
+      <div className="space-y-4 border border-line bg-white p-4 sm:p-6">
         <LocalizedFields
           label="Sous-titre"
           value={menu.subtitle}
@@ -197,7 +197,7 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
       ) : null}
 
       {menu.cuisines.map((cuisine, cuisineIndex) => (
-        <article key={cuisine.id} className="space-y-5 border border-line bg-white p-6">
+        <article key={cuisine.id} className="space-y-5 border border-line bg-white p-4 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="section-title text-2xl text-mist">
               Cuisine {cuisineIndex + 1}
