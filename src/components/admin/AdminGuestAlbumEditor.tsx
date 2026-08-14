@@ -18,7 +18,7 @@ function LocalizedFields({
   multiline?: boolean;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid min-w-0 gap-3 sm:grid-cols-2">
       <div>
         <label className="label">{label} (FR)</label>
         {multiline ? (
@@ -165,7 +165,7 @@ export function AdminGuestAlbumEditor({ initial }: { initial: GuestAlbumContent 
         <p className="text-xs tracking-[0.16em] text-champagne uppercase">
           En attente ({pending.length})
         </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {pending.map((photo) => (
             <article key={photo.id} className="border border-line p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -203,7 +203,7 @@ export function AdminGuestAlbumEditor({ initial }: { initial: GuestAlbumContent 
         <p className="text-xs tracking-[0.16em] text-champagne uppercase">
           Publiées ({approved.length})
         </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {approved.map((photo) => (
             <article key={photo.id} className="border border-line p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}

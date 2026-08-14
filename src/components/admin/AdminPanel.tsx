@@ -502,19 +502,19 @@ export function AdminPanel({
   }
 
   return (
-    <div className="admin-panel min-w-0">
+    <div className="admin-panel min-w-0 max-w-full">
       {AlertDialog}
-      <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 max-w-full flex-1 basis-[min(100%,16rem)]">
+      <div className="flex min-w-0 max-w-full flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 max-w-full flex-1 basis-full sm:basis-[min(100%,16rem)]">
           <p className="eyebrow">Espace couple</p>
           <h1 className="section-title mt-3 break-words text-3xl text-mist sm:text-4xl md:text-5xl">
             Administration
           </h1>
-          <p className="mt-3 max-w-xl break-words text-sm font-normal text-soft">
+          <p className="mt-3 max-w-full break-words text-sm font-normal text-soft sm:max-w-xl">
             Connecté : {currentUser.name} · {roleLabel(currentUser.role)}
           </p>
         </div>
-        <div className="flex min-w-0 flex-wrap gap-2 sm:gap-3">
+        <div className="flex w-full min-w-0 max-w-full flex-wrap gap-2 sm:w-auto sm:gap-3">
           <a href="/" className="btn-ghost !px-3 !py-2.5 text-[0.65rem] sm:!px-4 sm:text-[0.72rem]">
             Voir le site
           </a>
@@ -533,13 +533,13 @@ export function AdminPanel({
           aria-label="Rubriques de l’espace couple"
           className="sticky top-0 z-30 mt-8 w-full min-w-0 max-w-full border-y border-line bg-ivory/95 py-2.5 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90 sm:py-3"
         >
-          <ul className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="flex w-full min-w-0 max-w-full gap-0.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {navItems.map((item) => (
               <li key={item.href} className="shrink-0">
                 <a
                   href={item.href}
                   onClick={(event) => onAdminNavClick(event, item.href)}
-                  className="nav-link inline-block px-3 py-2 text-[0.68rem] tracking-[0.16em] text-champagne uppercase no-underline transition-colors duration-300 hover:text-mist"
+                  className="nav-link inline-block px-2.5 py-2 text-[0.62rem] tracking-[0.12em] text-champagne uppercase no-underline transition-colors duration-300 hover:text-mist sm:px-3 sm:text-[0.68rem] sm:tracking-[0.16em]"
                 >
                   {item.label}
                 </a>
@@ -549,6 +549,7 @@ export function AdminPanel({
         </nav>
       ) : null}
 
+      <div className="admin-panel-body mt-0 min-w-0 max-w-full">
       {can("view_dashboard") || can("view_rsvp") || can("check_in") ? (
         <AdminDashboard
           rsvps={rsvps}
@@ -1159,6 +1160,7 @@ export function AdminPanel({
         <AdminUsersEditor initialUsers={initialUsers} currentUserId={currentUser.id} />
       ) : null}
       {can("view_audit") ? <AdminAuditLog initialEntries={initialAudit} /> : null}
+      </div>
     </div>
   );
 }

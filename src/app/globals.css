@@ -130,6 +130,12 @@ p {
 }
 
 /* Conteneur admin : padding au lieu de width calculée → moins de débordement mobile */
+.admin-root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .admin-panel {
   width: 100%;
   max-width: 1120px;
@@ -138,6 +144,8 @@ p {
   padding-inline: 0.75rem;
   padding-block: 2.5rem;
   min-width: 0;
+  /* Empêche les enfants (tableaux, datetime-local…) d’élargir la page */
+  contain: inline-size;
 }
 
 @media (min-width: 768px) {
@@ -151,7 +159,6 @@ p {
 /*
  * Zone de scroll horizontal locale (tableaux).
  * contain:inline-size empêche un enfant min-width d’élargir la page (surtout iOS).
- * Pas d’overflow sur .admin-root : ça casse position:sticky.
  */
 .admin-scroll-x {
   width: 100%;
@@ -161,6 +168,43 @@ p {
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   contain: inline-size;
+}
+
+/* Mobile admin : bornes dures sur les contrôles qui ont une largeur intrinsèque */
+@media (max-width: 767px) {
+  .admin-panel input,
+  .admin-panel select,
+  .admin-panel textarea {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .admin-panel input[type="datetime-local"],
+  .admin-panel input[type="date"],
+  .admin-panel input[type="time"],
+  .admin-panel input[type="file"],
+  .admin-panel input[type="color"] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .admin-panel .btn-primary,
+  .admin-panel .btn-ghost {
+    max-width: 100%;
+    white-space: normal;
+    letter-spacing: 0.06em;
+    box-sizing: border-box;
+  }
+
+  .admin-panel .nav-link {
+    letter-spacing: 0.1em;
+    padding-inline: 0.55rem;
+  }
+
+  .admin-panel .eyebrow {
+    letter-spacing: 0.18em;
+  }
 }
 
 img {

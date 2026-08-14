@@ -321,7 +321,7 @@ export function AdminSiteEditor({
           </p>
         </div>
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="min-w-0 w-full flex-1 sm:min-w-[12rem]">
+          <div className="min-w-0 w-full flex-1">
             <label className="label" htmlFor="eventTypePreset">
               Modèle
             </label>
@@ -951,7 +951,7 @@ export function AdminSiteEditor({
               content.whatsappReminders.map((reminder, index) => (
                 <div
                   key={reminder.id}
-                  className="grid gap-3 border border-line bg-ivory/50 p-3 sm:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)_auto]"
+                  className="grid min-w-0 gap-3 border border-line bg-ivory/50 p-3 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.2fr)_auto]"
                 >
                   <div>
                     <label className="label" htmlFor={`reminder-label-${reminder.id}`}>
