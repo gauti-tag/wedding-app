@@ -184,67 +184,65 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
       aria-modal="false"
       aria-labelledby={titleId}
     >
-      <div className="pwa-banner pointer-events-auto mx-auto w-full max-w-md pwa-sheet-in">
-        <div className="flex items-center gap-2.5">
+      <div className="pwa-banner pointer-events-auto relative mx-auto w-full max-w-md pwa-sheet-in">
+        <button
+          type="button"
+          onClick={onLater}
+          className="absolute top-1.5 right-2 z-10 px-1.5 py-1 text-[1.05rem] leading-none text-soft/70 transition-colors hover:text-mist"
+          aria-label={copy.close}
+        >
+          ×
+        </button>
+
+        <div className="flex flex-col items-center px-6 text-center">
           <span
-            className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne/70"
+            className="mb-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-champagne/70"
             aria-hidden
           />
-          <div className="min-w-0 flex-1">
-            <p id={titleId} className="truncate text-[0.8rem] font-medium leading-tight text-mist">
-              {copy.title}
+          <p id={titleId} className="text-[0.8rem] font-medium leading-tight text-mist">
+            {copy.title}
+          </p>
+          {!showIosSteps ? (
+            <p className="mt-0.5 max-w-[18rem] text-[0.68rem] leading-snug text-soft/85">
+              {copy.body}
             </p>
-            {!showIosSteps ? (
-              <p className="mt-0.5 truncate text-[0.68rem] leading-tight text-soft/85">
-                {copy.body}
-              </p>
-            ) : null}
-          </div>
+          ) : null}
 
           {canInstall && !showIosSteps ? (
             <button
               type="button"
               onClick={() => void onInstall()}
-              className="shrink-0 rounded-lg border border-cacao/25 bg-cacao/90 px-2.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.12em] text-ivory uppercase transition-colors hover:bg-cacao"
+              className="mt-2.5 shrink-0 rounded-lg border border-cacao/25 bg-cacao/90 px-3.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.12em] text-ivory uppercase transition-colors hover:bg-cacao"
             >
               {copy.install}
             </button>
           ) : null}
 
-          <button
-            type="button"
-            onClick={onLater}
-            className="shrink-0 px-1 py-1 text-[1.05rem] leading-none text-soft/70 transition-colors hover:text-mist"
-            aria-label={copy.close}
-          >
-            ×
-          </button>
-        </div>
+          {showIosSteps ? (
+            <p className="mt-2 max-w-[20rem] border-t border-line/60 pt-2 text-[0.7rem] leading-snug text-mist/90">
+              {copy.iosHint}
+            </p>
+          ) : null}
 
-        {showIosSteps ? (
-          <p className="mt-2 border-t border-line/60 pt-2 text-[0.7rem] leading-snug text-mist/90">
-            {copy.iosHint}
-          </p>
-        ) : null}
-
-        <div className="mt-1.5 flex items-center gap-3 pl-4">
-          <button
-            type="button"
-            onClick={onLater}
-            className="text-[0.58rem] tracking-[0.14em] text-soft/75 uppercase transition-colors hover:text-champagne"
-          >
-            {copy.later}
-          </button>
-          <span className="text-soft/35" aria-hidden>
-            ·
-          </span>
-          <button
-            type="button"
-            onClick={onNever}
-            className="text-[0.58rem] tracking-[0.14em] text-soft/75 uppercase transition-colors hover:text-champagne"
-          >
-            {copy.never}
-          </button>
+          <div className="mt-2 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={onLater}
+              className="text-[0.58rem] tracking-[0.14em] text-soft/75 uppercase transition-colors hover:text-champagne"
+            >
+              {copy.later}
+            </button>
+            <span className="text-soft/35" aria-hidden>
+              ·
+            </span>
+            <button
+              type="button"
+              onClick={onNever}
+              className="text-[0.58rem] tracking-[0.14em] text-soft/75 uppercase transition-colors hover:text-champagne"
+            >
+              {copy.never}
+            </button>
+          </div>
         </div>
       </div>
     </div>
