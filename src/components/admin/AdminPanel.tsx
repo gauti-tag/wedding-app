@@ -14,6 +14,7 @@ import { AdminInviteQr } from "@/components/admin/AdminInviteQr";
 import { AdminMcRundownEditor } from "@/components/admin/AdminMcRundownEditor";
 import { AdminMenuEditor } from "@/components/admin/AdminMenuEditor";
 import { AdminPdfExport } from "@/components/admin/AdminPdfExport";
+import { AdminPhotosList } from "@/components/admin/AdminPhotosList";
 import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
 import { AdminSeatingEditor } from "@/components/admin/AdminSeatingEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
@@ -22,6 +23,7 @@ import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
 import type { GuestAlbumContent } from "@/lib/guest-album";
 import type { GuestbookContent } from "@/lib/guestbook";
 import type { InfoContent } from "@/lib/info-content";
+import type { AdminPrivacySettings } from "@/lib/admin-privacy";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
@@ -130,6 +132,7 @@ type Props = {
   initialGuestAlbum: GuestAlbumContent;
   initialUsers: AdminUserPublic[];
   initialAudit: AuditEntry[];
+  initialPrivacy: AdminPrivacySettings;
 };
 
 const albumLabels: Record<PhotoAlbum, string> = {
@@ -202,14 +205,17 @@ export function AdminPanel({
   initialGuestAlbum,
   initialUsers,
   initialAudit,
+  initialPrivacy,
 }: Props) {
   const can = (permission: Permission) => hasPermission(currentUser.role, permission);
   const navItems = adminNav.filter((item) => can(item.permission));
+  const isOwner = currentUser.role === "admin";
 
   const [photos, setPhotos] = useState(initialPhotos);
   const [rsvps, setRsvps] = useState(initialRsvps);
   const [reminders, setReminders] = useState(initialReminders);
   const [site, setSite] = useState(initialSite);
+  const [privacy, setPrivacy] = useState(initialPrivacy);
   const [album, setAlbum] = useState<PhotoAlbum>("gallery");
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -220,9 +226,9 @@ export function AdminPanel({
   const [blockBusyId, setBlockBusyId] = useState<string | null>(null);
   const [rsvpPage, setRsvpPage] = useState(1);
   const [rsvpQuery, setRsvpQuery] = useState("");
-  const [revealedRsvpIds, setRevealedRsvpIds] = useState<Record<string, true>>({});
-  const canRevealPii = currentUser.role === "admin";
-  const canBlockRsvp = currentUser.role === "admin";
+  const canBlockRsvp = isOwner;
+  /** Propriétaire toujours en clair ; équipe masquée seulement si le propriétaire l’active. */
+  const showGuestPii = isOwner || !privacy.maskGuestPiiForTeam;
 
   const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
   const RSVP_PAGE_SIZE = 10;
@@ -285,14 +291,21 @@ export function AdminPanel({
       if (data.photo.album !== "hero") return [...prev, data.photo];
       const heroes = prev
         .filter((p) => p.album === "hero")
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt));
       const keepIds = new Set(
         heroes.slice(Math.max(0, heroes.length - (MAX_HERO_PHOTOS - 1))).map((p) => p.id),
       );
+      const galleryMax = Math.max(
+        -1,
+        ...prev.filter((p) => p.album === "gallery").map((p) => p.order),
+      );
+      let demoted = 0;
       return [
-        ...prev.map((p) =>
-          p.album === "hero" && !keepIds.has(p.id) ? { ...p, album: "gallery" as const } : p,
-        ),
+        ...prev.map((p) => {
+          if (p.album !== "hero" || keepIds.has(p.id)) return p;
+          demoted += 1;
+          return { ...p, album: "gallery" as const, order: galleryMax + demoted };
+        }),
         data.photo,
       ];
     });
@@ -472,8 +485,8 @@ export function AdminPanel({
     ];
     const rows = rsvps.map((r) =>
       [
-        r.name,
-        r.phone,
+        showGuestPii ? r.name : maskName(r.name),
+        showGuestPii ? r.phone : maskPhone(r.phone || ""),
         r.status,
         guestOfLabels[r.guestOf] || r.guestOf,
         r.message,
@@ -557,6 +570,7 @@ export function AdminPanel({
           guestOfLabels={guestOfLabels}
           onExportCsv={exportCsv}
           canExport={can("view_rsvp")}
+          showGuestPii={showGuestPii}
         />
       ) : null}
 
@@ -645,37 +659,15 @@ export function AdminPanel({
           </button>
         </form>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <h2 className="section-title text-3xl text-mist">Photos ({photos.length})</h2>
-          <div className="grid min-w-0 gap-3 md:grid-cols-2">
-            {photos.length === 0 ? (
-              <p className="text-sm text-soft">Aucune photo pour le moment.</p>
-            ) : (
-              photos.map((photo) => (
-                <article key={photo.id} className="overflow-hidden border border-line bg-white">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.url}
-                    alt={photo.caption || "Photo"}
-                    className="aspect-[4/3] h-auto w-full object-cover"
-                  />
-                  <div className="space-y-2 p-3">
-                    <p className="text-xs tracking-[0.14em] text-gold uppercase">
-                      {albumLabels[photo.album]}
-                    </p>
-                    <p className="truncate text-sm text-mist">{photo.caption || "Sans légende"}</p>
-                    <button
-                      type="button"
-                      onClick={() => onDelete(photo.id)}
-                      className="text-xs tracking-[0.14em] text-soft uppercase hover:text-champagne"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
+          <AdminPhotosList
+            photos={photos}
+            albumLabels={albumLabels}
+            onPhotosChange={setPhotos}
+            onDelete={onDelete}
+            onError={(message) => showError(message)}
+          />
         </div>
       </section>
       ) : null}
@@ -791,9 +783,8 @@ export function AdminPanel({
             </p>
           ) : (
             pagedRsvps.map((rsvp) => {
-              const revealed = canRevealPii && Boolean(revealedRsvpIds[rsvp.id]);
-              const displayName = revealed ? rsvp.name : maskName(rsvp.name);
-              const displayPhone = revealed
+              const displayName = showGuestPii ? rsvp.name : maskName(rsvp.name);
+              const displayPhone = showGuestPii
                 ? rsvp.phone || "—"
                 : maskPhone(rsvp.phone || "");
 
@@ -808,22 +799,6 @@ export function AdminPanel({
                       {rsvp.status}
                     </span>
                   </div>
-                  {canRevealPii ? (
-                    <button
-                      type="button"
-                      className="text-left text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist"
-                      onClick={() =>
-                        setRevealedRsvpIds((prev) => {
-                          const next = { ...prev };
-                          if (next[rsvp.id]) delete next[rsvp.id];
-                          else next[rsvp.id] = true;
-                          return next;
-                        })
-                      }
-                    >
-                      {revealed ? "Masquer" : "Afficher"}
-                    </button>
-                  ) : null}
                   <dl className="admin-grid-2 grid gap-x-3 gap-y-2 text-xs text-soft">
                     <div>
                       <dt className="tracking-[0.12em] uppercase">Invité(e) de</dt>
@@ -954,9 +929,8 @@ export function AdminPanel({
                 </tr>
               ) : (
                 pagedRsvps.map((rsvp) => {
-                  const revealed = canRevealPii && Boolean(revealedRsvpIds[rsvp.id]);
-                  const displayName = revealed ? rsvp.name : maskName(rsvp.name);
-                  const displayPhone = revealed
+                  const displayName = showGuestPii ? rsvp.name : maskName(rsvp.name);
+                  const displayPhone = showGuestPii
                     ? rsvp.phone || "—"
                     : maskPhone(rsvp.phone || "");
 
@@ -964,22 +938,6 @@ export function AdminPanel({
                   <tr key={rsvp.id} className="border-t border-line">
                     <td className="px-4 py-3">
                       <div className="text-mist">{displayName}</div>
-                      {canRevealPii ? (
-                        <button
-                          type="button"
-                          className="mt-1 text-left text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist"
-                          onClick={() =>
-                            setRevealedRsvpIds((prev) => {
-                              const next = { ...prev };
-                              if (next[rsvp.id]) delete next[rsvp.id];
-                              else next[rsvp.id] = true;
-                              return next;
-                            })
-                          }
-                        >
-                          {revealed ? "Masquer" : "Afficher"}
-                        </button>
-                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-soft">{displayPhone}</td>
                     <td className="px-4 py-3 text-champagne">{rsvp.status}</td>
@@ -1149,6 +1107,7 @@ export function AdminPanel({
           initialPlan={initialSeatingPlan}
           site={site}
           canEdit={can("manage_rsvp")}
+          showGuestPii={showGuestPii}
           onUpdated={(updated) =>
             setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
           }
@@ -1157,7 +1116,13 @@ export function AdminPanel({
 
       {can("check_in") ? <AdminCheckIn site={site} /> : null}
       {can("manage_users") ? (
-        <AdminUsersEditor initialUsers={initialUsers} currentUserId={currentUser.id} />
+        <AdminUsersEditor
+          initialUsers={initialUsers}
+          currentUserId={currentUser.id}
+          isOwner={isOwner}
+          privacy={privacy}
+          onPrivacyChange={setPrivacy}
+        />
       ) : null}
       {can("view_audit") ? <AdminAuditLog initialEntries={initialAudit} /> : null}
       </div>

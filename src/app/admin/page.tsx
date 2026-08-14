@@ -4,6 +4,7 @@ import { getAuditLog } from "@/lib/audit";
 import { getSessionUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/roles";
 import {
+  getAdminPrivacy,
   getDesserts,
   getDrinks,
   getGuestAlbum,
@@ -19,6 +20,7 @@ import {
   getSiteContent,
   getStory,
 } from "@/lib/storage";
+import { defaultAdminPrivacy } from "@/lib/admin-privacy";
 import { emptyMcRundown } from "@/lib/mc-rundown";
 import { emptySeatingPlan } from "@/lib/seating";
 import { emptyGuestbookContent } from "@/lib/guestbook";
@@ -59,6 +61,7 @@ export default async function AdminPage() {
     guestAlbum,
     users,
     audit,
+    privacy,
   ] = await Promise.all([
     canPhotos || canContent ? getPhotos() : Promise.resolve([]),
     canRsvp ? getRsvps() : Promise.resolve([]),
@@ -88,6 +91,7 @@ export default async function AdminPage() {
     canContent ? getGuestAlbum() : Promise.resolve(emptyGuestAlbumContent()),
     canUsers ? listPublicUsers() : Promise.resolve([]),
     canAudit ? getAuditLog(300) : Promise.resolve([]),
+    getAdminPrivacy(),
   ]);
 
   return (
@@ -109,6 +113,7 @@ export default async function AdminPage() {
       initialGuestAlbum={guestAlbum}
       initialUsers={users}
       initialAudit={audit}
+      initialPrivacy={privacy ?? defaultAdminPrivacy()}
     />
   );
 }

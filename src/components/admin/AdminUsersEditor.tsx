@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import type { AdminPrivacySettings } from "@/lib/admin-privacy";
 import {
   ROLES,
   roleDescriptions,
@@ -13,12 +14,19 @@ import type { AdminUserPublic } from "@/lib/types";
 export function AdminUsersEditor({
   initialUsers,
   currentUserId,
+  isOwner,
+  privacy,
+  onPrivacyChange,
 }: {
   initialUsers: AdminUserPublic[];
   currentUserId: string;
+  isOwner: boolean;
+  privacy: AdminPrivacySettings;
+  onPrivacyChange: (next: AdminPrivacySettings) => void;
 }) {
   const [users, setUsers] = useState(initialUsers);
   const [busy, setBusy] = useState(false);
+  const [privacyBusy, setPrivacyBusy] = useState(false);
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
   const [form, setForm] = useState({
     name: "",
@@ -26,6 +34,36 @@ export function AdminUsersEditor({
     role: "editor" as Role,
     password: "",
   });
+
+  async function onToggleMaskGuestPii(nextValue: boolean) {
+    setPrivacyBusy(true);
+    const previous = privacy;
+    onPrivacyChange({ ...privacy, maskGuestPiiForTeam: nextValue });
+    try {
+      const res = await fetch("/api/admin/privacy", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ maskGuestPiiForTeam: nextValue }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        onPrivacyChange(previous);
+        showError(data.error || "Enregistrement impossible.");
+        return;
+      }
+      if (data.privacy) onPrivacyChange(data.privacy);
+      showSuccess(
+        nextValue
+          ? "Masquage activé : les autres profils voient noms et téléphones masqués."
+          : "Masquage désactivé : noms et téléphones visibles pour les profils autorisés.",
+      );
+    } catch {
+      onPrivacyChange(previous);
+      showError("Enregistrement impossible.");
+    } finally {
+      setPrivacyBusy(false);
+    }
+  }
 
   async function onCreate() {
     setBusy(true);
@@ -104,6 +142,36 @@ export function AdminUsersEditor({
         </p>
       </div>
 
+      {isOwner ? (
+        <div className="space-y-3 border border-line bg-white p-5">
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+            Profil propriétaire · Confidentialité
+          </p>
+          <p className="text-sm text-soft">
+            Par défaut, les noms et téléphones des invités sont visibles pour les profils qui ont
+            accès aux RSVP. Activez le masquage pour les cacher aux autres profils (vous les
+            voyez toujours en clair).
+          </p>
+          <label className="flex min-w-0 cursor-pointer items-start gap-3 border border-line bg-forest/40 px-3 py-3">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={privacy.maskGuestPiiForTeam}
+              disabled={privacyBusy}
+              onChange={(e) => void onToggleMaskGuestPii(e.target.checked)}
+            />
+            <span className="min-w-0">
+              <span className="block text-sm text-mist">
+                Masquer nom et téléphone pour l’équipe
+              </span>
+              <span className="mt-1 block text-xs text-soft">
+                Impacte RSVP, synthèse et plan de table pour Gestion invités, Lecteur, etc.
+              </span>
+            </span>
+          </label>
+        </div>
+      ) : null}
+
       <div className="grid min-w-0 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {ROLES.map((role) => (
           <article key={role} className="border border-line bg-white p-4">
@@ -180,6 +248,7 @@ export function AdminUsersEditor({
           {busy ? "Création…" : "Créer l’utilisateur"}
         </button>
       </div>
+
 
       <div className="space-y-3 md:hidden">
         {users.map((user) => (

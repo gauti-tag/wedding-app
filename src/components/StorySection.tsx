@@ -16,7 +16,10 @@ export function StorySection({
   locale: Locale;
   dict: Dictionary;
 }) {
-  const storyPhotos = photos.filter((p) => p.album === "story").slice(0, 3);
+  const storyPhotos = photos
+    .filter((p) => p.album === "story")
+    .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
+    .slice(0, 3);
 
   return (
     <section id="story" className="py-24 md:py-32">

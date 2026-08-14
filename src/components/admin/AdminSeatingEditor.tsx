@@ -13,6 +13,7 @@ import {
   seatingKey,
 } from "@/lib/seating";
 import type { Rsvp, SeatingPlanContent, SeatingPlanTable, SiteContent } from "@/lib/types";
+import { maskName } from "@/lib/mask-pii";
 import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
 
 type Props = {
@@ -21,6 +22,7 @@ type Props = {
   site: Pick<SiteContent, "partnerOne" | "partnerTwo">;
   onUpdated: (rsvp: Rsvp) => void;
   canEdit: boolean;
+  showGuestPii?: boolean;
 };
 
 export function AdminSeatingEditor({
@@ -29,6 +31,7 @@ export function AdminSeatingEditor({
   site,
   onUpdated,
   canEdit,
+  showGuestPii = true,
 }: Props) {
   const [plan, setPlan] = useState<SeatingPlanContent>(initialPlan);
   const [planBusy, setPlanBusy] = useState(false);
@@ -42,6 +45,8 @@ export function AdminSeatingEditor({
     {},
   );
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
+
+  const displayGuestName = (name: string) => (showGuestPii ? name : maskName(name));
 
   const yesGuests = useMemo(
     () =>
@@ -385,7 +390,7 @@ export function AdminSeatingEditor({
                 const wa = seatingWhatsAppForRsvp(rsvp, site, { toGuest: true });
                 return (
                   <article key={rsvp.id} className="space-y-3 border border-line p-3">
-                    <p className="font-medium text-mist">{rsvp.name}</p>
+                    <p className="font-medium text-mist">{displayGuestName(rsvp.name)}</p>
                     {canEdit ? (
                       <div className="admin-grid-2 grid gap-2">
                         <div>
@@ -508,7 +513,7 @@ export function AdminSeatingEditor({
                     const wa = seatingWhatsAppForRsvp(rsvp, site, { toGuest: true });
                     return (
                       <tr key={rsvp.id} className="border-t border-line">
-                        <td className="px-3 py-2 text-mist">{rsvp.name}</td>
+                        <td className="px-3 py-2 text-mist">{displayGuestName(rsvp.name)}</td>
                         <td className="px-3 py-2">
                           {canEdit ? (
                             <select
@@ -626,7 +631,7 @@ export function AdminSeatingEditor({
                             <li key={seat} className="break-words">
                               <span className="text-champagne">{seat}</span>
                               {" · "}
-                              {guest ? guest.name : "libre"}
+                              {guest ? displayGuestName(guest.name) : "libre"}
                             </li>
                           );
                         })}
@@ -653,7 +658,7 @@ export function AdminSeatingEditor({
                       <ul className="mt-2 space-y-1 text-sm text-soft">
                         {group.guests.map((g) => (
                           <li key={g.id} className="break-words">
-                            {g.name}
+                            {displayGuestName(g.name)}
                             {g.seatLabel ? (
                               <span className="text-champagne"> · {g.seatLabel}</span>
                             ) : null}

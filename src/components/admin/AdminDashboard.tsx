@@ -6,6 +6,7 @@ import {
   followUpReasonLabel,
   type FollowUpReason,
 } from "@/lib/rsvp-insights";
+import { maskName } from "@/lib/mask-pii";
 import type { Rsvp, SiteContent } from "@/lib/types";
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
   guestOfLabels: Record<string, string>;
   onExportCsv: () => void;
   canExport: boolean;
+  showGuestPii?: boolean;
 };
 
 const statusLabels: Record<"yes" | "no" | "maybe", string> = {
@@ -28,6 +30,7 @@ export function AdminDashboard({
   guestOfLabels,
   onExportCsv,
   canExport,
+  showGuestPii = true,
 }: Props) {
   const insights = useMemo(() => computeRsvpInsights(rsvps, site), [rsvps, site]);
 
@@ -152,7 +155,9 @@ export function AdminDashboard({
                 className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 text-sm"
               >
                 <div>
-                  <p className="text-mist">{rsvp.name}</p>
+                  <p className="text-mist">
+                    {showGuestPii ? rsvp.name : maskName(rsvp.name)}
+                  </p>
                   <p className="text-xs text-soft">
                     {statusLabels[rsvp.status as "yes" | "no" | "maybe"] || rsvp.status}
                     {" · "}

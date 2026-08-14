@@ -16,7 +16,9 @@ export function GallerySection({
   photos: Photo[];
   dict: Dictionary;
 }) {
-  const gallery = photos.filter((p) => p.album === "gallery");
+  const gallery = photos
+    .filter((p) => p.album === "gallery")
+    .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt));
   const scrollable = gallery.length > GALLERY_SCROLL_THRESHOLD;
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(false);

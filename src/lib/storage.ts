@@ -21,6 +21,11 @@ import {
 import { emptyGuestAlbumContent, normalizeGuestAlbumContent } from "@/lib/guest-album";
 import { emptyGuestbookContent, normalizeGuestbookContent } from "@/lib/guestbook";
 import { emptyInfoContent, normalizeInfoContent } from "@/lib/info-content";
+import {
+  defaultAdminPrivacy,
+  normalizeAdminPrivacy,
+  type AdminPrivacySettings,
+} from "@/lib/admin-privacy";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -420,6 +425,15 @@ export async function getGuestAlbum(): Promise<GuestAlbumContent> {
 
 export async function saveGuestAlbum(content: GuestAlbumContent) {
   await saveContent("guest-album", normalizeGuestAlbumContent(content));
+}
+
+export async function getAdminPrivacy(): Promise<AdminPrivacySettings> {
+  const raw = await getContent<unknown>("admin-privacy", defaultAdminPrivacy());
+  return normalizeAdminPrivacy(raw);
+}
+
+export async function saveAdminPrivacy(settings: AdminPrivacySettings) {
+  await saveContent("admin-privacy", normalizeAdminPrivacy(settings));
 }
 
 export async function getSiteContent(): Promise<SiteContent> {

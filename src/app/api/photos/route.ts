@@ -8,6 +8,27 @@ import type { Photo, PhotoAlbum } from "@/lib/types";
 
 const albums: PhotoAlbum[] = ["hero", "story", "gallery"];
 
+function sortAlbumPhotos(photos: Photo[], album: PhotoAlbum) {
+  return photos
+    .filter((photo) => photo.album === album)
+    .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt));
+}
+
+function applyAlbumOrder(photos: Photo[], album: PhotoAlbum, orderedIds: string[]): Photo[] | null {
+  const current = sortAlbumPhotos(photos, album);
+  if (orderedIds.length !== current.length) return null;
+  const currentIds = new Set(current.map((p) => p.id));
+  if (orderedIds.some((id) => !currentIds.has(id))) return null;
+  if (new Set(orderedIds).size !== orderedIds.length) return null;
+
+  const orderById = new Map(orderedIds.map((id, index) => [id, index]));
+  return photos.map((photo) => {
+    if (photo.album !== album) return photo;
+    const nextOrder = orderById.get(photo.id);
+    return nextOrder === undefined ? photo : { ...photo, order: nextOrder };
+  });
+}
+
 export async function GET() {
   const photos = await getPhotos();
   return NextResponse.json({ photos });
@@ -47,24 +68,28 @@ export async function POST(request: Request) {
     });
 
     if (album === "hero") {
-      const heroes = photos
-        .filter((photo) => photo.album === "hero")
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      const heroes = sortAlbumPhotos(photos, "hero");
       if (heroes.length >= MAX_HERO_PHOTOS) {
         const overflow = heroes.slice(0, heroes.length - (MAX_HERO_PHOTOS - 1));
         for (const photo of overflow) {
           photo.album = "gallery";
+          const galleryMax = Math.max(
+            -1,
+            ...photos.filter((p) => p.album === "gallery").map((p) => p.order),
+          );
+          photo.order = galleryMax + 1;
         }
       }
     }
 
+    const albumMax = Math.max(-1, ...sortAlbumPhotos(photos, album).map((p) => p.order));
     const entry: Photo = {
       id: crypto.randomUUID(),
       filename: uploaded.filename,
       url: uploaded.url,
       caption,
       album,
-      order: photos.length,
+      order: albumMax + 1,
       createdAt: new Date().toISOString(),
     };
 
@@ -89,6 +114,44 @@ export async function POST(request: Request) {
         ? err.message
         : "Échec de l'upload.";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+/** Réordonne les photos d’un album (Hero = ordre du carrousel). */
+export async function PATCH(request: Request) {
+  const { user, error } = await requirePermission("manage_photos");
+  if (error) return error;
+
+  try {
+    const body = (await request.json()) as {
+      album?: PhotoAlbum;
+      orderedIds?: string[];
+    };
+    const album = body.album;
+    const orderedIds = Array.isArray(body.orderedIds) ? body.orderedIds.map(String) : null;
+
+    if (!album || !albums.includes(album) || !orderedIds) {
+      return NextResponse.json({ error: "Paramètres invalides." }, { status: 400 });
+    }
+
+    const photos = await getPhotos();
+    const next = applyAlbumOrder(photos, album, orderedIds);
+    if (!next) {
+      return NextResponse.json(
+        { error: "Ordre invalide (liste incomplète ou IDs inconnus)." },
+        { status: 400 },
+      );
+    }
+
+    await savePhotos(next);
+    await auditAs(user, "update", "photo", `ordre ${album}: ${orderedIds.length} photo(s)`);
+
+    return NextResponse.json({
+      ok: true,
+      photos: next.sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt)),
+    });
+  } catch {
+    return NextResponse.json({ error: "Réordonnancement impossible." }, { status: 500 });
   }
 }
 

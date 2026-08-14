@@ -146,7 +146,7 @@ const fr: Dictionary = {
     coupleSpace: "Espace couple",
     installApp: "Installer l’app",
     installPrompt: {
-      title: "Gardez l’invitation à portée de main ?",
+      title: "Sur l’écran d’accueil ?",
       body: "Pour rouvrir l’invitation en un tap.",
       install: "Oui",
       later: "Plus tard",
