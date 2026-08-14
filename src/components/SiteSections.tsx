@@ -1,10 +1,16 @@
 import { GallerySection } from "@/components/GallerySection";
+import { GuestbookSection } from "@/components/GuestbookSection";
+import { GuestAlbumSection } from "@/components/GuestAlbumSection";
+import { InfoSection } from "@/components/InfoSection";
 import { MenuSection } from "@/components/MenuSection";
 import { RsvpForm } from "@/components/RsvpForm";
 import { ScheduleSection } from "@/components/ScheduleSection";
 import { StorySection } from "@/components/StorySection";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
+import type { GuestAlbumContent } from "@/lib/guest-album";
+import type { GuestbookContent } from "@/lib/guestbook";
+import type { InfoContent } from "@/lib/info-content";
 import { orderedEnabledSections } from "@/lib/site-features";
 import type {
   DessertsContent,
@@ -26,6 +32,9 @@ export function SiteSections({
   menu,
   drinks,
   desserts,
+  info,
+  guestbook,
+  guestAlbum,
   capacityFull,
 }: {
   locale: Locale;
@@ -37,6 +46,9 @@ export function SiteSections({
   menu: MenuContent;
   drinks: DrinksContent;
   desserts: DessertsContent;
+  info: InfoContent;
+  guestbook: GuestbookContent;
+  guestAlbum: GuestAlbumContent;
   capacityFull: boolean;
 }) {
   const features = siteContent.features;
@@ -85,6 +97,19 @@ export function SiteSections({
         }
         if (key === "gallery") {
           return <GallerySection key={key} photos={photos} dict={dict} />;
+        }
+        if (key === "info") {
+          return <InfoSection key={key} info={info} locale={locale} dict={dict} />;
+        }
+        if (key === "guestbook") {
+          return (
+            <GuestbookSection key={key} initial={guestbook} locale={locale} dict={dict} />
+          );
+        }
+        if (key === "guestAlbum") {
+          return (
+            <GuestAlbumSection key={key} initial={guestAlbum} locale={locale} dict={dict} />
+          );
         }
         return (
           <RsvpForm

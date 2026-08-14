@@ -6,6 +6,9 @@ import { hasPermission } from "@/lib/roles";
 import {
   getDesserts,
   getDrinks,
+  getGuestAlbum,
+  getGuestbook,
+  getInfoContent,
   getMcRundown,
   getMenu,
   getPhotos,
@@ -18,6 +21,9 @@ import {
 } from "@/lib/storage";
 import { emptyMcRundown } from "@/lib/mc-rundown";
 import { emptySeatingPlan } from "@/lib/seating";
+import { emptyGuestbookContent } from "@/lib/guestbook";
+import { emptyGuestAlbumContent } from "@/lib/guest-album";
+import { emptyInfoContent } from "@/lib/info-content";
 import { ensureSeedAdmin, listPublicUsers, publicUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -36,32 +42,53 @@ export default async function AdminPage() {
   const canUsers = hasPermission(user.role, "manage_users");
   const canAudit = hasPermission(user.role, "view_audit");
 
-  const [photos, rsvps, reminders, siteContent, story, schedule, mcRundown, seatingPlan, menu, drinks, desserts, users, audit] =
-    await Promise.all([
-      canPhotos || canContent ? getPhotos() : Promise.resolve([]),
-      canRsvp ? getRsvps() : Promise.resolve([]),
-      canRsvp ? getRsvpReminders() : Promise.resolve({}),
-      getSiteContent(),
-      canContent ? getStory() : Promise.resolve({ eyebrow: { fr: "", en: "" }, title: { fr: "", en: "" }, body: { fr: "", en: "" } }),
-      canContent
-        ? getSchedule()
-        : Promise.resolve({
-            eyebrow: { fr: "", en: "" },
-            title: { fr: "", en: "" },
-            dressCode: { fr: "", en: "" },
-            directions: { fr: "", en: "" },
-            venues: [],
-          }),
-      canContent ? getMcRundown() : Promise.resolve(emptyMcRundown()),
-      canRsvp ? getSeatingPlan() : Promise.resolve(emptySeatingPlan()),
-      canContent
-        ? getMenu()
-        : Promise.resolve({ subtitle: { fr: "", en: "" }, note: { fr: "", en: "" }, cuisines: [] }),
-      canContent ? getDrinks() : Promise.resolve({ items: [] }),
-      canContent ? getDesserts() : Promise.resolve({ items: [] }),
-      canUsers ? listPublicUsers() : Promise.resolve([]),
-      canAudit ? getAuditLog(300) : Promise.resolve([]),
-    ]);
+  const [
+    photos,
+    rsvps,
+    reminders,
+    siteContent,
+    story,
+    schedule,
+    mcRundown,
+    seatingPlan,
+    menu,
+    drinks,
+    desserts,
+    info,
+    guestbook,
+    guestAlbum,
+    users,
+    audit,
+  ] = await Promise.all([
+    canPhotos || canContent ? getPhotos() : Promise.resolve([]),
+    canRsvp ? getRsvps() : Promise.resolve([]),
+    canRsvp ? getRsvpReminders() : Promise.resolve({}),
+    getSiteContent(),
+    canContent
+      ? getStory()
+      : Promise.resolve({ eyebrow: { fr: "", en: "" }, title: { fr: "", en: "" }, body: { fr: "", en: "" } }),
+    canContent
+      ? getSchedule()
+      : Promise.resolve({
+          eyebrow: { fr: "", en: "" },
+          title: { fr: "", en: "" },
+          dressCode: { fr: "", en: "" },
+          directions: { fr: "", en: "" },
+          venues: [],
+        }),
+    canContent ? getMcRundown() : Promise.resolve(emptyMcRundown()),
+    canRsvp ? getSeatingPlan() : Promise.resolve(emptySeatingPlan()),
+    canContent
+      ? getMenu()
+      : Promise.resolve({ subtitle: { fr: "", en: "" }, note: { fr: "", en: "" }, cuisines: [] }),
+    canContent ? getDrinks() : Promise.resolve({ items: [] }),
+    canContent ? getDesserts() : Promise.resolve({ items: [] }),
+    canContent ? getInfoContent() : Promise.resolve(emptyInfoContent()),
+    canContent ? getGuestbook() : Promise.resolve(emptyGuestbookContent()),
+    canContent ? getGuestAlbum() : Promise.resolve(emptyGuestAlbumContent()),
+    canUsers ? listPublicUsers() : Promise.resolve([]),
+    canAudit ? getAuditLog(300) : Promise.resolve([]),
+  ]);
 
   return (
     <AdminPanel
@@ -77,6 +104,9 @@ export default async function AdminPage() {
       initialMenu={menu}
       initialDrinks={drinks}
       initialDesserts={desserts}
+      initialInfo={info}
+      initialGuestbook={guestbook}
+      initialGuestAlbum={guestAlbum}
       initialUsers={users}
       initialAudit={audit}
     />

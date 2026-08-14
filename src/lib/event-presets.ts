@@ -223,6 +223,9 @@ function featuresWith(
       schedule: navLabels?.schedule ?? emptyL(),
       menu: navLabels?.menu ?? emptyL(),
       gallery: navLabels?.gallery ?? emptyL(),
+      info: navLabels?.info ?? emptyL(),
+      guestbook: navLabels?.guestbook ?? emptyL(),
+      guestAlbum: navLabels?.guestAlbum ?? emptyL(),
       rsvp: navLabels?.rsvp ?? emptyL(),
     },
   });

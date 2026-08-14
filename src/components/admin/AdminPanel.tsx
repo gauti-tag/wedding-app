@@ -7,14 +7,21 @@ import { AdminCheckIn } from "@/components/admin/AdminCheckIn";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminDessertsEditor } from "@/components/admin/AdminDessertsEditor";
 import { AdminDrinksEditor } from "@/components/admin/AdminDrinksEditor";
+import { AdminGuestAlbumEditor } from "@/components/admin/AdminGuestAlbumEditor";
+import { AdminGuestbookEditor } from "@/components/admin/AdminGuestbookEditor";
+import { AdminInfoEditor } from "@/components/admin/AdminInfoEditor";
 import { AdminInviteQr } from "@/components/admin/AdminInviteQr";
 import { AdminMcRundownEditor } from "@/components/admin/AdminMcRundownEditor";
 import { AdminMenuEditor } from "@/components/admin/AdminMenuEditor";
+import { AdminPdfExport } from "@/components/admin/AdminPdfExport";
 import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
 import { AdminSeatingEditor } from "@/components/admin/AdminSeatingEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
+import type { GuestAlbumContent } from "@/lib/guest-album";
+import type { GuestbookContent } from "@/lib/guestbook";
+import type { InfoContent } from "@/lib/info-content";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
@@ -118,6 +125,9 @@ type Props = {
   initialMenu: MenuContent;
   initialDrinks: DrinksContent;
   initialDesserts: DessertsContent;
+  initialInfo: InfoContent;
+  initialGuestbook: GuestbookContent;
+  initialGuestAlbum: GuestAlbumContent;
   initialUsers: AdminUserPublic[];
   initialAudit: AuditEntry[];
 };
@@ -139,6 +149,10 @@ const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-menu", label: "Menu", permission: "manage_content" },
   { href: "#admin-desserts", label: "Desserts", permission: "manage_content" },
   { href: "#admin-drinks", label: "Boissons", permission: "manage_content" },
+  { href: "#admin-info", label: "FAQ & carte", permission: "manage_content" },
+  { href: "#admin-guestbook", label: "Livre d’or", permission: "manage_content" },
+  { href: "#admin-guest-album", label: "Album invités", permission: "manage_content" },
+  { href: "#admin-pdf", label: "PDF", permission: "view_rsvp" },
   { href: "#admin-rsvp", label: "RSVP", permission: "view_rsvp" },
   { href: "#admin-seating", label: "Plan de table", permission: "view_rsvp" },
   { href: "#admin-checkin", label: "Check-in", permission: "check_in" },
@@ -183,6 +197,9 @@ export function AdminPanel({
   initialMenu,
   initialDrinks,
   initialDesserts,
+  initialInfo,
+  initialGuestbook,
+  initialGuestAlbum,
   initialUsers,
   initialAudit,
 }: Props) {
@@ -675,7 +692,19 @@ export function AdminPanel({
           <AdminMenuEditor initialMenu={initialMenu} />
           <AdminDessertsEditor initialDesserts={initialDesserts} />
           <AdminDrinksEditor initialDrinks={initialDrinks} />
+          <AdminInfoEditor initial={initialInfo} />
+          <AdminGuestbookEditor initial={initialGuestbook} />
+          <AdminGuestAlbumEditor initial={initialGuestAlbum} />
         </>
+      ) : null}
+
+      {can("view_rsvp") ? (
+        <AdminPdfExport
+          rsvps={rsvps}
+          site={site}
+          seatingPlan={initialSeatingPlan}
+          guestOfLabels={guestOfLabels}
+        />
       ) : null}
 
       {can("view_rsvp") ? (

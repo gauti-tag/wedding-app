@@ -11,6 +11,9 @@ import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import {
   getDesserts,
   getDrinks,
+  getGuestAlbum,
+  getGuestbook,
+  getInfoContent,
   getMenu,
   getPhotos,
   getRsvps,
@@ -31,17 +34,31 @@ export default async function Home({ params }: Props) {
   if (!isLocale(raw)) notFound();
 
   const baseDict = getDictionary(raw);
-  const [photos, siteContent, story, schedule, menu, drinks, desserts, rsvps] =
-    await Promise.all([
-      getPhotos(),
-      getSiteContent(),
-      getStory(),
-      getSchedule(),
-      getMenu(),
-      getDrinks(),
-      getDesserts(),
-      getRsvps(),
-    ]);
+  const [
+    photos,
+    siteContent,
+    story,
+    schedule,
+    menu,
+    drinks,
+    desserts,
+    info,
+    guestbook,
+    guestAlbum,
+    rsvps,
+  ] = await Promise.all([
+    getPhotos(),
+    getSiteContent(),
+    getStory(),
+    getSchedule(),
+    getMenu(),
+    getDrinks(),
+    getDesserts(),
+    getInfoContent(),
+    getGuestbook(),
+    getGuestAlbum(),
+    getRsvps(),
+  ]);
   const dict = resolveDictionary(baseDict, siteContent.vocabulary, raw);
   const heroPhotos = photos
     .filter((photo) => photo.album === "hero")
@@ -73,6 +90,9 @@ export default async function Home({ params }: Props) {
           menu={menu}
           drinks={drinks}
           desserts={desserts}
+          info={info}
+          guestbook={guestbook}
+          guestAlbum={guestAlbum}
           capacityFull={capacityFull}
         />
       </main>

@@ -175,10 +175,21 @@ export type SiteSectionKey =
   | "drinks"
   | "desserts"
   | "gallery"
+  | "info"
+  | "guestbook"
+  | "guestAlbum"
   | "rsvp";
 
 /** Sections présentes dans la navigation (le bloc menu regroupe carte + boissons + desserts). */
-export type SiteNavSectionKey = "story" | "schedule" | "menu" | "gallery" | "rsvp";
+export type SiteNavSectionKey =
+  | "story"
+  | "schedule"
+  | "menu"
+  | "gallery"
+  | "info"
+  | "guestbook"
+  | "guestAlbum"
+  | "rsvp";
 
 export type SiteFeatures = {
   enabled: Record<SiteSectionKey, boolean>;

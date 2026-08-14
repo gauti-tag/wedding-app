@@ -18,6 +18,9 @@ import {
   normalizeRsvpConfig,
   syncGuestOfLabelsFromHosts,
 } from "@/lib/event-presets";
+import { emptyGuestAlbumContent, normalizeGuestAlbumContent } from "@/lib/guest-album";
+import { emptyGuestbookContent, normalizeGuestbookContent } from "@/lib/guestbook";
+import { emptyInfoContent, normalizeInfoContent } from "@/lib/info-content";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -33,6 +36,9 @@ import type {
   SiteContent,
   StoryContent,
 } from "./types";
+import type { GuestAlbumContent } from "@/lib/guest-album";
+import type { GuestbookContent } from "@/lib/guestbook";
+import type { InfoContent } from "@/lib/info-content";
 
 const dataDir = path.join(process.cwd(), "data");
 const uploadsDir = path.join(process.cwd(), "public", "uploads");
@@ -387,6 +393,33 @@ export async function getSeatingPlan(): Promise<SeatingPlanContent> {
 
 export async function saveSeatingPlan(plan: SeatingPlanContent) {
   await saveContent("seating-plan", normalizeSeatingPlan(plan));
+}
+
+export async function getInfoContent(): Promise<InfoContent> {
+  const raw = await getContent<unknown>("info", emptyInfoContent());
+  return normalizeInfoContent(raw);
+}
+
+export async function saveInfoContent(content: InfoContent) {
+  await saveContent("info", normalizeInfoContent(content));
+}
+
+export async function getGuestbook(): Promise<GuestbookContent> {
+  const raw = await getContent<unknown>("guestbook", emptyGuestbookContent());
+  return normalizeGuestbookContent(raw);
+}
+
+export async function saveGuestbook(content: GuestbookContent) {
+  await saveContent("guestbook", normalizeGuestbookContent(content));
+}
+
+export async function getGuestAlbum(): Promise<GuestAlbumContent> {
+  const raw = await getContent<unknown>("guest-album", emptyGuestAlbumContent());
+  return normalizeGuestAlbumContent(raw);
+}
+
+export async function saveGuestAlbum(content: GuestAlbumContent) {
+  await saveContent("guest-album", normalizeGuestAlbumContent(content));
 }
 
 export async function getSiteContent(): Promise<SiteContent> {

@@ -1,5 +1,5 @@
 /* Wedding invitation PWA service worker */
-const CACHE_VERSION = "wedding-pwa-v4";
+const CACHE_VERSION = "wedding-pwa-v6";
 const TICKET_CACHE = "wedding-tickets-v1";
 const PRECACHE = [
   "/",

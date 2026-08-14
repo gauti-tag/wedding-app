@@ -10,6 +10,9 @@ export const SITE_SECTION_KEYS: SiteSectionKey[] = [
   "drinks",
   "desserts",
   "gallery",
+  "info",
+  "guestbook",
+  "guestAlbum",
   "rsvp",
 ];
 
@@ -18,6 +21,9 @@ export const SITE_BODY_ORDER_KEYS: SiteNavSectionKey[] = [
   "schedule",
   "menu",
   "gallery",
+  "info",
+  "guestbook",
+  "guestAlbum",
   "rsvp",
 ];
 
@@ -29,6 +35,9 @@ export const SITE_SECTION_LABELS_FR: Record<SiteSectionKey, string> = {
   drinks: "Boissons",
   desserts: "Desserts",
   gallery: "Galerie",
+  info: "FAQ & carte",
+  guestbook: "Livre d’or",
+  guestAlbum: "Album invités",
   rsvp: "Confirmation (RSVP)",
 };
 
@@ -44,6 +53,9 @@ export function defaultSiteFeatures(): SiteFeatures {
       drinks: true,
       desserts: true,
       gallery: true,
+      info: false,
+      guestbook: false,
+      guestAlbum: false,
       rsvp: true,
     },
     order: [...SITE_BODY_ORDER_KEYS],
@@ -52,6 +64,9 @@ export function defaultSiteFeatures(): SiteFeatures {
       schedule: emptyNavLabel(),
       menu: emptyNavLabel(),
       gallery: emptyNavLabel(),
+      info: emptyNavLabel(),
+      guestbook: emptyNavLabel(),
+      guestAlbum: emptyNavLabel(),
       rsvp: emptyNavLabel(),
     },
     countdown: true,
@@ -103,6 +118,9 @@ export function normalizeSiteFeatures(raw?: Partial<SiteFeatures> | null): SiteF
     schedule: asLocalized(labelsRaw.schedule),
     menu: asLocalized(labelsRaw.menu),
     gallery: asLocalized(labelsRaw.gallery),
+    info: asLocalized(labelsRaw.info),
+    guestbook: asLocalized(labelsRaw.guestbook),
+    guestAlbum: asLocalized(labelsRaw.guestAlbum),
     rsvp: asLocalized(labelsRaw.rsvp),
   };
 

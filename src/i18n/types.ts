@@ -8,6 +8,9 @@ export type Dictionary = {
     schedule: string;
     menu: string;
     gallery: string;
+    info: string;
+    guestbook: string;
+    guestAlbum: string;
     rsvp: string;
     confirm: string;
     openMenu: string;
@@ -91,6 +94,44 @@ export type Dictionary = {
     errorCapacityFull: string;
     capacityFullTitle: string;
     capacityFullMessage: string;
+  };
+  info: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    faqLabel: string;
+    mapLabel: string;
+    openMap: string;
+    emptyFaq: string;
+    emptyMap: string;
+  };
+  guestbook: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    name: string;
+    message: string;
+    submit: string;
+    sending: string;
+    success: string;
+    pending: string;
+    error: string;
+    empty: string;
+  };
+  guestAlbum: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    name: string;
+    caption: string;
+    photo: string;
+    submit: string;
+    sending: string;
+    success: string;
+    pending: string;
+    error: string;
+    empty: string;
+    needFile: string;
   };
   footer: {
     coupleSpace: string;

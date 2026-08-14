@@ -91,7 +91,16 @@ const rsvpConfigSchema = z.object({
   messagePlaceholder: localizedSchema,
 });
 
-const navSectionSchema = z.enum(["story", "schedule", "menu", "gallery", "rsvp"]);
+const navSectionSchema = z.enum([
+  "story",
+  "schedule",
+  "menu",
+  "gallery",
+  "info",
+  "guestbook",
+  "guestAlbum",
+  "rsvp",
+]);
 
 const featuresSchema = z.object({
   enabled: z.object({
@@ -102,14 +111,20 @@ const featuresSchema = z.object({
     drinks: z.boolean(),
     desserts: z.boolean(),
     gallery: z.boolean(),
+    info: z.boolean(),
+    guestbook: z.boolean(),
+    guestAlbum: z.boolean(),
     rsvp: z.boolean(),
   }),
-  order: z.array(navSectionSchema).min(1).max(5),
+  order: z.array(navSectionSchema).min(1).max(12),
   navLabels: z.object({
     story: localizedSchema,
     schedule: localizedSchema,
     menu: localizedSchema,
     gallery: localizedSchema,
+    info: localizedSchema,
+    guestbook: localizedSchema,
+    guestAlbum: localizedSchema,
     rsvp: localizedSchema,
   }),
   countdown: z.boolean(),
