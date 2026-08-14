@@ -79,7 +79,8 @@ export function AdminPwaBannerPreview({ settings }: { settings: PwaBannerSetting
         <div className="mx-auto w-full max-w-[22rem]">
           <div className="overflow-hidden border border-line bg-[#ebe4db] shadow-sm">
             <div className="border-b border-line/70 bg-white/70 px-3 py-1.5 text-center text-[0.58rem] tracking-[0.14em] text-soft uppercase">
-              Mobile · {settings.width} · {settings.height}
+              Mobile · {settings.width} · {settings.height} ·{" "}
+              {Math.round((settings.opacity ?? 1) * 100)}%
             </div>
             <div className="relative min-h-[17rem] px-3 pb-3 pt-8">
               <div className="pointer-events-none absolute inset-x-4 top-6 space-y-2 opacity-40">

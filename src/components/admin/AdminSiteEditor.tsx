@@ -9,6 +9,7 @@ import {
   defaultPwaBanner,
   normalizePwaBanner,
   PWA_BANNER_HEIGHT_OPTIONS,
+  PWA_BANNER_OPACITY_OPTIONS,
   PWA_BANNER_PLACEMENT_OPTIONS,
   PWA_BANNER_RADIUS_OPTIONS,
   PWA_BANNER_WIDTH_OPTIONS,
@@ -1405,6 +1406,59 @@ export function AdminSiteEditor({
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="min-w-0 sm:col-span-2">
+                <label className="label" htmlFor="pwaOpacity">
+                  Opacité du fond ({Math.round(content.pwaBanner.opacity * 100)}%)
+                </label>
+                <select
+                  id="pwaOpacityPreset"
+                  className="field mb-2"
+                  value={String(content.pwaBanner.opacity)}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: {
+                        ...prev.pwaBanner,
+                        opacity: Number(e.target.value),
+                      },
+                    }))
+                  }
+                >
+                  {PWA_BANNER_OPACITY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </option>
+                  ))}
+                  {!PWA_BANNER_OPACITY_OPTIONS.some(
+                    (o) => o.value === content.pwaBanner.opacity,
+                  ) ? (
+                    <option value={String(content.pwaBanner.opacity)}>
+                      Personnalisé {Math.round(content.pwaBanner.opacity * 100)}%
+                    </option>
+                  ) : null}
+                </select>
+                <input
+                  id="pwaOpacity"
+                  type="range"
+                  min={45}
+                  max={100}
+                  step={1}
+                  className="w-full"
+                  value={Math.round(content.pwaBanner.opacity * 100)}
+                  onChange={(e) =>
+                    setContent((prev) => ({
+                      ...prev,
+                      pwaBanner: {
+                        ...prev.pwaBanner,
+                        opacity: Number(e.target.value) / 100,
+                      },
+                    }))
+                  }
+                />
+                <p className="mt-1 text-xs text-soft">
+                  Sous 98 %, un flou (verre) s’applique derrière la bannière.
+                </p>
               </div>
             </div>
 

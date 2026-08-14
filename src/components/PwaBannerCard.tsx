@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  pwaBannerBackgroundCss,
   pwaBannerButtonRadiusCss,
   pwaBannerGapClass,
   pwaBannerMaxWidthClass,
@@ -14,7 +15,7 @@ type Props = {
   copy: ResolvedPwaBannerCopy;
   settings: Pick<
     PwaBannerSettings,
-    "cardRadius" | "buttonRadius" | "width" | "height" | "placement"
+    "cardRadius" | "buttonRadius" | "width" | "height" | "placement" | "opacity"
   >;
   showIosSteps?: boolean;
   /** Afficher le bouton d’install (false si non éligible côté navigateur). */
@@ -54,6 +55,8 @@ export function PwaBannerCard({
 
   const compact = settings.height === "compact";
   const airy = settings.height === "airy" || settings.height === "tall";
+  const opacity = settings.opacity ?? 1;
+  const frosted = opacity < 0.98;
 
   return (
     <div
@@ -61,6 +64,9 @@ export function PwaBannerCard({
       style={{
         borderRadius: pwaBannerRadiusCss(settings.cardRadius),
         padding: pwaBannerPaddingCss(settings.height),
+        background: pwaBannerBackgroundCss(opacity),
+        backdropFilter: frosted ? "blur(12px)" : undefined,
+        WebkitBackdropFilter: frosted ? "blur(12px)" : undefined,
       }}
     >
       <button

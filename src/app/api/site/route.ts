@@ -201,6 +201,7 @@ const siteSchema = z.object({
       buttonRadius: z.enum(["square", "slight", "soft", "round", "pill"]),
       width: z.enum(["narrow", "compact", "medium", "wide", "full"]),
       height: z.enum(["compact", "comfortable", "tall", "airy"]).optional(),
+      opacity: z.number().min(0.45).max(1).optional(),
       engageMs: z.number().min(5000).max(120000),
       copy: z.object({
         title: localizedSchema,

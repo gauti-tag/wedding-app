@@ -231,6 +231,8 @@ export type PwaBannerSettings = {
   buttonRadius: PwaBannerRadius;
   width: PwaBannerWidth;
   height: PwaBannerHeight;
+  /** Opacité du fond (0.45–1). */
+  opacity: number;
   engageMs: number;
   copy: PwaBannerCopy;
 };

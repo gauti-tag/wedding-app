@@ -29,6 +29,7 @@ export const defaultPwaBanner = (): PwaBannerSettings => ({
   buttonRadius: "soft",
   width: "compact",
   height: "comfortable",
+  opacity: 1,
   engageMs: 28000,
   copy: {
     title: { fr: "Sur l’écran d’accueil ?", en: "Add to Home Screen?" },
@@ -87,6 +88,7 @@ export function normalizePwaBanner(raw?: Partial<PwaBannerSettings> | null): Pwa
       ? (raw.copy as Partial<PwaBannerCopy>)
       : {};
   const engageMs = Number(raw?.engageMs);
+  const opacity = Number(raw?.opacity);
 
   return {
     enabled: raw?.enabled ?? d.enabled,
@@ -97,6 +99,9 @@ export function normalizePwaBanner(raw?: Partial<PwaBannerSettings> | null): Pwa
     buttonRadius: asBannerRadius(raw?.buttonRadius, d.buttonRadius),
     width: asEnum(raw?.width, WIDTHS, d.width),
     height: asEnum(raw?.height, HEIGHTS, d.height),
+    opacity: Number.isFinite(opacity)
+      ? Math.min(1, Math.max(0.45, Math.round(opacity * 100) / 100))
+      : d.opacity,
     engageMs: Number.isFinite(engageMs)
       ? Math.min(120_000, Math.max(5_000, Math.round(engageMs)))
       : d.engageMs,
@@ -188,6 +193,28 @@ export const PWA_BANNER_RADIUS_OPTIONS: {
   { id: "round", label: "Arrondi" },
   { id: "pill", label: "Pilule" },
 ];
+
+/** Presets d’opacité du fond (valeur 0.45–1). */
+export const PWA_BANNER_OPACITY_OPTIONS: {
+  value: number;
+  label: string;
+}[] = [
+  { value: 1, label: "Opaque 100%" },
+  { value: 0.95, label: "Très dense 95%" },
+  { value: 0.9, label: "Dense 90%" },
+  { value: 0.85, label: "Légère 85%" },
+  { value: 0.8, label: "Voilée 80%" },
+  { value: 0.75, label: "Douce 75%" },
+  { value: 0.7, label: "Soft 70%" },
+  { value: 0.65, label: "Brume 65%" },
+  { value: 0.55, label: "Transparente 55%" },
+  { value: 0.45, label: "Très légère 45%" },
+];
+
+export function pwaBannerBackgroundCss(opacity: number): string {
+  const a = Math.min(1, Math.max(0.45, opacity));
+  return `rgba(247, 244, 240, ${a})`;
+}
 
 export function pwaBannerRadiusCss(radius: PwaBannerRadius): string {
   if (radius === "pill") return "999px";
