@@ -205,7 +205,7 @@ export function PwaInstallPrompt({ copy }: { copy: Copy }) {
             <button
               type="button"
               onClick={() => void onInstall()}
-              className="shrink-0 border border-cacao/25 bg-cacao/90 px-2.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.12em] text-ivory uppercase transition-colors hover:bg-cacao"
+              className="shrink-0 rounded-lg border border-cacao/25 bg-cacao/90 px-2.5 py-1.5 text-[0.62rem] font-semibold tracking-[0.12em] text-ivory uppercase transition-colors hover:bg-cacao"
             >
               {copy.install}
             </button>
