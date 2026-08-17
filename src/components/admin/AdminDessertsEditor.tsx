@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
+import { normalizeDessertsContent } from "@/lib/menu-headings";
 import type { DessertItem, DessertsContent, LocalizedText } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -67,24 +68,27 @@ export function AdminDessertsEditor({
 }: {
   initialDesserts: DessertsContent;
 }) {
-  const [desserts, setDesserts] = useState<DessertsContent>(initialDesserts);
+  const [desserts, setDesserts] = useState<DessertsContent>(() =>
+    normalizeDessertsContent(initialDesserts),
+  );
   const [busy, setBusy] = useState(false);
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
   async function persist(next: DessertsContent, successMessage = "Desserts enregistrés.") {
     setBusy(true);
     try {
+      const payload = normalizeDessertsContent(next);
       const res = await fetch("/api/desserts", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
         showError(data.error || "Enregistrement impossible.");
         return false;
       }
-      setDesserts(data.desserts);
+      setDesserts(normalizeDessertsContent(data.desserts));
       showSuccess(successMessage);
       return true;
     } catch {
@@ -101,17 +105,21 @@ export function AdminDessertsEditor({
       name: emptyLocalized(),
       description: emptyLocalized(),
     };
-    setDesserts((prev) => ({ items: [...prev.items, item] }));
+    setDesserts((prev) => ({ ...prev, items: [...prev.items, item] }));
   }
 
   async function removeDessert(id: string) {
-    const next = { items: desserts.items.filter((item) => item.id !== id) };
+    const next = normalizeDessertsContent({
+      ...desserts,
+      items: desserts.items.filter((item) => item.id !== id),
+    });
     setDesserts(next);
     await persist(next, "Dessert supprimé.");
   }
 
   function updateDessert(id: string, updater: (item: DessertItem) => DessertItem) {
     setDesserts((prev) => ({
+      ...prev,
       items: prev.items.map((item) => (item.id === id ? updater(item) : item)),
     }));
   }
@@ -125,7 +133,7 @@ export function AdminDessertsEditor({
       {AlertDialog}
       <AdminStickyHeader
         title="Desserts"
-        description="Liste universelle affichée dans la section Menu (yaourt, fruits, gâteau…)."
+        description="Sur-titre, titre, sous-titre et liste (FR / EN). Vide = textes par défaut."
         actions={
           <>
             <button type="button" onClick={addDessert} className="btn-ghost">
@@ -142,6 +150,32 @@ export function AdminDessertsEditor({
           </>
         }
       />
+
+      <div className="space-y-4 border border-line bg-white p-4 sm:p-6">
+        <p className="text-xs tracking-[0.14em] text-soft uppercase">En-tête de section</p>
+        <LocalizedFields
+          label="Sur-titre"
+          value={desserts.eyebrow}
+          onChange={(eyebrow) => setDesserts((prev) => ({ ...prev, eyebrow }))}
+        />
+        <LocalizedFields
+          label="Titre"
+          value={desserts.title}
+          onChange={(title) => setDesserts((prev) => ({ ...prev, title }))}
+        />
+        <LocalizedFields
+          label="Sous-titre"
+          value={desserts.subtitle}
+          onChange={(subtitle) => setDesserts((prev) => ({ ...prev, subtitle }))}
+          multiline
+        />
+        <LocalizedFields
+          label="Message si vide"
+          value={desserts.emptyMessage}
+          onChange={(emptyMessage) => setDesserts((prev) => ({ ...prev, emptyMessage }))}
+          multiline
+        />
+      </div>
 
       {desserts.items.length === 0 ? (
         <p className="text-sm text-soft">

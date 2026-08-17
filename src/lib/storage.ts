@@ -23,10 +23,19 @@ import { emptyGuestAlbumContent, normalizeGuestAlbumContent } from "@/lib/guest-
 import { emptyGuestbookContent, normalizeGuestbookContent } from "@/lib/guestbook";
 import { emptyInfoContent, normalizeInfoContent } from "@/lib/info-content";
 import {
+  emptyDessertsContent,
+  emptyDrinksContent,
+  emptyMenuContent,
+  normalizeDessertsContent,
+  normalizeDrinksContent,
+  normalizeMenuContent,
+} from "@/lib/menu-headings";
+import {
   defaultAdminPrivacy,
   normalizeAdminPrivacy,
   type AdminPrivacySettings,
 } from "@/lib/admin-privacy";
+import { emptyTeeStudio, normalizeTeeStudio, type TeeStudioContent } from "@/lib/tee-studio";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -67,14 +76,9 @@ async function writeJsonFile<T>(file: string, value: T) {
   await fs.writeFile(file, JSON.stringify(value, null, 2), "utf8");
 }
 
-const emptyMenu: MenuContent = {
-  subtitle: { fr: "", en: "" },
-  note: { fr: "", en: "" },
-  cuisines: [],
-};
-
-const emptyDrinks: DrinksContent = { items: [] };
-const emptyDesserts: DessertsContent = { items: [] };
+const emptyMenu: MenuContent = emptyMenuContent();
+const emptyDrinks: DrinksContent = emptyDrinksContent();
+const emptyDesserts: DessertsContent = emptyDessertsContent();
 
 const emptyStory: StoryContent = {
   eyebrow: { fr: "", en: "" },
@@ -345,27 +349,30 @@ export async function recordTicketView(token: string): Promise<void> {
 }
 
 export async function getMenu(): Promise<MenuContent> {
-  return getContent("menu", emptyMenu);
+  const raw = await getContent<unknown>("menu", emptyMenu);
+  return normalizeMenuContent(raw);
 }
 
 export async function saveMenu(menu: MenuContent) {
-  await saveContent("menu", menu);
+  await saveContent("menu", normalizeMenuContent(menu));
 }
 
 export async function getDrinks(): Promise<DrinksContent> {
-  return getContent("drinks", emptyDrinks);
+  const raw = await getContent<unknown>("drinks", emptyDrinks);
+  return normalizeDrinksContent(raw);
 }
 
 export async function saveDrinks(drinks: DrinksContent) {
-  await saveContent("drinks", drinks);
+  await saveContent("drinks", normalizeDrinksContent(drinks));
 }
 
 export async function getDesserts(): Promise<DessertsContent> {
-  return getContent("desserts", emptyDesserts);
+  const raw = await getContent<unknown>("desserts", emptyDesserts);
+  return normalizeDessertsContent(raw);
 }
 
 export async function saveDesserts(desserts: DessertsContent) {
-  await saveContent("desserts", desserts);
+  await saveContent("desserts", normalizeDessertsContent(desserts));
 }
 
 export async function getStory(): Promise<StoryContent> {
@@ -427,6 +434,15 @@ export async function getGuestAlbum(): Promise<GuestAlbumContent> {
 
 export async function saveGuestAlbum(content: GuestAlbumContent) {
   await saveContent("guest-album", normalizeGuestAlbumContent(content));
+}
+
+export async function getTeeStudio(): Promise<TeeStudioContent> {
+  const raw = await getContent<unknown>("tee-studio", emptyTeeStudio());
+  return normalizeTeeStudio(raw);
+}
+
+export async function saveTeeStudio(content: TeeStudioContent) {
+  await saveContent("tee-studio", normalizeTeeStudio(content));
 }
 
 export async function getAdminPrivacy(): Promise<AdminPrivacySettings> {

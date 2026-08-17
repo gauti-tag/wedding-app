@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
+import { normalizeMenuContent } from "@/lib/menu-headings";
 import { getMenu, saveMenu } from "@/lib/storage";
 
 const localizedSchema = z.object({
@@ -22,8 +23,11 @@ const cuisineSchema = z.object({
 });
 
 const menuSchema = z.object({
+  eyebrow: localizedSchema.optional(),
+  title: localizedSchema.optional(),
   subtitle: localizedSchema,
   note: localizedSchema,
+  emptyMessage: localizedSchema.optional(),
   cuisines: z.array(cuisineSchema).max(12),
 });
 
@@ -46,9 +50,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    await saveMenu(parsed.data);
-    await auditAs(user, "update", "menu", `${parsed.data.cuisines.length} cuisines`);
-    return NextResponse.json({ ok: true, menu: parsed.data });
+    const menu = normalizeMenuContent(parsed.data);
+    await saveMenu(menu);
+    await auditAs(user, "update", "menu", `${menu.cuisines.length} cuisines`);
+    return NextResponse.json({ ok: true, menu });
   } catch (err) {
     console.error("[api/menu PUT]", err);
     return NextResponse.json(

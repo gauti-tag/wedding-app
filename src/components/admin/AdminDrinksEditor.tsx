@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
+import { normalizeDrinksContent } from "@/lib/menu-headings";
 import type { DrinkItem, DrinksContent, LocalizedText } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -63,24 +64,25 @@ function LocalizedFields({
 }
 
 export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksContent }) {
-  const [drinks, setDrinks] = useState<DrinksContent>(initialDrinks);
+  const [drinks, setDrinks] = useState<DrinksContent>(() => normalizeDrinksContent(initialDrinks));
   const [busy, setBusy] = useState(false);
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
   async function persist(next: DrinksContent, successMessage = "Boissons enregistrées.") {
     setBusy(true);
     try {
+      const payload = normalizeDrinksContent(next);
       const res = await fetch("/api/drinks", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
         showError(data.error || "Enregistrement impossible.");
         return false;
       }
-      setDrinks(data.drinks);
+      setDrinks(normalizeDrinksContent(data.drinks));
       showSuccess(successMessage);
       return true;
     } catch {
@@ -97,17 +99,21 @@ export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksCont
       name: emptyLocalized(),
       description: emptyLocalized(),
     };
-    setDrinks((prev) => ({ items: [...prev.items, item] }));
+    setDrinks((prev) => ({ ...prev, items: [...prev.items, item] }));
   }
 
   async function removeDrink(id: string) {
-    const next = { items: drinks.items.filter((item) => item.id !== id) };
+    const next = normalizeDrinksContent({
+      ...drinks,
+      items: drinks.items.filter((item) => item.id !== id),
+    });
     setDrinks(next);
     await persist(next, "Boisson supprimée.");
   }
 
   function updateDrink(id: string, updater: (item: DrinkItem) => DrinkItem) {
     setDrinks((prev) => ({
+      ...prev,
       items: prev.items.map((item) => (item.id === id ? updater(item) : item)),
     }));
   }
@@ -121,7 +127,7 @@ export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksCont
       {AlertDialog}
       <AdminStickyHeader
         title="Boissons"
-        description="Liste universelle affichée dans la section Menu (vin, bière, softs…)."
+        description="Sur-titre, titre, sous-titre et liste (FR / EN). Vide = textes par défaut."
         actions={
           <>
             <button type="button" onClick={addDrink} className="btn-ghost">
@@ -138,6 +144,32 @@ export function AdminDrinksEditor({ initialDrinks }: { initialDrinks: DrinksCont
           </>
         }
       />
+
+      <div className="space-y-4 border border-line bg-white p-4 sm:p-6">
+        <p className="text-xs tracking-[0.14em] text-soft uppercase">En-tête de section</p>
+        <LocalizedFields
+          label="Sur-titre"
+          value={drinks.eyebrow}
+          onChange={(eyebrow) => setDrinks((prev) => ({ ...prev, eyebrow }))}
+        />
+        <LocalizedFields
+          label="Titre"
+          value={drinks.title}
+          onChange={(title) => setDrinks((prev) => ({ ...prev, title }))}
+        />
+        <LocalizedFields
+          label="Sous-titre"
+          value={drinks.subtitle}
+          onChange={(subtitle) => setDrinks((prev) => ({ ...prev, subtitle }))}
+          multiline
+        />
+        <LocalizedFields
+          label="Message si vide"
+          value={drinks.emptyMessage}
+          onChange={(emptyMessage) => setDrinks((prev) => ({ ...prev, emptyMessage }))}
+          multiline
+        />
+      </div>
 
       {drinks.items.length === 0 ? (
         <p className="text-sm text-soft">

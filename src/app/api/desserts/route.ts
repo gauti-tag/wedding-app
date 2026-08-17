@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
+import { normalizeDessertsContent } from "@/lib/menu-headings";
 import { getDesserts, saveDesserts } from "@/lib/storage";
 
 const localizedSchema = z.object({
@@ -9,6 +10,10 @@ const localizedSchema = z.object({
 });
 
 const dessertsSchema = z.object({
+  eyebrow: localizedSchema.optional(),
+  title: localizedSchema.optional(),
+  subtitle: localizedSchema.optional(),
+  emptyMessage: localizedSchema.optional(),
   items: z
     .array(
       z.object({
@@ -39,9 +44,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    await saveDesserts(parsed.data);
-    await auditAs(user, "update", "desserts", `${parsed.data.items.length} desserts`);
-    return NextResponse.json({ ok: true, desserts: parsed.data });
+    const desserts = normalizeDessertsContent(parsed.data);
+    await saveDesserts(desserts);
+    await auditAs(user, "update", "desserts", `${desserts.items.length} desserts`);
+    return NextResponse.json({ ok: true, desserts });
   } catch (err) {
     console.error("[api/desserts PUT]", err);
     return NextResponse.json(

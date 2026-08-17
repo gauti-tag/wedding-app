@@ -2,6 +2,7 @@ import { Reveal } from "@/components/Reveal";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
 import { t } from "@/lib/localized";
+import { headingOr } from "@/lib/menu-headings";
 import type { DessertsContent, DrinksContent, MenuContent } from "@/lib/types";
 
 function UniversalList({
@@ -23,7 +24,9 @@ function UniversalList({
     <Reveal delay={0.12} className="mt-16 border-t border-line pt-12 md:mt-20">
       <p className="eyebrow">{eyebrow}</p>
       <h3 className="section-title mt-3 text-3xl text-mist md:text-4xl">{title}</h3>
-      <p className="mt-3 max-w-xl text-sm font-normal text-soft">{subtitle}</p>
+      {subtitle ? (
+        <p className="mt-3 max-w-xl text-sm font-normal text-soft">{subtitle}</p>
+      ) : null}
 
       {items.length === 0 ? (
         <p className="mt-8 text-base font-normal text-soft">{empty}</p>
@@ -62,10 +65,30 @@ export function MenuSection({
   showDrinks?: boolean;
   showDesserts?: boolean;
 }) {
+  const menuEyebrow = headingOr(menu.eyebrow, locale, dict.menu.eyebrow);
+  const menuTitle = headingOr(menu.title, locale, dict.menu.title);
   const subtitle = t(menu.subtitle, locale);
   const note = t(menu.note, locale);
+  const menuEmpty = headingOr(menu.emptyMessage, locale, dict.menu.empty);
   const hasFood = menu.cuisines.some((cuisine) => cuisine.dishes.length > 0);
   if (!showMenu && !showDrinks && !showDesserts) return null;
+
+  const dessertsEyebrow = headingOr(desserts.eyebrow, locale, dict.desserts.eyebrow);
+  const dessertsTitle = headingOr(desserts.title, locale, dict.desserts.title);
+  const dessertsSubtitle = headingOr(desserts.subtitle, locale, dict.desserts.subtitle);
+  const dessertsEmpty = headingOr(desserts.emptyMessage, locale, dict.desserts.empty);
+
+  const drinksEyebrow = headingOr(drinks.eyebrow, locale, dict.drinks.eyebrow);
+  const drinksTitle = headingOr(drinks.title, locale, dict.drinks.title);
+  const drinksSubtitle = headingOr(drinks.subtitle, locale, dict.drinks.subtitle);
+  const drinksEmpty = headingOr(drinks.emptyMessage, locale, dict.drinks.empty);
+
+  const sectionFallbackTitle =
+    showDesserts && !showDrinks
+      ? dessertsTitle
+      : showDrinks && !showDesserts
+        ? drinksTitle
+        : menuTitle;
 
   return (
     <section id="menu" className="py-24 md:py-32">
@@ -73,10 +96,8 @@ export function MenuSection({
         {showMenu ? (
           <>
             <Reveal className="max-w-2xl">
-              <p className="eyebrow">{dict.menu.eyebrow}</p>
-              <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
-                {dict.menu.title}
-              </h2>
+              <p className="eyebrow">{menuEyebrow}</p>
+              <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">{menuTitle}</h2>
               {subtitle ? (
                 <p className="mt-5 text-base font-normal leading-7 text-soft">{subtitle}</p>
               ) : null}
@@ -84,7 +105,7 @@ export function MenuSection({
 
             {!hasFood ? (
               <Reveal delay={0.08}>
-                <p className="mt-12 text-base font-normal text-soft">{dict.menu.empty}</p>
+                <p className="mt-12 text-base font-normal text-soft">{menuEmpty}</p>
               </Reveal>
             ) : (
               <div className="mt-14 grid gap-10 lg:grid-cols-2 lg:gap-14">
@@ -120,23 +141,25 @@ export function MenuSection({
           </>
         ) : (
           <Reveal className="max-w-2xl">
-            <p className="eyebrow">{dict.menu.eyebrow}</p>
-            <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
+            <p className="eyebrow">
               {showDesserts && !showDrinks
-                ? dict.desserts.title
+                ? dessertsEyebrow
                 : showDrinks && !showDesserts
-                  ? dict.drinks.title
-                  : dict.menu.title}
+                  ? drinksEyebrow
+                  : menuEyebrow}
+            </p>
+            <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
+              {sectionFallbackTitle}
             </h2>
           </Reveal>
         )}
 
         {showDesserts ? (
           <UniversalList
-            eyebrow={dict.desserts.eyebrow}
-            title={dict.desserts.title}
-            subtitle={dict.desserts.subtitle}
-            empty={dict.desserts.empty}
+            eyebrow={dessertsEyebrow}
+            title={dessertsTitle}
+            subtitle={dessertsSubtitle}
+            empty={dessertsEmpty}
             items={desserts.items}
             locale={locale}
           />
@@ -144,10 +167,10 @@ export function MenuSection({
 
         {showDrinks ? (
           <UniversalList
-            eyebrow={dict.drinks.eyebrow}
-            title={dict.drinks.title}
-            subtitle={dict.drinks.subtitle}
-            empty={dict.drinks.empty}
+            eyebrow={drinksEyebrow}
+            title={drinksTitle}
+            subtitle={drinksSubtitle}
+            empty={drinksEmpty}
             items={drinks.items}
             locale={locale}
           />

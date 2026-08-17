@@ -64,8 +64,14 @@ export type MenuCuisine = {
 };
 
 export type MenuContent = {
+  /** Sur-titre section (vide = dictionnaire i18n). */
+  eyebrow: LocalizedText;
+  /** Titre principal (vide = dictionnaire i18n). */
+  title: LocalizedText;
   subtitle: LocalizedText;
   note: LocalizedText;
+  /** Message si aucun plat (vide = dictionnaire i18n). */
+  emptyMessage: LocalizedText;
   cuisines: MenuCuisine[];
 };
 
@@ -77,6 +83,10 @@ export type DrinkItem = {
 
 /** Liste universelle de boissons (vin, bière, etc.) — pas de catégorisation par pays. */
 export type DrinksContent = {
+  eyebrow: LocalizedText;
+  title: LocalizedText;
+  subtitle: LocalizedText;
+  emptyMessage: LocalizedText;
   items: DrinkItem[];
 };
 
@@ -88,6 +98,10 @@ export type DessertItem = {
 
 /** Liste universelle de desserts (yaourt, etc.) — pas de catégorisation par pays. */
 export type DessertsContent = {
+  eyebrow: LocalizedText;
+  title: LocalizedText;
+  subtitle: LocalizedText;
+  emptyMessage: LocalizedText;
   items: DessertItem[];
 };
 

@@ -19,11 +19,13 @@ import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
 import { AdminSeatingEditor } from "@/components/admin/AdminSeatingEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
+import { AdminTeeStudio } from "@/components/admin/AdminTeeStudio";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
 import type { GuestAlbumContent } from "@/lib/guest-album";
 import type { GuestbookContent } from "@/lib/guestbook";
 import type { InfoContent } from "@/lib/info-content";
 import type { AdminPrivacySettings } from "@/lib/admin-privacy";
+import type { TeeStudioContent } from "@/lib/tee-studio";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
@@ -130,6 +132,7 @@ type Props = {
   initialInfo: InfoContent;
   initialGuestbook: GuestbookContent;
   initialGuestAlbum: GuestAlbumContent;
+  initialTeeStudio: TeeStudioContent;
   initialUsers: AdminUserPublic[];
   initialAudit: AuditEntry[];
   initialPrivacy: AdminPrivacySettings;
@@ -144,6 +147,7 @@ const albumLabels: Record<PhotoAlbum, string> = {
 const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-dashboard", label: "Synthèse", permission: "view_dashboard" },
   { href: "#admin-invite-qr", label: "QR", permission: "manage_content" },
+  { href: "#admin-tees", label: "Tees", permission: "manage_content" },
   { href: "#admin-photos", label: "Photos", permission: "manage_photos" },
   { href: "#admin-site", label: "Site", permission: "manage_content" },
   { href: "#admin-story", label: "Histoire", permission: "manage_content" },
@@ -203,6 +207,7 @@ export function AdminPanel({
   initialInfo,
   initialGuestbook,
   initialGuestAlbum,
+  initialTeeStudio,
   initialUsers,
   initialAudit,
   initialPrivacy,
@@ -576,10 +581,16 @@ export function AdminPanel({
 
       {can("manage_content") ? (
         <AdminInviteQr
+          eventType={site.eventType}
+          eventTitle={site.eventTitle}
           partnerOne={site.partnerOne}
           partnerTwo={site.partnerTwo}
           weddingDateLabel={site.hero.weddingDateLabel}
         />
+      ) : null}
+
+      {can("manage_content") ? (
+        <AdminTeeStudio initial={initialTeeStudio} site={site} photos={photos} />
       ) : null}
 
       {can("manage_photos") ? (

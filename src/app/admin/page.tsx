@@ -19,6 +19,7 @@ import {
   getSeatingPlan,
   getSiteContent,
   getStory,
+  getTeeStudio,
 } from "@/lib/storage";
 import { defaultAdminPrivacy } from "@/lib/admin-privacy";
 import { emptyMcRundown } from "@/lib/mc-rundown";
@@ -26,6 +27,12 @@ import { emptySeatingPlan } from "@/lib/seating";
 import { emptyGuestbookContent } from "@/lib/guestbook";
 import { emptyGuestAlbumContent } from "@/lib/guest-album";
 import { emptyInfoContent } from "@/lib/info-content";
+import {
+  emptyDessertsContent,
+  emptyDrinksContent,
+  emptyMenuContent,
+} from "@/lib/menu-headings";
+import { emptyTeeStudio } from "@/lib/tee-studio";
 import { ensureSeedAdmin, listPublicUsers, publicUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -59,6 +66,7 @@ export default async function AdminPage() {
     info,
     guestbook,
     guestAlbum,
+    teeStudio,
     users,
     audit,
     privacy,
@@ -83,12 +91,13 @@ export default async function AdminPage() {
     canRsvp ? getSeatingPlan() : Promise.resolve(emptySeatingPlan()),
     canContent
       ? getMenu()
-      : Promise.resolve({ subtitle: { fr: "", en: "" }, note: { fr: "", en: "" }, cuisines: [] }),
-    canContent ? getDrinks() : Promise.resolve({ items: [] }),
-    canContent ? getDesserts() : Promise.resolve({ items: [] }),
+      : Promise.resolve(emptyMenuContent()),
+    canContent ? getDrinks() : Promise.resolve(emptyDrinksContent()),
+    canContent ? getDesserts() : Promise.resolve(emptyDessertsContent()),
     canContent ? getInfoContent() : Promise.resolve(emptyInfoContent()),
     canContent ? getGuestbook() : Promise.resolve(emptyGuestbookContent()),
     canContent ? getGuestAlbum() : Promise.resolve(emptyGuestAlbumContent()),
+    canContent ? getTeeStudio() : Promise.resolve(emptyTeeStudio()),
     canUsers ? listPublicUsers() : Promise.resolve([]),
     canAudit ? getAuditLog(300) : Promise.resolve([]),
     getAdminPrivacy(),
@@ -111,6 +120,7 @@ export default async function AdminPage() {
       initialInfo={info}
       initialGuestbook={guestbook}
       initialGuestAlbum={guestAlbum}
+      initialTeeStudio={teeStudio}
       initialUsers={users}
       initialAudit={audit}
       initialPrivacy={privacy ?? defaultAdminPrivacy()}

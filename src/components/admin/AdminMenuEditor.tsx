@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
+import { normalizeMenuContent } from "@/lib/menu-headings";
 import type { LocalizedText, MenuContent, MenuCuisine, MenuDish } from "@/lib/types";
 
 function emptyLocalized(): LocalizedText {
@@ -63,24 +64,25 @@ function LocalizedFields({
 }
 
 export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
-  const [menu, setMenu] = useState<MenuContent>(initialMenu);
+  const [menu, setMenu] = useState<MenuContent>(() => normalizeMenuContent(initialMenu));
   const [busy, setBusy] = useState(false);
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
   async function persist(next: MenuContent, successMessage = "Menu enregistré.") {
     setBusy(true);
     try {
+      const payload = normalizeMenuContent(next);
       const res = await fetch("/api/menu", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(next),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
         showError(data.error || "Enregistrement impossible.");
         return false;
       }
-      setMenu(data.menu);
+      setMenu(normalizeMenuContent(data.menu));
       showSuccess(successMessage);
       return true;
     } catch {
@@ -159,7 +161,7 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
       {AlertDialog}
       <AdminStickyHeader
         title="Menu de réception"
-        description="Gérez les cuisines et plats affichés sur le site (FR / EN)."
+        description="Sur-titre, titre, sous-titre et plats (FR / EN). Vide = textes par défaut du site."
         actions={
           <>
             <button type="button" onClick={addCuisine} className="btn-ghost">
@@ -178,10 +180,27 @@ export function AdminMenuEditor({ initialMenu }: { initialMenu: MenuContent }) {
       />
 
       <div className="space-y-4 border border-line bg-white p-4 sm:p-6">
+        <p className="text-xs tracking-[0.14em] text-soft uppercase">En-tête de section</p>
+        <LocalizedFields
+          label="Sur-titre"
+          value={menu.eyebrow}
+          onChange={(eyebrow) => setMenu((prev) => ({ ...prev, eyebrow }))}
+        />
+        <LocalizedFields
+          label="Titre"
+          value={menu.title}
+          onChange={(title) => setMenu((prev) => ({ ...prev, title }))}
+        />
         <LocalizedFields
           label="Sous-titre"
           value={menu.subtitle}
           onChange={(subtitle) => setMenu((prev) => ({ ...prev, subtitle }))}
+          multiline
+        />
+        <LocalizedFields
+          label="Message si vide"
+          value={menu.emptyMessage}
+          onChange={(emptyMessage) => setMenu((prev) => ({ ...prev, emptyMessage }))}
           multiline
         />
         <LocalizedFields
