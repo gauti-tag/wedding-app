@@ -152,7 +152,7 @@ const fr: Dictionary = {
       later: "Plus tard",
       never: "Ne plus demander",
       iosHint:
-        "Safari → Partager → « Sur l’écran d’accueil ».",
+        "iPhone : bouton Partager (carré + flèche) → « Sur l’écran d’accueil » → Ajouter.",
       close: "Fermer",
     },
   },

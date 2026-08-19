@@ -151,7 +151,7 @@ const en: Dictionary = {
       install: "Yes",
       later: "Later",
       never: "Don’t ask again",
-      iosHint: "Safari → Share → “Add to Home Screen”.",
+      iosHint: "iPhone: Share button (square with arrow) → “Add to Home Screen” → Add.",
       close: "Close",
     },
   },

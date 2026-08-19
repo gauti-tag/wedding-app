@@ -49,7 +49,7 @@ export function PwaInstallButton({ label }: { label: string }) {
   async function onInstall() {
     if (iosHint) {
       window.alert(
-        "Sur iPhone / iPad : ouvrez le menu Partager de Safari, puis « Sur l’écran d’accueil ».",
+        "Sur iPhone / iPad : bouton Partager (carré + flèche) → « Sur l’écran d’accueil » → Ajouter.",
       );
       return;
     }

@@ -5,6 +5,16 @@ export type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+declare global {
+  interface Window {
+    __pwaDeferredPrompt?: BeforeInstallPromptEvent | null;
+    __pwaInstallHooked?: boolean;
+  }
+}
+
+/** Capturer `beforeinstallprompt` dès le HTML (avant l’hydratation React). */
+export const PWA_EARLY_CAPTURE_SCRIPT = `(function(){if(window.__pwaInstallHooked)return;window.__pwaInstallHooked=1;window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__pwaDeferredPrompt=e;window.dispatchEvent(new Event("pwa-install:captured"));});window.addEventListener("appinstalled",function(){window.__pwaDeferredPrompt=null;window.dispatchEvent(new Event("pwa-install:installed"));});})();`;
+
 const STORAGE_KEY = "wedding-pwa-install-v1";
 const LATER_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -29,18 +39,30 @@ export function subscribePwaInstall(listener: () => void) {
   };
 }
 
+export function hydrateDeferredFromWindow() {
+  if (typeof window === "undefined") return;
+  const fromWindow = window.__pwaDeferredPrompt;
+  if (fromWindow && fromWindow !== deferred) {
+    deferred = fromWindow;
+    notify();
+  }
+}
+
 export function getDeferredInstallPrompt() {
+  hydrateDeferredFromWindow();
   return deferred;
 }
 
 export function captureInstallPrompt(event: BeforeInstallPromptEvent) {
   event.preventDefault();
   deferred = event;
+  if (typeof window !== "undefined") window.__pwaDeferredPrompt = event;
   notify();
 }
 
 export function clearDeferredInstallPrompt() {
   deferred = null;
+  if (typeof window !== "undefined") window.__pwaDeferredPrompt = null;
   notify();
 }
 
@@ -121,15 +143,24 @@ export function suggestPwaInstall() {
   window.dispatchEvent(new Event(PWA_SUGGEST_EVENT));
 }
 
+/**
+ * Ouvre la feuille d’installation du navigateur (Chrome / Edge / Samsung Android).
+ * Doit être appelé dans le geste utilisateur (clic). iOS Safari n’a pas d’API équivalente.
+ */
 export async function promptNativeInstall() {
+  hydrateDeferredFromWindow();
   const event = deferred;
-  if (!event) return "unavailable" as const;
-  await event.prompt();
-  const choice = await event.userChoice;
-  clearDeferredInstallPrompt();
-  if (choice.outcome === "accepted") {
-    markInstalled();
-    return "accepted" as const;
+  if (!event?.prompt) return "unavailable" as const;
+  try {
+    await event.prompt();
+    const choice = await event.userChoice;
+    clearDeferredInstallPrompt();
+    if (choice.outcome === "accepted") {
+      markInstalled();
+      return "accepted" as const;
+    }
+    return "dismissed" as const;
+  } catch {
+    return "unavailable" as const;
   }
-  return "dismissed" as const;
 }

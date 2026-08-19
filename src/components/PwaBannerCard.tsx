@@ -18,6 +18,8 @@ type Props = {
     "cardRadius" | "buttonRadius" | "width" | "height" | "placement" | "opacity"
   >;
   showIosSteps?: boolean;
+  /** Texte des étapes manuelles (iOS ou repli Android). */
+  stepsText?: string;
   /** Afficher le bouton d’install (false si non éligible côté navigateur). */
   showInstallButton?: boolean;
   /** Mode aperçu admin : pas d’actions réelles. */
@@ -37,6 +39,7 @@ export function PwaBannerCard({
   copy,
   settings,
   showIosSteps = false,
+  stepsText,
   showInstallButton = true,
   preview = false,
   onInstall,
@@ -124,7 +127,7 @@ export function PwaBannerCard({
               compact ? "mt-1.5 pt-1.5 text-[0.62rem]" : "mt-2 pt-2 text-[0.7rem]"
             }`}
           >
-            {copy.iosHint}
+            {stepsText || copy.iosHint}
           </p>
         ) : null}
 

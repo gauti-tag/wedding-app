@@ -3,6 +3,7 @@ import { Great_Vibes, Poppins } from "next/font/google";
 import { headers } from "next/headers";
 import { PwaRegister } from "@/components/PwaRegister";
 import { defaultLocale, isLocale } from "@/i18n/config";
+import { PWA_EARLY_CAPTURE_SCRIPT } from "@/lib/pwa-install";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -70,6 +71,11 @@ export default async function RootLayout({
     <html lang={lang} className={`${display.variable} ${sans.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full touch-manipulation antialiased" suppressHydrationWarning>
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: PWA_EARLY_CAPTURE_SCRIPT,
+          }}
+        />
         <PwaRegister />
       </body>
     </html>

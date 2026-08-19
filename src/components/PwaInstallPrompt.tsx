@@ -41,7 +41,9 @@ export function PwaInstallPrompt({
   const [open, setOpen] = useState(false);
   const [iosHint, setIosHint] = useState(false);
   const [hasDeferred, setHasDeferred] = useState(false);
-  const [showIosSteps, setShowIosSteps] = useState(false);
+  const [showManualSteps, setShowManualSteps] = useState(false);
+  const [manualHint, setManualHint] = useState("");
+  const [installBusy, setInstallBusy] = useState(false);
   const engaged = useRef(false);
   const openedOnce = useRef(false);
 
@@ -125,17 +127,33 @@ export function PwaInstallPrompt({
   }, [eligible, hasDeferred, iosHint]);
 
   async function onInstall() {
+    if (installBusy) return;
     if (iosHint) {
-      setShowIosSteps(true);
+      setManualHint(copy.iosHint);
+      setShowManualSteps(true);
       return;
     }
-    const result = await promptNativeInstall();
-    if (result === "accepted") {
-      setOpen(false);
-      setEligible(false);
-    } else if (result === "dismissed") {
-      markInstallLater();
-      setOpen(false);
+    setInstallBusy(true);
+    try {
+      const result = await promptNativeInstall();
+      if (result === "accepted") {
+        setOpen(false);
+        setEligible(false);
+        return;
+      }
+      if (result === "dismissed") {
+        markInstallLater();
+        setOpen(false);
+        return;
+      }
+      setManualHint(
+        copy.locale === "en"
+          ? "Chrome menu (⋮) → Install app / Add to Home screen."
+          : "Menu Chrome (⋮) → Installer l’application / Ajouter à l’écran d’accueil.",
+      );
+      setShowManualSteps(true);
+    } finally {
+      setInstallBusy(false);
     }
   }
 
@@ -189,8 +207,9 @@ export function PwaInstallPrompt({
       <PwaBannerCard
         copy={copy}
         settings={settings}
-        showIosSteps={showIosSteps}
-        showInstallButton={canInstall}
+        showIosSteps={showManualSteps}
+        stepsText={manualHint || copy.iosHint}
+        showInstallButton={canInstall && !installBusy}
         titleId={titleId}
         className="pointer-events-auto pwa-sheet-in"
         onInstall={() => void onInstall()}

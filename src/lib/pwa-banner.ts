@@ -41,8 +41,8 @@ export const defaultPwaBanner = (): PwaBannerSettings => ({
     later: { fr: "Plus tard", en: "Later" },
     never: { fr: "Ne plus demander", en: "Don’t ask again" },
     iosHint: {
-      fr: "Safari → Partager → « Sur l’écran d’accueil ».",
-      en: "Safari → Share → “Add to Home Screen”.",
+      fr: "iPhone : bouton Partager (carré + flèche) → « Sur l’écran d’accueil » → Ajouter.",
+      en: "iPhone: Share button (square with arrow) → “Add to Home Screen” → Add.",
     },
     close: { fr: "Fermer", en: "Close" },
     footerInstall: { fr: "Installer l’app", en: "Install app" },
@@ -124,6 +124,7 @@ function pickText(value: LocalizedText, fallback: string, locale: Locale) {
 }
 
 export type ResolvedPwaBannerCopy = {
+  locale: Locale;
   title: string;
   body: string;
   install: string;
@@ -142,6 +143,7 @@ export function resolvePwaBannerCopy(
 ): ResolvedPwaBannerCopy {
   const p = dict.installPrompt;
   return {
+    locale,
     title: pickText(banner.copy.title, p.title, locale),
     body: pickText(banner.copy.body, p.body, locale),
     install: pickText(banner.copy.install, p.install, locale),

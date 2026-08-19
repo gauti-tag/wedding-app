@@ -1,10 +1,38 @@
 "use client";
 
 import { useEffect } from "react";
+import {
+  captureInstallPrompt,
+  hydrateDeferredFromWindow,
+  markInstalled,
+  type BeforeInstallPromptEvent,
+} from "@/lib/pwa-install";
 
 export function PwaRegister() {
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    if (typeof window === "undefined") return;
+
+    hydrateDeferredFromWindow();
+
+    const onBeforeInstall = (event: Event) => {
+      captureInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const onCaptured = () => hydrateDeferredFromWindow();
+    const onInstalled = () => markInstalled();
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    window.addEventListener("pwa-install:captured", onCaptured);
+    window.addEventListener("pwa-install:installed", onInstalled);
+    window.addEventListener("appinstalled", onInstalled);
+
+    if (!("serviceWorker" in navigator)) {
+      return () => {
+        window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+        window.removeEventListener("pwa-install:captured", onCaptured);
+        window.removeEventListener("pwa-install:installed", onInstalled);
+        window.removeEventListener("appinstalled", onInstalled);
+      };
+    }
 
     // En dev : désinstaller le SW pour éviter les chunks Next.js périmés.
     if (process.env.NODE_ENV !== "production") {
@@ -16,7 +44,12 @@ export function PwaRegister() {
           for (const key of keys) void caches.delete(key);
         });
       }
-      return;
+      return () => {
+        window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+        window.removeEventListener("pwa-install:captured", onCaptured);
+        window.removeEventListener("pwa-install:installed", onInstalled);
+        window.removeEventListener("appinstalled", onInstalled);
+      };
     }
 
     const register = () => {
@@ -30,6 +63,13 @@ export function PwaRegister() {
     } else {
       window.addEventListener("load", register, { once: true });
     }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("pwa-install:captured", onCaptured);
+      window.removeEventListener("pwa-install:installed", onInstalled);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
   }, []);
 
   return null;
