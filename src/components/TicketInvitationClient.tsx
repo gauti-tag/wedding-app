@@ -325,7 +325,7 @@ export function TicketInvitationClient({
         </div>
 
         <p className="mt-6 text-sm leading-6 text-soft">
-          Présentez ce <span className="font-semibold text-mist">QR Code</span> à l&apos;entrée afin
+          Présentez ce <span className="font-semibold text-mist">QR Code </span> à l&apos;entrée afin
           de confirmer votre présence.
         </p>
 

@@ -25,6 +25,8 @@ import {
   type InviteZoneStyle,
 } from "@/lib/invite-card-templates";
 import type { EventType, LocalizedText } from "@/lib/types";
+import { CI_PHONE_PATTERN, isValidCiPhone } from "@/lib/validation";
+import { siteInviteWhatsApp } from "@/lib/whatsapp";
 
 type Props = {
   eventType: EventType;
@@ -161,6 +163,7 @@ export function AdminInviteQr({
   const [previewUrl, setPreviewUrl] = useState("");
   const [previewBusy, setPreviewBusy] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [waPhone, setWaPhone] = useState("");
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
   const { recommended, others } = useMemo(() => templatesForEvent(eventType), [eventType]);
@@ -180,6 +183,18 @@ export function AdminInviteQr({
 
   const dateLabel = weddingDateLabel[locale] || weddingDateLabel.fr;
   const pageUrl = useMemo(() => inviteUrl(locale), [locale]);
+  const siteInviteWa = useMemo(() => {
+    if (!pageUrl) return null;
+    return siteInviteWhatsApp({
+      coupleNames: displayName,
+      siteUrl: pageUrl,
+      dateLabel,
+      locale,
+      phone: waPhone.trim() || undefined,
+      eventType,
+      customization: custom,
+    });
+  }, [pageUrl, displayName, dateLabel, locale, waPhone, eventType, custom]);
   const defaults = useMemo(
     () => resolveInviteCardCopy(eventType, locale),
     [eventType, locale],
@@ -289,6 +304,33 @@ export function AdminInviteQr({
     }
   }
 
+  async function onCopyWhatsAppMessage() {
+    if (!siteInviteWa?.message) return;
+    try {
+      await navigator.clipboard.writeText(siteInviteWa.message);
+      showSuccess("Message WhatsApp copié — collez-le dans la conversation.");
+    } catch {
+      showError("Copie impossible.");
+    }
+  }
+
+  function onOpenWhatsAppLink() {
+    if (!siteInviteWa?.url) {
+      showError("Configurez l’URL du site (NEXT_PUBLIC_SITE_URL).");
+      return;
+    }
+    if (waPhone.trim() && !isValidCiPhone(waPhone)) {
+      showError("Numéro WhatsApp ivoirien invalide (ex. +2250708345891).");
+      return;
+    }
+    window.open(siteInviteWa.url, "_blank", "noopener,noreferrer");
+    showSuccess(
+      waPhone.trim()
+        ? "WhatsApp ouvert avec le message lien pour cet invité."
+        : "WhatsApp ouvert — choisissez le contact, puis envoyez.",
+    );
+  }
+
   function patchCustom(partial: Partial<InviteCardCustomization>) {
     setCustom((prev) => normalizeInviteCustomization({ ...prev, ...partial }));
   }
@@ -392,8 +434,9 @@ export function AdminInviteQr({
       <div className="mb-5">
         <h2 className="section-title text-3xl text-mist">QR invitation (site)</h2>
         <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-          Modèles adaptés ({EVENT_TYPE_LABELS[eventType]}), textes et styles par zone (police,
-          couleur, taille, casse). Aperçu live — au scan, l’invité ouvre le site.
+          Deux façons d’inviter : la <span className="text-mist">carte QR</span> (lien caché
+          dans le code) et le <span className="text-mist">message WhatsApp avec lien</span>{" "}
+          (un clic, sans second téléphone). Modèles, textes et styles par zone — aperçu live.
         </p>
       </div>
 
@@ -574,6 +617,68 @@ export function AdminInviteQr({
               <button type="button" onClick={onCopyLink} className="btn-ghost" disabled={!pageUrl}>
                 Copier le lien
               </button>
+            </div>
+
+            <div className="space-y-4 border border-line bg-[#f7f4f0]/50 p-4">
+              <div>
+                <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+                  Message WhatsApp — lien direct
+                </p>
+                <p className="mt-2 text-sm text-soft">
+                  Pour les invités qui reçoivent la carte image sur WhatsApp et ne peuvent pas
+                  scanner avec le même téléphone : envoyez ce message. WhatsApp affiche un
+                  aperçu cliquable (équivalent d’un bouton). L’URL doit figurer dans le texte —
+                  limitation WhatsApp.
+                </p>
+              </div>
+
+              <div>
+                <label className="label" htmlFor="invite-wa-phone">
+                  Numéro invité (optionnel)
+                </label>
+                <input
+                  id="invite-wa-phone"
+                  type="tel"
+                  inputMode="tel"
+                  className="field"
+                  placeholder="+2250708345891"
+                  pattern={CI_PHONE_PATTERN}
+                  value={waPhone}
+                  onChange={(e) => setWaPhone(e.target.value)}
+                  autoComplete="tel"
+                />
+                <p className="mt-1 text-xs text-soft">
+                  Vide = vous choisissez le contact dans WhatsApp.
+                </p>
+              </div>
+
+              {siteInviteWa ? (
+                <div>
+                  <p className="label">Aperçu du message</p>
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded border border-line bg-white px-3 py-2 text-xs leading-relaxed text-mist">
+                    {siteInviteWa.message}
+                  </pre>
+                </div>
+              ) : null}
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  className="btn-primary disabled:opacity-60"
+                  disabled={!siteInviteWa}
+                  onClick={onOpenWhatsAppLink}
+                >
+                  Ouvrir WhatsApp (lien)
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost disabled:opacity-60"
+                  disabled={!siteInviteWa}
+                  onClick={() => void onCopyWhatsAppMessage()}
+                >
+                  Copier le message
+                </button>
+              </div>
             </div>
           </div>
 

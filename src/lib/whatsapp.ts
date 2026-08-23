@@ -1,6 +1,10 @@
 import { coupleLabel } from "@/lib/site";
 import { ticketPageUrl } from "@/lib/tickets";
-import type { Rsvp, SiteContent } from "@/lib/types";
+import type { EventType, Rsvp, SiteContent } from "@/lib/types";
+import {
+  resolveInviteCardCopy,
+  type InviteCardCustomization,
+} from "@/lib/invite-card-templates";
 import { formatFullName, normalizeCiPhone } from "@/lib/validation";
 
 /**
@@ -299,6 +303,86 @@ export function seatingWhatsAppForRsvp(
     locale,
   });
 
+  return {
+    message,
+    url: whatsappUrl(message, digits),
+    phoneDigits: digits,
+  };
+}
+
+/**
+ * Message WhatsApp « lien direct » pour l’invitation site (QR invitation).
+ * Reprend les textes de la carte (eyebrow, invitation, corps, pied),
+ * en remplaçant « scannez le QR » par « ouvrez ce lien ».
+ * WhatsApp n’autorise pas de vrai bouton HTML : l’URL doit figurer dans le texte.
+ */
+export function buildSiteInviteWhatsAppMessage(input: {
+  coupleNames: string;
+  siteUrl: string;
+  dateLabel?: string;
+  locale?: "fr" | "en";
+  eventType?: EventType;
+  customization?: Partial<InviteCardCustomization> | null;
+}) {
+  const locale = input.locale || "fr";
+  const couple = input.coupleNames.trim();
+  const siteUrl = input.siteUrl.trim();
+  const dateLabel = (input.dateLabel || "").trim();
+  const copy = resolveInviteCardCopy(
+    input.eventType || "wedding",
+    locale,
+    input.customization,
+  );
+  const bodyLine = inviteBodyForDirectLink(copy.body, locale);
+
+  return joinWhatsAppLines([
+    copy.eyebrow || null,
+    "",
+    copy.inviteLine || null,
+    couple ? `*${couple}*` : null,
+    dateLabel || null,
+    "",
+    bodyLine ? `${bodyLine.replace(/[.:…]+$/, "")} :` : null,
+    siteUrl,
+    "",
+    copy.footer || null,
+  ]);
+}
+
+/** Adapte le corps de la carte (scan QR → ouvrir le lien). */
+function inviteBodyForDirectLink(body: string[], locale: "fr" | "en"): string {
+  const joined = body.map((line) => line.trim()).filter(Boolean).join(" ");
+  if (!joined) {
+    return locale === "en"
+      ? "Open this link to discover the celebration and confirm your attendance"
+      : "Ouvrez ce lien pour découvrir la célébration et confirmer votre présence";
+  }
+
+  if (locale === "en") {
+    return joined
+      .replace(/^Scan this QR code to\s+/i, "Open this link to ")
+      .replace(/^Scan this QR code for\s+/i, "Open this link for ")
+      .replace(/^Scan for\s+/i, "Open this link for ")
+      .replace(/^Scan\s+/i, "Open this link to ");
+  }
+
+  return joined
+    .replace(/^Scannez ce QR code pour\s+/i, "Ouvrez ce lien pour ")
+    .replace(/^Scannez pour\s+/i, "Ouvrez ce lien pour ")
+    .replace(/^Scannez\s+/i, "Ouvrez ce lien pour ");
+}
+
+export function siteInviteWhatsApp(input: {
+  coupleNames: string;
+  siteUrl: string;
+  dateLabel?: string;
+  locale?: "fr" | "en";
+  phone?: string;
+  eventType?: EventType;
+  customization?: Partial<InviteCardCustomization> | null;
+}) {
+  const message = buildSiteInviteWhatsAppMessage(input);
+  const digits = input.phone ? phoneToWhatsAppDigits(input.phone) : null;
   return {
     message,
     url: whatsappUrl(message, digits),
