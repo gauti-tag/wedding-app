@@ -15,6 +15,9 @@ export type RsvpStatus = "yes" | "no" | "maybe";
 /** Identifiant d’option « invité de » (configurable ; legacy : gautier | francybel | both). */
 export type GuestOf = string;
 
+/** Nombre d’enfants accompagnants */
+export type ChildCount = 0 | 1 | 2 | 3 | 4;
+
 export type Rsvp = {
   id: string;
   name: string;
@@ -22,6 +25,8 @@ export type Rsvp = {
   phone: string;
   status: RsvpStatus;
   guestOf: GuestOf;
+  /** Enfants accompagnants (comptent dans la capacité si présence = oui). */
+  childCount: ChildCount;
   message: string;
   createdAt: string;
   /** Jeton unique pour le QR code / check-in le jour J. */
@@ -269,9 +274,12 @@ export type RsvpConfig = {
   showGuestOf: boolean;
   showMessage: boolean;
   showMaybe: boolean;
+  showChildCount: boolean;
   guestOfOptions: RsvpGuestOfOption[];
   /** Surcharge du placeholder message (vide = dictionnaire). */
   messagePlaceholder: LocalizedText;
+  /** Libellé du champ enfants (vide = dictionnaire). */
+  childCountLabel: LocalizedText;
 };
 
 /** Textes d’interface surchargés (FR/EN) selon le type d’événement. */

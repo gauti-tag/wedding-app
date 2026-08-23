@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth";
 import { eventLabel } from "@/lib/site";
 import { getRsvps, getSiteContent, recordTicketView } from "@/lib/storage";
 import { generateTicketQrDataUrl } from "@/lib/tickets";
+import { formatFullName } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,7 @@ export default async function TicketPage({ params, searchParams }: Props) {
         </div>
       ) : null}
       <TicketInvitationClient
-        guestName={rsvp.name}
+        guestName={formatFullName(rsvp.name)}
         coupleNames={names}
         dateLabel={siteContent.hero.weddingDateLabel.fr}
         qrDataUrl={qr}

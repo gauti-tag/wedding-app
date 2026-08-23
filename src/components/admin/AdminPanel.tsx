@@ -477,6 +477,7 @@ export function AdminPanel({
       "phone",
       "status",
       "guestOf",
+      "childCount",
       "message",
       "table",
       "seat",
@@ -494,6 +495,7 @@ export function AdminPanel({
         showGuestPii ? r.phone : maskPhone(r.phone || ""),
         r.status,
         guestOfLabels[r.guestOf] || r.guestOf,
+        String(r.childCount ?? 0),
         r.message,
         r.tableLabel || "",
         r.seatLabel || "",
@@ -818,6 +820,10 @@ export function AdminPanel({
                       </dd>
                     </div>
                     <div>
+                      <dt className="tracking-[0.12em] uppercase">Enfants</dt>
+                      <dd className="mt-0.5 text-mist">{rsvp.childCount ?? 0}</dd>
+                    </div>
+                    <div>
                       <dt className="tracking-[0.12em] uppercase">Table</dt>
                       <dd className="mt-0.5 break-words text-mist">
                         {formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "—"}
@@ -919,6 +925,7 @@ export function AdminPanel({
                 <th className="px-4 py-3 font-medium">Téléphone</th>
                 <th className="px-4 py-3 font-medium">Statut</th>
                 <th className="px-4 py-3 font-medium">Invité(e) de</th>
+                <th className="px-4 py-3 font-medium">Enfants</th>
                 <th className="px-4 py-3 font-medium">Table</th>
                 <th className="px-4 py-3 font-medium">Suivi</th>
                 <th className="px-4 py-3 font-medium">Check-in</th>
@@ -928,13 +935,13 @@ export function AdminPanel({
             <tbody>
               {rsvps.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-soft">
+                  <td colSpan={9} className="px-4 py-6 text-soft">
                     Aucune réponse pour l’instant.
                   </td>
                 </tr>
               ) : filteredRsvps.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-soft">
+                  <td colSpan={9} className="px-4 py-6 text-soft">
                     Aucun résultat pour « {rsvpQuery.trim()} ».
                   </td>
                 </tr>
@@ -955,6 +962,7 @@ export function AdminPanel({
                     <td className="px-4 py-3 text-mist">
                       {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
                     </td>
+                    <td className="px-4 py-3 text-soft">{rsvp.childCount ?? 0}</td>
                     <td className="px-4 py-3 text-soft">
                       {formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "—"}
                     </td>

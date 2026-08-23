@@ -80,6 +80,7 @@ const rsvpConfigSchema = z.object({
   showGuestOf: z.boolean(),
   showMessage: z.boolean(),
   showMaybe: z.boolean(),
+  showChildCount: z.boolean().optional().default(true),
   guestOfOptions: z
     .array(
       z.object({
@@ -90,6 +91,7 @@ const rsvpConfigSchema = z.object({
     .min(1)
     .max(12),
   messagePlaceholder: localizedSchema,
+  childCountLabel: localizedSchema.optional().default({ fr: "", en: "" }),
 });
 
 const navSectionSchema = z.enum([

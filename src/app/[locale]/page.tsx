@@ -5,7 +5,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { SiteSections } from "@/components/SiteSections";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
-import { isGuestCapacityFull } from "@/lib/guest-capacity";
+import { isGuestCapacityFull, seatsRemaining } from "@/lib/guest-capacity";
 import { eventLabel, resolveDictionary } from "@/lib/site";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { resolvePwaBannerCopy } from "@/lib/pwa-banner";
@@ -67,6 +67,7 @@ export default async function Home({ params }: Props) {
     .slice(0, MAX_HERO_PHOTOS);
   const names = eventLabel(siteContent, raw);
   const capacityFull = isGuestCapacityFull(siteContent.guestCapacity, rsvps);
+  const remainingSeats = seatsRemaining(siteContent.guestCapacity, rsvps);
   const features = siteContent.features;
 
   return (
@@ -95,6 +96,7 @@ export default async function Home({ params }: Props) {
           guestbook={guestbook}
           guestAlbum={guestAlbum}
           capacityFull={capacityFull}
+          seatsRemaining={remainingSeats}
         />
       </main>
       <SiteFooter dict={dict} siteContent={siteContent} locale={raw} />

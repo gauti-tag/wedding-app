@@ -20,8 +20,10 @@ export type RsvpInsights = {
   maybe: number;
   checkedIn: number;
   capacity: number;
+  seatsTaken: number;
   seatsRemaining: number;
   capacityPct: number;
+  totalChildren: number;
   byGuestOf: Record<string, { total: number; yes: number }>;
   statusBars: { key: "yes" | "no" | "maybe"; count: number; pct: number }[];
   guestOfYesBars: { key: GuestOf; count: number; pct: number }[];
@@ -64,6 +66,9 @@ export function computeRsvpInsights(
   const seatsTaken = countConfirmedSeats(rsvps);
   const seatsRemaining = Math.max(0, capacity - seatsTaken);
   const capacityPct = capacity > 0 ? Math.min(100, Math.round((seatsTaken / capacity) * 100)) : 0;
+  const totalChildren = rsvps
+    .filter((r) => r.status === "yes")
+    .reduce((sum, r) => sum + (r.childCount ?? 0), 0);
 
   const optionIds =
     site.rsvpConfig?.guestOfOptions?.map((o) => o.id) ??
@@ -122,8 +127,10 @@ export function computeRsvpInsights(
     maybe,
     checkedIn,
     capacity,
+    seatsTaken,
     seatsRemaining,
     capacityPct,
+    totalChildren,
     byGuestOf,
     statusBars,
     guestOfYesBars,

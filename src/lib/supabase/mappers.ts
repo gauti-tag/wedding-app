@@ -7,6 +7,8 @@ import type {
   RsvpStatus,
   GuestOf,
 } from "@/lib/types";
+import { normalizeChildCount } from "@/lib/guest-capacity";
+import { formatFullName } from "@/lib/validation";
 import { normalizeRole } from "@/lib/roles";
 
 export type DbPhoto = {
@@ -26,6 +28,7 @@ export type DbRsvp = {
   phone: string;
   status: string;
   guest_of: string;
+  child_count: number;
   message: string;
   ticket_token: string;
   checked_in_at: string | null;
@@ -89,11 +92,12 @@ export function toDbPhoto(photo: Photo): DbPhoto {
 export function mapRsvp(row: DbRsvp): Rsvp {
   return {
     id: row.id,
-    name: row.name,
+    name: formatFullName(row.name || ""),
     email: row.email,
     phone: row.phone,
     status: row.status as RsvpStatus,
     guestOf: row.guest_of as GuestOf,
+    childCount: normalizeChildCount(row.child_count ?? 0),
     message: row.message || "",
     ticketToken: row.ticket_token,
     checkedInAt: row.checked_in_at,
@@ -110,11 +114,12 @@ export function mapRsvp(row: DbRsvp): Rsvp {
 export function toDbRsvp(rsvp: Rsvp): DbRsvp {
   return {
     id: rsvp.id,
-    name: rsvp.name,
+    name: formatFullName(rsvp.name || ""),
     email: rsvp.email,
     phone: rsvp.phone,
     status: rsvp.status,
     guest_of: rsvp.guestOf,
+    child_count: normalizeChildCount(rsvp.childCount ?? 0),
     message: rsvp.message || "",
     ticket_token: rsvp.ticketToken,
     checked_in_at: rsvp.checkedInAt,

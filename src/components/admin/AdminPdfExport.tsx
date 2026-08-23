@@ -35,12 +35,13 @@ export function AdminPdfExport({ rsvps, site, seatingPlan, guestOfLabels }: Prop
 
       autoTable(doc, {
         startY: 28,
-        head: [["Nom", "Tél.", "Statut", "Invité de", "Table", "Check-in"]],
+        head: [["Nom", "Tél.", "Statut", "Invité de", "Enfants", "Table", "Check-in"]],
         body: rsvps.map((r) => [
           r.name,
           r.phone || "—",
           r.status,
           guestOfLabels[r.guestOf] || r.guestOf || "—",
+          String(r.childCount ?? 0),
           formatSeatingLabel(r.tableLabel, r.seatLabel) || "—",
           r.checkedInAt ? new Date(r.checkedInAt).toLocaleString("fr-FR") : "—",
         ]),

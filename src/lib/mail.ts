@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { coupleLabel, site } from "@/lib/site";
 import { generateTicketQrDataUrl, ticketPageUrl } from "@/lib/tickets";
 import type { Rsvp, SiteContent } from "@/lib/types";
+import { formatFullName } from "@/lib/validation";
 
 function getResend() {
   const key = process.env.RESEND_API_KEY;
@@ -28,7 +29,8 @@ export async function sendRsvpThankYouEmail(
   const qrDataUrl = await generateTicketQrDataUrl(rsvp.ticketToken);
   const ticketUrl = ticketPageUrl(rsvp.ticketToken);
 
-  const subject = `Merci ${rsvp.name} — votre invitation ${names}`;
+  const guestName = formatFullName(rsvp.name);
+  const subject = `Merci ${guestName} — votre invitation ${names}`;
 
   const html = `
 <!DOCTYPE html>
@@ -48,7 +50,7 @@ export async function sendRsvpThankYouEmail(
           <tr>
             <td style="padding:0 28px 24px;text-align:center;">
               <p style="margin:0 0 12px;font-size:16px;line-height:1.6;">
-                Bonjour <strong>${rsvp.name}</strong>,
+                Bonjour <strong>${guestName}</strong>,
               </p>
               <p style="margin:0;font-size:15px;line-height:1.7;color:#7a5c4a;">
                 Merci pour votre réponse. Voici votre carte d’invitation personnelle.

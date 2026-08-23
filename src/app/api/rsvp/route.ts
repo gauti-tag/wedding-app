@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
-import { wouldExceedGuestCapacity } from "@/lib/guest-capacity";
+import { normalizeChildCount, wouldExceedGuestCapacity } from "@/lib/guest-capacity";
 import { isRsvpDeadlinePassed, isRsvpNotYetOpen } from "@/lib/rsvp-deadline";
 import { getRsvps, getSiteContent, saveRsvps, setRsvpBlocked } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
 import type { Rsvp } from "@/lib/types";
-import { isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
+import { formatFullName, isValidCiPhone, normalizeCiPhone } from "@/lib/validation";
 import { formatCiWhatsAppPhone, ticketWhatsAppForRsvp } from "@/lib/whatsapp";
 
 /** Email technique pour la contrainte unique DB (plus demandé aux invités). */
@@ -21,7 +21,8 @@ const schema = z.object({
     .trim()
     .refine(isValidCiPhone, { message: "phone_invalid" }),
   status: z.enum(["yes", "no", "maybe"]),
-  guestOf: z.string().trim().max(80).optional().default("both"),
+  guestOf: z.string().trim().max(80).optional().default("parent_host_one"),
+  childCount: z.coerce.number().int().min(0).max(4).optional().default(0),
   message: z.string().trim().max(1000).optional().default(""),
   locale: z.enum(["fr", "en"]).optional().default("fr"),
 });
@@ -115,6 +116,9 @@ export async function POST(request: Request) {
     let message = parsed.data.message || "";
     if (!rsvpConfig.showMessage) message = "";
 
+    let childCount = normalizeChildCount(parsed.data.childCount);
+    if (!rsvpConfig.showChildCount || status !== "yes") childCount = 0;
+
     const rsvps = await getRsvps();
 
     if (rsvps.some((r) => normalizeCiPhone(r.phone) === nationalPhone)) {
@@ -124,7 +128,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (wouldExceedGuestCapacity(siteContent.guestCapacity, rsvps, status)) {
+    if (wouldExceedGuestCapacity(siteContent.guestCapacity, rsvps, status, childCount)) {
       return NextResponse.json(
         {
           error:
@@ -138,9 +142,10 @@ export async function POST(request: Request) {
     const locale = parsed.data.locale;
     const entry: Rsvp = {
       id: crypto.randomUUID(),
-      name: parsed.data.name,
+      name: formatFullName(parsed.data.name),
       status,
       guestOf,
+      childCount,
       message,
       email: guestEmailFromPhone(nationalPhone),
       phone,

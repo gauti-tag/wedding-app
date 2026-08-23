@@ -74,6 +74,17 @@ export type Dictionary = {
     guestOfFrancybel: string;
     guestOfGautier: string;
     guestOfBoth: string;
+    guestRelation: string;
+    guestHost: string;
+    guestRelationParent: string;
+    guestRelationFriend: string;
+    guestRelationColleague: string;
+    childCount: string;
+    childCount0: string;
+    childCount1: string;
+    childCount2: string;
+    childCount3: string;
+    childCount4: string;
     message: string;
     messagePlaceholder: string;
     submit: string;

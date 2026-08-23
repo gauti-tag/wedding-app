@@ -2,6 +2,8 @@ import { randomBytes } from "crypto";
 import QRCode from "qrcode";
 import { site } from "@/lib/site";
 import type { Rsvp } from "@/lib/types";
+import { normalizeChildCount } from "@/lib/guest-capacity";
+import { formatFullName } from "@/lib/validation";
 
 export function createTicketToken() {
   return randomBytes(24).toString("base64url");
@@ -32,6 +34,7 @@ export async function generateTicketQrDataUrl(token: string) {
 export function ensureRsvpTicketFields(rsvp: Rsvp): Rsvp {
   return {
     ...rsvp,
+    name: formatFullName(rsvp.name || ""),
     ticketToken: rsvp.ticketToken || createTicketToken(),
     checkedInAt: rsvp.checkedInAt ?? null,
     emailSentAt: rsvp.emailSentAt ?? null,
@@ -40,5 +43,6 @@ export function ensureRsvpTicketFields(rsvp: Rsvp): Rsvp {
     blockedAt: rsvp.blockedAt ?? null,
     tableLabel: rsvp.tableLabel ?? "",
     seatLabel: rsvp.seatLabel ?? "",
+    childCount: normalizeChildCount(rsvp.childCount ?? 0),
   };
 }

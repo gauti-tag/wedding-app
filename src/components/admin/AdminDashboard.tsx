@@ -55,13 +55,18 @@ export function AdminDashboard({
         ) : null}
       </div>
 
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {[
           { label: "Réponses", value: String(insights.total) },
           {
             label: "Places restantes",
             value: `${insights.seatsRemaining}`,
-            hint: `${insights.yes} oui / ${insights.capacity}`,
+            hint: `${insights.seatsTaken} places / ${insights.capacity}`,
+          },
+          {
+            label: "Enfants attendus",
+            value: String(insights.totalChildren),
+            hint: `${insights.yes} adulte${insights.yes > 1 ? "s" : ""} confirmé${insights.yes > 1 ? "s" : ""}`,
           },
           { label: "Check-in", value: String(insights.checkedIn) },
           { label: "À relancer", value: String(insights.followUps.length) },
@@ -95,7 +100,7 @@ export function AdminDashboard({
             <div className="flex items-center justify-between text-xs text-soft">
               <span>Remplissage des places</span>
               <span>
-                {insights.yes}/{insights.capacity} ({insights.capacityPct} %)
+                {insights.seatsTaken}/{insights.capacity} ({insights.capacityPct} %)
               </span>
             </div>
             <div className="mt-2 h-2 overflow-hidden bg-forest">
@@ -110,7 +115,7 @@ export function AdminDashboard({
         {site.rsvpConfig?.showGuestOf !== false ? (
         <div className="border border-line bg-white p-5">
           <p className="text-xs tracking-[0.16em] text-champagne uppercase">
-            Confirmations « oui » par côté
+            Confirmations « oui » par lien
           </p>
           <div className="mt-4 space-y-3">
             {insights.guestOfYesBars.map((bar) => (

@@ -1,7 +1,7 @@
 import { coupleLabel } from "@/lib/site";
 import { ticketPageUrl } from "@/lib/tickets";
 import type { Rsvp, SiteContent } from "@/lib/types";
-import { normalizeCiPhone } from "@/lib/validation";
+import { formatFullName, normalizeCiPhone } from "@/lib/validation";
 
 /**
  * Digits internationaux sans « + » pour WhatsApp / wa.me.
@@ -73,7 +73,7 @@ export function buildTicketWhatsAppMessage(input: {
   locale?: "fr" | "en";
 }) {
   const locale = input.locale || "fr";
-  const name = input.guestName.trim();
+  const name = formatFullName(input.guestName);
   const couple = input.coupleNames.trim();
   const dateLabel = (input.dateLabel || "").trim();
   const ticketUrl = input.ticketUrl.trim();
@@ -161,7 +161,7 @@ export function buildReminderWhatsAppMessage(input: {
   locale?: "fr" | "en";
 }) {
   const locale = input.locale || "fr";
-  const name = input.guestName.trim();
+  const name = formatFullName(input.guestName);
   const couple = input.coupleNames.trim();
   const dateLabel = (input.dateLabel || "").trim();
   const ticketUrl = input.ticketUrl.trim();
@@ -235,7 +235,7 @@ export function buildSeatingWhatsAppMessage(input: {
   locale?: "fr" | "en";
 }) {
   const locale = input.locale || "fr";
-  const name = input.guestName.trim();
+  const name = formatFullName(input.guestName);
   const couple = input.coupleNames.trim();
   const table = input.tableLabel.trim();
   const seat = input.seatLabel.trim();

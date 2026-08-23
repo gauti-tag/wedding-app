@@ -4,6 +4,20 @@ import { useMemo, useState, type FormEvent } from "react";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
 import {
+  childCountOptions,
+  normalizeChildCount,
+  seatsForRsvp,
+} from "@/lib/guest-capacity";
+import {
+  composeGuestOfId,
+  guestHostOptions,
+  guestRelationLabel,
+  GUEST_RELATIONS,
+  isStructuredGuestOfConfig,
+  type GuestHostSuffix,
+  type GuestRelation,
+} from "@/lib/guest-of";
+import {
   formatRsvpDeadlineLabel,
   formatRsvpOpensAtLabel,
   isRsvpDeadlinePassed,
@@ -11,8 +25,8 @@ import {
 } from "@/lib/rsvp-deadline";
 import { t } from "@/lib/localized";
 import { suggestPwaInstall } from "@/lib/pwa-install";
-import type { SiteContent } from "@/lib/types";
-import { CI_PHONE_PATTERN, isValidCiPhone } from "@/lib/validation";
+import type { ChildCount, SiteContent } from "@/lib/types";
+import { CI_PHONE_PATTERN, formatFullName, isValidCiPhone } from "@/lib/validation";
 import { phoneToWhatsAppDigits } from "@/lib/whatsapp";
 
 type Status = "idle" | "loading" | "success" | "error";
@@ -22,11 +36,31 @@ type WhatsAppPayload = {
   url: string;
 };
 
+const CHILD_COUNT_LABEL_KEYS = [
+  "childCount0",
+  "childCount1",
+  "childCount2",
+  "childCount3",
+  "childCount4",
+] as const;
+
+function relationDictKey(relation: GuestRelation) {
+  switch (relation) {
+    case "parent":
+      return "guestRelationParent" as const;
+    case "friend":
+      return "guestRelationFriend" as const;
+    case "colleague":
+      return "guestRelationColleague" as const;
+  }
+}
+
 export function RsvpForm({
   dict,
   locale,
   siteContent,
   capacityFull = false,
+  seatsRemaining,
 }: {
   dict: Dictionary;
   locale: Locale;
@@ -42,13 +76,26 @@ export function RsvpForm({
     | "rsvpConfig"
   >;
   capacityFull?: boolean;
+  seatsRemaining?: number;
 }) {
   const rsvpConfig = siteContent.rsvpConfig;
+  const structuredGuestOf = isStructuredGuestOfConfig(rsvpConfig.guestOfOptions);
   const messagePlaceholder =
     t(rsvpConfig.messagePlaceholder, locale).trim() || dict.rsvp.messagePlaceholder;
+  const childCountLabel =
+    t(rsvpConfig.childCountLabel, locale).trim() || dict.rsvp.childCount;
+  const hostOptions = useMemo(
+    () => guestHostOptions(siteContent.partnerOne, siteContent.partnerTwo, locale),
+    [siteContent.partnerOne, siteContent.partnerTwo, locale],
+  );
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [whatsapp, setWhatsapp] = useState<WhatsAppPayload | null>(null);
+  const [attendance, setAttendance] = useState(
+    capacityFull ? (rsvpConfig.showMaybe ? "maybe" : "no") : "yes",
+  );
+  const [guestRelation, setGuestRelation] = useState<GuestRelation>("parent");
+  const [guestHost, setGuestHost] = useState<GuestHostSuffix>("host_one");
 
   const notYetOpen = useMemo(
     () => isRsvpNotYetOpen(siteContent.rsvpOpensAt),
@@ -79,6 +126,22 @@ export function RsvpForm({
       ? `tel:${siteContent.contactPhone.replace(/\s/g, "")}`
       : "";
   const formClosed = notYetOpen || deadlinePassed;
+  const showChildCountField =
+    rsvpConfig.showChildCount && attendance === "yes" && !capacityFull;
+
+  function resolveGuestOf(form: FormData): string {
+    if (!rsvpConfig.showGuestOf) {
+      return rsvpConfig.guestOfOptions[0]?.id || "parent_host_one";
+    }
+    if (structuredGuestOf) {
+      const relation = String(form.get("guestRelation") || guestRelation) as GuestRelation;
+      const host = String(form.get("guestHost") || guestHost) as GuestHostSuffix;
+      return composeGuestOfId(relation, host);
+    }
+    return String(
+      form.get("guestOf") || rsvpConfig.guestOfOptions[0]?.id || "parent_host_one",
+    );
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -99,18 +162,29 @@ export function RsvpForm({
 
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
+    const nextStatus = String(form.get("status") || (capacityFull ? "maybe" : "yes"));
+    const childCount = normalizeChildCount(form.get("childCount") ?? 0);
     const payload = {
-      name: String(form.get("name") || ""),
+      name: formatFullName(String(form.get("name") || "")),
       phone: String(form.get("phone") || ""),
-      status: String(form.get("status") || (capacityFull ? "maybe" : "yes")),
-      guestOf: String(
-        form.get("guestOf") || rsvpConfig.guestOfOptions[0]?.id || "both",
-      ),
+      status: nextStatus,
+      guestOf: resolveGuestOf(form),
+      childCount: nextStatus === "yes" && rsvpConfig.showChildCount ? childCount : 0,
       message: String(form.get("message") || ""),
       locale,
     };
 
     if (capacityFull && payload.status === "yes") {
+      setStatus("error");
+      setError(dict.rsvp.errorCapacityFull);
+      return;
+    }
+
+    if (
+      payload.status === "yes" &&
+      typeof seatsRemaining === "number" &&
+      seatsForRsvp({ status: "yes", childCount: payload.childCount }) > seatsRemaining
+    ) {
       setStatus("error");
       setError(dict.rsvp.errorCapacityFull);
       return;
@@ -151,8 +225,10 @@ export function RsvpForm({
         });
       }
       setStatus("success");
+      setAttendance(capacityFull ? (rsvpConfig.showMaybe ? "maybe" : "no") : "yes");
+      setGuestRelation("parent");
+      setGuestHost("host_one");
       formEl.reset();
-      // Soft suggest d’installer l’app après un RSVP réussi (mobile).
       window.setTimeout(() => suggestPwaInstall(), 900);
     } catch (err) {
       setStatus("error");
@@ -241,6 +317,10 @@ export function RsvpForm({
                   required
                   className="field"
                   placeholder={dict.rsvp.namePlaceholder}
+                  autoComplete="name"
+                  onBlur={(e) => {
+                    e.target.value = formatFullName(e.target.value);
+                  }}
                 />
               </div>
               <div>
@@ -262,34 +342,70 @@ export function RsvpForm({
               </div>
             </div>
 
-            <div
-              className={`grid gap-5 ${rsvpConfig.showGuestOf ? "sm:grid-cols-2" : ""}`}
-            >
-              <div>
-                <label className="label" htmlFor="status">
-                  {dict.rsvp.status}
-                </label>
-                <select
-                  id="status"
-                  name="status"
-                  className="field"
-                  defaultValue={
-                    capacityFull
-                      ? rsvpConfig.showMaybe
-                        ? "maybe"
-                        : "no"
-                      : "yes"
-                  }
-                  required
-                >
-                  {!capacityFull ? <option value="yes">{dict.rsvp.statusYes}</option> : null}
-                  {rsvpConfig.showMaybe ? (
-                    <option value="maybe">{dict.rsvp.statusMaybe}</option>
-                  ) : null}
-                  <option value="no">{dict.rsvp.statusNo}</option>
-                </select>
-              </div>
-              {rsvpConfig.showGuestOf ? (
+            <div>
+              <label className="label" htmlFor="status">
+                {dict.rsvp.status}
+              </label>
+              <select
+                id="status"
+                name="status"
+                className="field"
+                value={attendance}
+                onChange={(e) => setAttendance(e.target.value)}
+                required
+              >
+                {!capacityFull ? <option value="yes">{dict.rsvp.statusYes}</option> : null}
+                {rsvpConfig.showMaybe ? (
+                  <option value="maybe">{dict.rsvp.statusMaybe}</option>
+                ) : null}
+                <option value="no">{dict.rsvp.statusNo}</option>
+              </select>
+            </div>
+
+            {rsvpConfig.showGuestOf ? (
+              structuredGuestOf ? (
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <label className="label" htmlFor="guestRelation">
+                      {dict.rsvp.guestRelation}
+                    </label>
+                    <select
+                      id="guestRelation"
+                      name="guestRelation"
+                      className="field"
+                      value={guestRelation}
+                      onChange={(e) => setGuestRelation(e.target.value as GuestRelation)}
+                      required
+                    >
+                      {GUEST_RELATIONS.map((relation) => (
+                        <option key={relation} value={relation}>
+                          {dict.rsvp[relationDictKey(relation)] ||
+                            guestRelationLabel(relation, locale)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="guestHost">
+                      {dict.rsvp.guestHost}
+                    </label>
+                    <select
+                      id="guestHost"
+                      name="guestHost"
+                      className="field"
+                      value={guestHost}
+                      onChange={(e) => setGuestHost(e.target.value as GuestHostSuffix)}
+                      required
+                    >
+                      {hostOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ) : (
                 <div>
                   <label className="label" htmlFor="guestOf">
                     {dict.rsvp.guestOf}
@@ -298,11 +414,7 @@ export function RsvpForm({
                     id="guestOf"
                     name="guestOf"
                     className="field"
-                    defaultValue={
-                      rsvpConfig.guestOfOptions.find((o) => o.id === "both")?.id ||
-                      rsvpConfig.guestOfOptions[0]?.id ||
-                      "both"
-                    }
+                    defaultValue={rsvpConfig.guestOfOptions[0]?.id || "parent_host_one"}
                     required
                   >
                     {rsvpConfig.guestOfOptions.map((option) => (
@@ -312,14 +424,34 @@ export function RsvpForm({
                     ))}
                   </select>
                 </div>
-              ) : (
-                <input
-                  type="hidden"
-                  name="guestOf"
-                  value={rsvpConfig.guestOfOptions[0]?.id || "both"}
-                />
-              )}
-            </div>
+              )
+            ) : (
+              <input
+                type="hidden"
+                name="guestOf"
+                value={rsvpConfig.guestOfOptions[0]?.id || "parent_host_one"}
+              />
+            )}
+
+            {showChildCountField ? (
+              <div>
+                <label className="label" htmlFor="childCount">
+                  {childCountLabel}
+                </label>
+                <select
+                  id="childCount"
+                  name="childCount"
+                  className="field"
+                  defaultValue="0"
+                >
+                  {childCountOptions().map((count) => (
+                    <option key={count} value={count}>
+                      {dict.rsvp[CHILD_COUNT_LABEL_KEYS[count as ChildCount]]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
             {rsvpConfig.showMessage ? (
               <div>

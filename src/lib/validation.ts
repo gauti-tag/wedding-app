@@ -11,6 +11,34 @@ export function normalizeEmail(email: string) {
 }
 
 /**
+ * Nom complet RSVP :
+ * - 1er mot (nom de famille) → TOUT EN MAJUSCULES
+ * - mots suivants (prénoms) → Première lettre majuscule, reste minuscule
+ * - segments après tiret titrés de la même façon (ex. Marie-Claire)
+ * Ex. « dosso dorien francvic » → « DOSSO Dorien Francvic »
+ */
+export function formatFullName(raw: string): string {
+  const parts = raw.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "";
+
+  return parts
+    .map((word, index) => {
+      if (index === 0) {
+        return word.toLocaleUpperCase("fr-FR");
+      }
+      return word
+        .split("-")
+        .map((segment) => {
+          if (!segment) return segment;
+          const lower = segment.toLocaleLowerCase("fr-FR");
+          return lower.charAt(0).toLocaleUpperCase("fr-FR") + lower.slice(1);
+        })
+        .join("-");
+    })
+    .join(" ");
+}
+
+/**
  * Retourne le numéro national CI sur 10 chiffres (ex. 0708345891), ou null si invalide.
  * Accepte +2250708345891, +225 07 08 34 58 91, 0708345891, etc.
  */

@@ -598,16 +598,18 @@ export function AdminSiteEditor({
             Formulaire RSVP
           </p>
           <p className="mt-2 text-sm font-normal text-soft">
-            Activez les champs selon votre type d’événement. Les options « invité de » sont
-            synchronisées avec les noms des hôtes pour les clés legacy.
+            Activez les champs selon votre type d’événement. Les options « invité de » structurées
+            (parent / ami / collègue × hôte 1 / hôte 2) se synchronisent avec les prénoms des
+            mariés.
           </p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {(
             [
               { key: "showGuestOf" as const, label: "Champ « invité de »" },
               { key: "showMessage" as const, label: "Message libre" },
               { key: "showMaybe" as const, label: "Statut « peut-être »" },
+              { key: "showChildCount" as const, label: "Nombre d’enfants" },
             ] as const
           ).map((item) => (
             <label
@@ -727,6 +729,20 @@ export function AdminSiteEditor({
             >
               Ajouter une option
             </button>
+          </div>
+        ) : null}
+        {content.rsvpConfig.showChildCount ? (
+          <div className="border-t border-line pt-4">
+            <LocalizedFields
+              label="Libellé champ enfants (FR / EN)"
+              value={content.rsvpConfig.childCountLabel}
+              onChange={(childCountLabel) =>
+                setContent((prev) => ({
+                  ...prev,
+                  rsvpConfig: { ...prev.rsvpConfig, childCountLabel },
+                }))
+              }
+            />
           </div>
         ) : null}
       </div>

@@ -36,6 +36,7 @@ export function SiteSections({
   guestbook,
   guestAlbum,
   capacityFull,
+  seatsRemaining,
 }: {
   locale: Locale;
   dict: Dictionary;
@@ -50,6 +51,7 @@ export function SiteSections({
   guestbook: GuestbookContent;
   guestAlbum: GuestAlbumContent;
   capacityFull: boolean;
+  seatsRemaining: number;
 }) {
   const features = siteContent.features;
   const sections = orderedEnabledSections(features);
@@ -118,6 +120,7 @@ export function SiteSections({
             locale={locale}
             siteContent={siteContent}
             capacityFull={capacityFull}
+            seatsRemaining={seatsRemaining}
           />
         );
       })}

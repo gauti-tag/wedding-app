@@ -7,7 +7,10 @@ import type {
   SiteContent,
   SiteFeatures,
 } from "@/lib/types";
+import { buildStructuredGuestOfOptions, syncGuestOfLabelsFromHosts } from "@/lib/guest-of";
 import { defaultSiteFeatures, normalizeSiteFeatures } from "@/lib/site-features";
+
+export { syncGuestOfLabelsFromHosts };
 
 const emptyL = (): LocalizedText => ({ fr: "", en: "" });
 
@@ -83,19 +86,17 @@ export function defaultRsvpConfig(
   partnerOne = "Hôte 1",
   partnerTwo = "Hôte 2",
 ): RsvpConfig {
-  const one = partnerOne.trim() || "Hôte 1";
-  const two = partnerTwo.trim() || "Hôte 2";
-  const both = two ? `${one} & ${two}` : one;
   return {
     showGuestOf: true,
     showMessage: true,
     showMaybe: true,
-    guestOfOptions: [
-      { id: "gautier", label: { fr: one, en: one } },
-      { id: "francybel", label: { fr: two || one, en: two || one } },
-      { id: "both", label: { fr: both, en: both } },
-    ],
+    showChildCount: true,
+    guestOfOptions: buildStructuredGuestOfOptions(partnerOne, partnerTwo),
     messagePlaceholder: emptyL(),
+    childCountLabel: {
+      fr: "Enfants accompagnants",
+      en: "Accompanying children",
+    },
   };
 }
 
@@ -166,38 +167,30 @@ export function normalizeRsvpConfig(
     }
   }
 
+  const legacyIds = new Set(["gautier", "francybel", "both"]);
+  const isLegacyGuestOf =
+    guestOfOptions.length === 3 &&
+    guestOfOptions.every((option) => legacyIds.has(option.id));
+  const resolvedGuestOfOptions = isLegacyGuestOf
+    ? buildStructuredGuestOfOptions(
+        partners?.partnerOne || "Hôte 1",
+        partners?.partnerTwo || "Hôte 2",
+      )
+    : guestOfOptions.length
+      ? guestOfOptions
+      : defaults.guestOfOptions;
+
   return {
     showGuestOf: asBool(raw?.showGuestOf, defaults.showGuestOf),
     showMessage: asBool(raw?.showMessage, defaults.showMessage),
     showMaybe: asBool(raw?.showMaybe, defaults.showMaybe),
-    guestOfOptions: guestOfOptions.length ? guestOfOptions : defaults.guestOfOptions,
+    showChildCount: asBool(raw?.showChildCount, defaults.showChildCount),
+    guestOfOptions: resolvedGuestOfOptions,
     messagePlaceholder: asLocalized(raw?.messagePlaceholder),
-  };
-}
-
-/** Met à jour les libellés des options hôte legacy quand les prénoms changent. */
-export function syncGuestOfLabelsFromHosts(
-  config: RsvpConfig,
-  partnerOne: string,
-  partnerTwo: string,
-): RsvpConfig {
-  const one = partnerOne.trim() || "Hôte 1";
-  const two = partnerTwo.trim();
-  const both = two ? `${one} & ${two}` : one;
-  return {
-    ...config,
-    guestOfOptions: config.guestOfOptions.map((opt) => {
-      if (opt.id === "gautier" || opt.id === "host_one") {
-        return { ...opt, label: { fr: one, en: one } };
-      }
-      if (opt.id === "francybel" || opt.id === "host_two") {
-        return { ...opt, label: { fr: two || one, en: two || one } };
-      }
-      if (opt.id === "both") {
-        return { ...opt, label: { fr: both, en: both } };
-      }
-      return opt;
-    }),
+    childCountLabel: (() => {
+      const label = asLocalized(raw?.childCountLabel);
+      return label.fr.trim() || label.en.trim() ? label : defaults.childCountLabel;
+    })(),
   };
 }
 
@@ -321,11 +314,9 @@ export function getEventPreset(
           galleryPhotoAlt: { fr: "Photo de l’événement", en: "Event photo" },
         },
         rsvpConfig: {
+          ...rsvpBase,
           showGuestOf: false,
-          showMessage: true,
-          showMaybe: true,
           guestOfOptions: [{ id: "both", label: { fr: "Organisateur", en: "Host" } }],
-          messagePlaceholder: emptyL(),
         },
         eventTitle: {
           fr: partners.partnerOne ? `Anniversaire de ${partners.partnerOne}` : "Anniversaire",
@@ -374,11 +365,10 @@ export function getEventPreset(
           galleryPhotoAlt: { fr: "Photo du concert", en: "Concert photo" },
         },
         rsvpConfig: {
+          ...rsvpBase,
           showGuestOf: false,
-          showMessage: true,
           showMaybe: false,
           guestOfOptions: [{ id: "both", label: { fr: "Public", en: "Audience" } }],
-          messagePlaceholder: emptyL(),
         },
         eventTitle: {
           fr: partners.partnerOne || "Concert",
@@ -501,11 +491,9 @@ export function getEventPreset(
           galleryPhotoAlt: { fr: "Photo de la cérémonie", en: "Ceremony photo" },
         },
         rsvpConfig: {
+          ...rsvpBase,
           showGuestOf: false,
-          showMessage: true,
-          showMaybe: true,
           guestOfOptions: [{ id: "both", label: { fr: "Invité", en: "Guest" } }],
-          messagePlaceholder: emptyL(),
         },
         eventTitle: emptyL(),
         heroTagline: {
@@ -520,11 +508,9 @@ export function getEventPreset(
         features: defaultSiteFeatures(),
         vocabulary: defaultEventVocabulary(),
         rsvpConfig: {
+          ...rsvpBase,
           showGuestOf: false,
-          showMessage: true,
-          showMaybe: true,
           guestOfOptions: [{ id: "both", label: { fr: "Invité", en: "Guest" } }],
-          messagePlaceholder: emptyL(),
         },
         eventTitle: emptyL(),
       };
