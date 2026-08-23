@@ -3,9 +3,28 @@
 import { Html5Qrcode } from "html5-qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import {
+  formatCheckInGuestLines,
+  resolveCheckInGuestDetails,
+} from "@/lib/guest-of";
 import { formatSeatingLabel } from "@/lib/seating";
 import type { Rsvp, SiteContent } from "@/lib/types";
 import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
+
+function guestOfLabelsFromSite(
+  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig">,
+): Record<string, string> {
+  const fromConfig: Record<string, string> = {};
+  for (const option of site.rsvpConfig?.guestOfOptions || []) {
+    fromConfig[option.id] = option.label.fr || option.label.en || option.id;
+  }
+  if (Object.keys(fromConfig).length) return fromConfig;
+  return {
+    gautier: site.partnerOne,
+    francybel: site.partnerTwo,
+    both: `${site.partnerOne}${site.partnerTwo ? ` & ${site.partnerTwo}` : ""}`,
+  };
+}
 
 type CheckInResult = {
   ok?: boolean;
@@ -24,7 +43,7 @@ function vibrate(pattern: number | number[]) {
 export function AdminCheckIn({
   site,
 }: {
-  site: Pick<SiteContent, "partnerOne" | "partnerTwo">;
+  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig">;
 }) {
   const [manualToken, setManualToken] = useState("");
   const [busy, setBusy] = useState(false);
@@ -33,6 +52,16 @@ export function AdminCheckIn({
   const { showSuccess, showError, showInfo, AlertDialog } = useAdminAlert();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanRef = useRef("");
+
+  const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
+
+  const lastGuestDetails = useMemo(
+    () =>
+      lastGuest
+        ? resolveCheckInGuestDetails(lastGuest, site, guestOfLabels)
+        : null,
+    [lastGuest, site, guestOfLabels],
+  );
 
   const seatingLabel = useMemo(
     () => (lastGuest ? formatSeatingLabel(lastGuest.tableLabel, lastGuest.seatLabel) : null),
@@ -114,6 +143,9 @@ export function AdminCheckIn({
       const place = guest
         ? formatSeatingLabel(guest.tableLabel, guest.seatLabel)
         : null;
+      const guestLines = guest
+        ? formatCheckInGuestLines(resolveCheckInGuestDetails(guest, site, guestOfLabels))
+        : "";
       const wa = guest ? seatingWhatsAppForRsvp(guest, site, { toGuest: true }) : null;
       const waAction =
         wa?.url
@@ -125,7 +157,8 @@ export function AdminCheckIn({
         showInfo(
           [
             `${guest?.name || "Invité"} est déjà enregistré(e).`,
-            place ? `\nPlace : ${place}` : "\nAucune table / siège assigné.",
+            guestLines ? `\n\n${guestLines}` : "",
+            place ? `\n\nPlace : ${place}` : "\n\nAucune table / siège assigné.",
           ].join(""),
           "Déjà check-in",
           waAction,
@@ -135,6 +168,7 @@ export function AdminCheckIn({
         showSuccess(
           [
             `${guest?.name || "Invité"} — présence enregistrée.`,
+            guestLines ? `\n\n${guestLines}` : "",
             place ? `\n\nPlace : ${place}` : "\n\nAucune table / siège assigné.",
           ].join(""),
           "Check-in réussi",
@@ -213,6 +247,35 @@ export function AdminCheckIn({
             <div className="border border-line bg-forest p-4 text-sm">
               <p className="text-mist">{lastGuest.name}</p>
               <p className="mt-1 text-soft">{lastGuest.phone}</p>
+              {lastGuestDetails ? (
+                <dl className="mt-3 space-y-1.5 text-xs text-soft">
+                  {lastGuestDetails.relation !== "—" ? (
+                    <>
+                      <div className="flex justify-between gap-3">
+                        <dt className="tracking-[0.1em] uppercase">Lien</dt>
+                        <dd className="text-mist">{lastGuestDetails.relation}</dd>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <dt className="tracking-[0.1em] uppercase">Côté</dt>
+                        <dd className="text-mist">{lastGuestDetails.side}</dd>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between gap-3">
+                      <dt className="tracking-[0.1em] uppercase">Invité(e) de</dt>
+                      <dd className="text-right text-mist">{lastGuestDetails.guestOfLabel}</dd>
+                    </div>
+                  )}
+                  <div className="flex justify-between gap-3">
+                    <dt className="tracking-[0.1em] uppercase">Enfants</dt>
+                    <dd className="text-mist">
+                      {lastGuestDetails.childCount === 0
+                        ? "Aucun"
+                        : lastGuestDetails.childCount}
+                    </dd>
+                  </div>
+                </dl>
+              ) : null}
               {seatingLabel ? (
                 <p className="meta-date mt-3 text-xl tracking-[0.06em] text-champagne">
                   {seatingLabel}

@@ -81,6 +81,70 @@ export function guestHostOptions(
   ];
 }
 
+const RELATION_SHORT_FR: Record<GuestRelation, string> = {
+  parent: "Parent",
+  friend: "Ami(e)",
+  colleague: "Collègue",
+};
+
+export type CheckInGuestDetails = {
+  relation: string;
+  side: string;
+  guestOfLabel: string;
+  childCount: number;
+};
+
+/** Détails invité pour l’affichage check-in (lien, côté, enfants). */
+export function resolveCheckInGuestDetails(
+  rsvp: { guestOf: string; childCount?: number },
+  partners: { partnerOne: string; partnerTwo: string },
+  guestOfLabels: Record<string, string> = {},
+): CheckInGuestDetails {
+  const one = partners.partnerOne.trim() || "Hôte 1";
+  const two = partners.partnerTwo.trim() || one;
+  const childCount = Math.min(4, Math.max(0, Number(rsvp.childCount) || 0));
+  const guestOfLabel = guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—";
+
+  const parsed = parseGuestOfId(rsvp.guestOf);
+  if (parsed) {
+    return {
+      relation: RELATION_SHORT_FR[parsed.relation],
+      side: parsed.host === "host_one" ? one : two,
+      guestOfLabel,
+      childCount,
+    };
+  }
+
+  if (rsvp.guestOf === "gautier" || rsvp.guestOf === "host_one") {
+    return { relation: "—", side: one, guestOfLabel, childCount };
+  }
+  if (rsvp.guestOf === "francybel" || rsvp.guestOf === "host_two") {
+    return { relation: "—", side: two, guestOfLabel, childCount };
+  }
+  if (rsvp.guestOf === "both") {
+    return { relation: "—", side: two ? `${one} & ${two}` : one, guestOfLabel, childCount };
+  }
+
+  return { relation: "—", side: "—", guestOfLabel, childCount };
+}
+
+/** Lignes texte pour alerte / carte check-in. */
+export function formatCheckInGuestLines(details: CheckInGuestDetails): string {
+  const lines: string[] = [];
+  if (details.relation !== "—") {
+    lines.push(`Lien : ${details.relation}`);
+    lines.push(`Côté : ${details.side}`);
+  } else if (details.guestOfLabel && details.guestOfLabel !== "—") {
+    lines.push(`Invité(e) de : ${details.guestOfLabel}`);
+  }
+  lines.push(
+    details.childCount === 0
+      ? "Enfants accompagnants : aucun"
+      : `Enfants accompagnants : ${details.childCount}`,
+  );
+  return lines.join("\n");
+}
+
 /** Met à jour les libellés des options structurées et legacy quand les prénoms changent. */
 export function syncGuestOfLabelsFromHosts(
   config: RsvpConfig,
