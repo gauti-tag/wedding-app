@@ -88,7 +88,7 @@ export function defaultRsvpConfig(
 ): RsvpConfig {
   return {
     showGuestOf: true,
-    showMessage: true,
+    showMessage: false,
     showMaybe: true,
     showChildCount: true,
     guestOfOptions: buildStructuredGuestOfOptions(partnerOne, partnerTwo),
@@ -182,7 +182,7 @@ export function normalizeRsvpConfig(
 
   return {
     showGuestOf: asBool(raw?.showGuestOf, defaults.showGuestOf),
-    showMessage: asBool(raw?.showMessage, defaults.showMessage),
+    showMessage: false,
     showMaybe: asBool(raw?.showMaybe, defaults.showMaybe),
     showChildCount: asBool(raw?.showChildCount, defaults.showChildCount),
     guestOfOptions: resolvedGuestOfOptions,
@@ -269,7 +269,7 @@ export function getEventPreset(
           adminSpaceLabel: { fr: "Espace couple", en: "Couple space" },
           galleryPhotoAlt: { fr: "Photo du couple", en: "Couple photo" },
         },
-        rsvpConfig: { ...rsvpBase, showGuestOf: true, showMessage: true, showMaybe: true },
+        rsvpConfig: { ...rsvpBase, showGuestOf: true, showMaybe: true },
         eventTitle: emptyL(),
         heroTagline: {
           fr: "Une soirée pour célébrer l’amour, entourés de ceux qui comptent.",
@@ -421,7 +421,6 @@ export function getEventPreset(
         rsvpConfig: {
           ...rsvpBase,
           showGuestOf: true,
-          showMessage: true,
           showMaybe: true,
           guestOfOptions: [
             {

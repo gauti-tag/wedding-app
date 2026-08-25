@@ -603,11 +603,10 @@ export function AdminSiteEditor({
             mariés.
           </p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {(
             [
               { key: "showGuestOf" as const, label: "Champ « invité de »" },
-              { key: "showMessage" as const, label: "Message libre" },
               { key: "showMaybe" as const, label: "Statut « peut-être »" },
               { key: "showChildCount" as const, label: "Nombre d’enfants" },
             ] as const

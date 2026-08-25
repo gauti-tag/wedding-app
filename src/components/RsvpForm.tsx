@@ -80,8 +80,6 @@ export function RsvpForm({
 }) {
   const rsvpConfig = siteContent.rsvpConfig;
   const structuredGuestOf = isStructuredGuestOfConfig(rsvpConfig.guestOfOptions);
-  const messagePlaceholder =
-    t(rsvpConfig.messagePlaceholder, locale).trim() || dict.rsvp.messagePlaceholder;
   const childCountLabel =
     t(rsvpConfig.childCountLabel, locale).trim() || dict.rsvp.childCount;
   const hostOptions = useMemo(
@@ -170,7 +168,7 @@ export function RsvpForm({
       status: nextStatus,
       guestOf: resolveGuestOf(form),
       childCount: nextStatus === "yes" && rsvpConfig.showChildCount ? childCount : 0,
-      message: String(form.get("message") || ""),
+      message: "",
       locale,
     };
 
@@ -450,21 +448,6 @@ export function RsvpForm({
                     </option>
                   ))}
                 </select>
-              </div>
-            ) : null}
-
-            {rsvpConfig.showMessage ? (
-              <div>
-                <label className="label" htmlFor="message">
-                  {dict.rsvp.message}
-                </label>
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={4}
-                  className="field resize-y"
-                  placeholder={messagePlaceholder}
-                />
               </div>
             ) : null}
 
