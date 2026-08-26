@@ -21,17 +21,17 @@ function UniversalList({
   locale: Locale;
 }) {
   return (
-    <Reveal delay={0.12} className="mt-16 border-t border-line pt-12 md:mt-20">
+    <Reveal delay={0.12} className="site-section-sub">
       <p className="eyebrow">{eyebrow}</p>
-      <h3 className="section-title mt-3 text-3xl text-mist md:text-4xl">{title}</h3>
+      <h3 className="section-title text-3xl text-mist md:text-4xl">{title}</h3>
       {subtitle ? (
-        <p className="mt-3 max-w-xl text-sm font-normal text-soft">{subtitle}</p>
+        <p className="site-section-lead max-w-xl text-sm">{subtitle}</p>
       ) : null}
 
       {items.length === 0 ? (
-        <p className="mt-8 text-base font-normal text-soft">{empty}</p>
+        <p className="site-section-body text-base font-normal text-soft">{empty}</p>
       ) : (
-        <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="site-section-body site-section-cards sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <li key={item.id} className="border-t border-line pt-5">
               <p className="text-lg font-medium text-champagne">{t(item.name, locale)}</p>
@@ -91,24 +91,22 @@ export function MenuSection({
         : menuTitle;
 
   return (
-    <section id="menu" className="py-24 md:py-32">
+    <section id="menu" className="site-section">
       <div className="section-shell">
         {showMenu ? (
           <>
-            <Reveal className="max-w-2xl">
+            <Reveal className="site-section-head max-w-2xl">
               <p className="eyebrow">{menuEyebrow}</p>
-              <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">{menuTitle}</h2>
-              {subtitle ? (
-                <p className="mt-5 text-base font-normal leading-7 text-soft">{subtitle}</p>
-              ) : null}
+              <h2 className="section-title text-4xl text-mist md:text-5xl">{menuTitle}</h2>
+              {subtitle ? <p className="site-section-lead">{subtitle}</p> : null}
             </Reveal>
 
             {!hasFood ? (
               <Reveal delay={0.08}>
-                <p className="mt-12 text-base font-normal text-soft">{menuEmpty}</p>
+                <p className="site-section-body text-base font-normal text-soft">{menuEmpty}</p>
               </Reveal>
             ) : (
-              <div className="mt-14 grid gap-10 lg:grid-cols-2 lg:gap-14">
+              <div className="site-section-body site-section-grid lg:grid-cols-2">
                 {menu.cuisines.map((cuisine, index) => (
                   <Reveal key={cuisine.id} delay={index * 0.1}>
                     <div className="border-t border-line pt-8">
@@ -118,7 +116,7 @@ export function MenuSection({
                       <h3 className="section-title mt-3 text-2xl text-mist md:text-3xl">
                         {t(cuisine.region, locale)}
                       </h3>
-                      <ul className="mt-8 space-y-6">
+                      <ul className="site-section-stack--loose mt-8">
                         {cuisine.dishes.map((dish) => (
                           <li
                             key={dish.id}
@@ -140,7 +138,7 @@ export function MenuSection({
             )}
           </>
         ) : (
-          <Reveal className="max-w-2xl">
+          <Reveal className="site-section-head max-w-2xl">
             <p className="eyebrow">
               {showDesserts && !showDrinks
                 ? dessertsEyebrow
@@ -148,7 +146,7 @@ export function MenuSection({
                   ? drinksEyebrow
                   : menuEyebrow}
             </p>
-            <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
+            <h2 className="section-title text-4xl text-mist md:text-5xl">
               {sectionFallbackTitle}
             </h2>
           </Reveal>
@@ -178,7 +176,9 @@ export function MenuSection({
 
         {showMenu && note ? (
           <Reveal delay={0.15}>
-            <p className="mt-12 max-w-xl text-sm font-normal italic text-soft/80">{note}</p>
+            <p className="site-section-body max-w-xl text-sm font-normal italic text-soft/80">
+              {note}
+            </p>
           </Reveal>
         ) : null}
       </div>

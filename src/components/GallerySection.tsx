@@ -155,15 +155,15 @@ export function GallerySection({
     ) : null;
 
   return (
-    <section id="gallery" className="py-24 md:py-32">
+    <section id="gallery" className="site-section">
       <div className="section-shell">
-        <Reveal>
+        <Reveal className="site-section-head">
           <p className="eyebrow">{dict.gallery.eyebrow}</p>
-          <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">{dict.gallery.title}</h2>
-          <p className="mt-4 max-w-xl text-base font-normal text-soft">{dict.gallery.subtitle}</p>
+          <h2 className="section-title text-4xl text-mist md:text-5xl">{dict.gallery.title}</h2>
+          <p className="site-section-lead max-w-xl">{dict.gallery.subtitle}</p>
         </Reveal>
 
-        <div className="relative mt-12">
+        <div className="site-section-body relative">
           <div
             ref={scrollerRef}
             className={

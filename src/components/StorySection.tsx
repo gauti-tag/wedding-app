@@ -1,9 +1,62 @@
 import { PhotoFill } from "@/components/PhotoFill";
 import { Reveal } from "@/components/Reveal";
+import { StoryScriptureBlock } from "@/components/StoryScriptureBlock";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
 import { t } from "@/lib/localized";
+import { hasVisibleScripture } from "@/lib/story-scripture";
 import type { Photo, StoryContent } from "@/lib/types";
+
+type StoryPhotoItem = {
+  id: string;
+  url: string;
+  caption: string;
+};
+
+function StoryPhotoTile({
+  photo,
+  photoAlt,
+  uploadHint,
+  index,
+  className = "",
+}: {
+  photo: StoryPhotoItem;
+  photoAlt: string;
+  uploadHint: string;
+  index: number;
+  className?: string;
+}) {
+  const layoutClass =
+    index === 0 ? "col-span-2 aspect-[16/10]" : "aspect-[4/5]";
+
+  return (
+    <div
+      className={`relative overflow-hidden border border-line bg-forest/60 ${layoutClass} ${className}`}
+    >
+      {photo.url ? (
+        <>
+          <PhotoFill
+            src={photo.url}
+            alt={photo.caption || photoAlt}
+            sizes={
+              index === 0
+                ? "(max-width: 1023px) 100vw, 55vw"
+                : "(max-width: 1023px) 50vw, 28vw"
+            }
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cacao/15 via-cacao/25 to-cacao/55 md:from-cacao/25 md:via-cacao/45 md:to-cacao/90" />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.28),transparent_50%,rgba(59,36,22,0.16))] md:bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />
+        </>
+      ) : (
+        <div className="flex h-full w-full items-end bg-[linear-gradient(145deg,#efe8e0,#e5d9cc_40%,#d4c0a8)] p-4">
+          <span className="text-xs tracking-[0.18em] text-champagne uppercase">
+            {photo.caption} — {uploadHint}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function StorySection({
   photos,
@@ -21,61 +74,72 @@ export function StorySection({
     .sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt))
     .slice(0, 3);
 
-  return (
-    <section id="story" className="py-24 md:py-32">
-      <div className="section-shell grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
-        <Reveal>
-          <p className="eyebrow">{t(story.eyebrow, locale)}</p>
-          <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
-            {t(story.title, locale)}
-          </h2>
-          <div className="divider my-7" />
-          <p className="max-w-xl whitespace-pre-line text-base font-normal leading-8 text-soft md:text-lg">
-            {t(story.body, locale)}
-          </p>
-        </Reveal>
+  const items: StoryPhotoItem[] = storyPhotos.length
+    ? storyPhotos.map((p) => ({
+        id: p.id,
+        url: p.url,
+        caption: p.caption,
+      }))
+    : dict.story.placeholders.map((caption, index) => ({
+        id: `placeholder-${index}`,
+        url: "",
+        caption,
+      }));
 
-        <Reveal delay={0.12}>
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
-            {(storyPhotos.length
-              ? storyPhotos
-              : dict.story.placeholders.map((caption, index) => ({
-                  id: `placeholder-${index}`,
-                  url: "",
-                  caption,
-                }))
-            ).map((photo, index) => (
-              <div
-                key={photo.id}
-                className={`relative overflow-hidden border border-line bg-forest/60 ${
-                  index === 0 ? "col-span-2 aspect-[16/10]" : "aspect-[4/5]"
-                }`}
-              >
-                {photo.url ? (
-                  <>
-                    <PhotoFill
-                      src={photo.url}
-                      alt={photo.caption || dict.story.photoAlt}
-                      sizes={
-                        index === 0
-                          ? "(max-width: 1023px) 100vw, 55vw"
-                          : "(max-width: 1023px) 50vw, 28vw"
-                      }
-                    />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cacao/15 via-cacao/25 to-cacao/55 md:from-cacao/25 md:via-cacao/45 md:to-cacao/90" />
-                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.28),transparent_50%,rgba(59,36,22,0.16))] md:bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />
-                  </>
-                ) : (
-                  <div className="flex h-full w-full items-end bg-[linear-gradient(145deg,#efe8e0,#e5d9cc_40%,#d4c0a8)] p-4">
-                    <span className="text-xs tracking-[0.18em] text-champagne uppercase">
-                      {photo.caption} — {dict.story.uploadHint}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </Reveal>
+  const showScripture = hasVisibleScripture(story.scripture, locale);
+  const heroPhoto = items[0];
+
+  return (
+    <section id="story" className="site-section">
+      <div
+        className={`section-shell site-section-blocks${showScripture ? " site-section-blocks--separated" : ""}`}
+      >
+        <StoryScriptureBlock
+          block={story.scripture}
+          locale={locale}
+          fallbackEyebrow={dict.story.scriptureEyebrow}
+        />
+
+        <div className="site-section-grid items-center lg:grid-cols-[0.95fr_1.05fr]">
+          <Reveal className="site-section-head">
+            <p className="eyebrow">{t(story.eyebrow, locale)}</p>
+            <h2 className="section-title text-4xl text-mist md:text-5xl">
+              {t(story.title, locale)}
+            </h2>
+
+            {heroPhoto ? (
+              <Reveal delay={0.06} className="site-section-body lg:hidden">
+                <StoryPhotoTile
+                  photo={heroPhoto}
+                  photoAlt={dict.story.photoAlt}
+                  uploadHint={dict.story.uploadHint}
+                  index={0}
+                  className="!col-span-1 w-full"
+                />
+              </Reveal>
+            ) : null}
+
+            <div className="divider site-section-divider" />
+            <p className="max-w-xl whitespace-pre-line text-base font-normal leading-8 text-soft md:text-lg">
+              {t(story.body, locale)}
+            </p>
+          </Reveal>
+
+          <Reveal delay={0.12}>
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {items.map((photo, index) => (
+                <StoryPhotoTile
+                  key={photo.id}
+                  photo={photo}
+                  photoAlt={dict.story.photoAlt}
+                  uploadHint={dict.story.uploadHint}
+                  index={index}
+                  className={index === 0 ? "hidden lg:block" : undefined}
+                />
+              ))}
+            </div>
+          </Reveal>
+        </div>
       </div>
     </section>
   );

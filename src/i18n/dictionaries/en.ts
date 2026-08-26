@@ -22,6 +22,7 @@ const en: Dictionary = {
     placeholders: ["Couple photo", "Memory", "Together"],
     uploadHint: "upload soon",
     photoAlt: "Memory",
+    scriptureEyebrow: "Scripture",
   },
   countdown: {
     days: "Days",

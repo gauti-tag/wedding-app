@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
+import { normalizeStoryContent } from "@/lib/story-scripture";
 import { getStory, saveStory } from "@/lib/storage";
 
 const localizedSchema = z.object({
@@ -13,10 +14,28 @@ const localizedBodySchema = z.object({
   en: z.string().trim().max(4000),
 });
 
+const localizedVerseSchema = z.object({
+  fr: z.string().trim().max(2000),
+  en: z.string().trim().max(2000),
+});
+
+const scriptureReferenceSchema = z.object({
+  id: z.string().trim().min(1).max(80),
+  reference: localizedSchema,
+  text: localizedVerseSchema,
+});
+
+const scriptureBlockSchema = z.object({
+  enabled: z.boolean(),
+  eyebrow: localizedSchema,
+  references: z.array(scriptureReferenceSchema).max(5),
+});
+
 const storySchema = z.object({
   eyebrow: localizedSchema,
   title: localizedSchema,
   body: localizedBodySchema,
+  scripture: scriptureBlockSchema.optional(),
 });
 
 export async function GET() {
@@ -38,9 +57,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    await saveStory(parsed.data);
-    await auditAs(user, "update", "story", parsed.data.title.fr || parsed.data.title.en);
-    return NextResponse.json({ ok: true, story: parsed.data });
+    const story = normalizeStoryContent(parsed.data);
+    await saveStory(story);
+    await auditAs(user, "update", "story", story.title.fr || story.title.en);
+    return NextResponse.json({ ok: true, story });
   } catch {
     return NextResponse.json(
       { error: "Impossible d’enregistrer l’histoire." },

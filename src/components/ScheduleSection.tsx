@@ -19,27 +19,27 @@ export function ScheduleSection({
   showCountdown?: boolean;
 }) {
   return (
-    <section id="schedule" className="border-y border-line bg-forest/80 py-24 md:py-32">
+    <section id="schedule" className="site-section site-section--border-y bg-forest/80">
       <div className="section-shell">
-        <Reveal className="max-w-2xl">
+        <Reveal className="site-section-head max-w-2xl">
           <p className="eyebrow">{t(schedule.eyebrow, locale)}</p>
-          <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
+          <h2 className="section-title text-4xl text-mist md:text-5xl">
             {t(schedule.title, locale)}
           </h2>
-          <p className="mt-5 whitespace-pre-line text-base font-normal leading-7 text-soft">
+          <p className="site-section-lead whitespace-pre-line">
             {t(schedule.dressCode, locale)}
           </p>
           {showCountdown ? (
-            <div className="mt-8 max-w-md border-t border-line pt-6">
+            <div className="site-section-aside max-w-md">
               <Countdown targetDate={weddingDate} labels={dict.countdown} />
             </div>
           ) : null}
         </Reveal>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2">
+        <div className="site-section-body site-section-cards md:grid-cols-2">
           {schedule.venues.map((venue, index) => (
             <Reveal key={venue.id} delay={index * 0.1}>
-              <article className="border border-line bg-white/80 p-7 md:p-9">
+              <article className="site-section-card">
                 <p className="meta-date text-xs tracking-[0.22em] text-gold uppercase">
                   {t(venue.time, locale)}
                 </p>

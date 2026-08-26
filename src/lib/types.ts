@@ -114,6 +114,20 @@ export type StoryContent = {
   eyebrow: LocalizedText;
   title: LocalizedText;
   body: LocalizedText;
+  /** Versets bibliques affichés avant le texte de l’histoire. */
+  scripture: StoryScriptureBlock;
+};
+
+export type StoryScriptureReference = {
+  id: string;
+  reference: LocalizedText;
+  text: LocalizedText;
+};
+
+export type StoryScriptureBlock = {
+  enabled: boolean;
+  eyebrow: LocalizedText;
+  references: StoryScriptureReference[];
 };
 
 export type ScheduleVenue = {

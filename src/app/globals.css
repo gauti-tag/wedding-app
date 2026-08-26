@@ -129,6 +129,167 @@ p {
   box-sizing: border-box;
 }
 
+/*
+ * Rythme vertical du site public — sections & blocs internes
+ * py-24/32 · mt-4/5/12 · gap-12/6 · panneaux p-5
+ */
+.site-section {
+  padding-block: 6rem;
+}
+
+@media (min-width: 768px) {
+  .site-section {
+    padding-block: 8rem;
+  }
+}
+
+.site-section--border-t {
+  border-top: 1px solid var(--line);
+}
+
+.site-section--border-y {
+  border-block: 1px solid var(--line);
+}
+
+.site-section-head > .section-title {
+  margin-top: 1rem;
+}
+
+.site-section-lead {
+  margin-top: 1.25rem;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75rem;
+  color: var(--soft);
+}
+
+.site-section-body {
+  margin-top: 3rem;
+}
+
+.site-section-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.site-section-blocks--separated {
+  gap: 0;
+}
+
+.site-section-blocks--separated > :not(:first-child) {
+  margin-top: 3rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--line);
+}
+
+.scripture-quote {
+  font-family: var(--font-sans-body), "Poppins", system-ui, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.8;
+  color: var(--cacao);
+}
+
+@media (min-width: 768px) {
+  .scripture-quote {
+    font-size: 1.125rem;
+    line-height: 1.85;
+  }
+}
+
+.site-section-grid {
+  display: grid;
+  gap: 3rem;
+}
+
+.site-section-cards {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.site-section-divider {
+  margin-block: 1.75rem;
+}
+
+.site-section-sub {
+  margin-top: 4rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--line);
+}
+
+@media (min-width: 768px) {
+  .site-section-sub {
+    margin-top: 5rem;
+  }
+}
+
+.site-section-sub > .section-title {
+  margin-top: 0.75rem;
+}
+
+.site-section-aside {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.site-section-panel {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 1.25rem;
+}
+
+.site-section-panel--lg {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .site-section-panel--lg {
+    padding: 2rem;
+  }
+}
+
+.site-section-card {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .site-section-card {
+    padding: 2.25rem;
+  }
+}
+
+.site-section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.site-section-stack--form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.site-section-stack--loose {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.site-section-verse-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  margin-top: 2rem;
+}
+
 /* Conteneur admin : padding au lieu de width calculée → moins de débordement mobile */
 .admin-root {
   width: 100%;

@@ -33,6 +33,7 @@ import {
   emptyMenuContent,
 } from "@/lib/menu-headings";
 import { emptyTeeStudio } from "@/lib/tee-studio";
+import { emptyStoryScriptureBlock } from "@/lib/story-scripture";
 import { ensureSeedAdmin, listPublicUsers, publicUser } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
@@ -77,7 +78,12 @@ export default async function AdminPage() {
     getSiteContent(),
     canContent
       ? getStory()
-      : Promise.resolve({ eyebrow: { fr: "", en: "" }, title: { fr: "", en: "" }, body: { fr: "", en: "" } }),
+      : Promise.resolve({
+          eyebrow: { fr: "", en: "" },
+          title: { fr: "", en: "" },
+          body: { fr: "", en: "" },
+          scripture: emptyStoryScriptureBlock(),
+        }),
     canContent
       ? getSchedule()
       : Promise.resolve({

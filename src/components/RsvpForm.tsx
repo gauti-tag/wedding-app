@@ -235,20 +235,20 @@ export function RsvpForm({
   }
 
   return (
-    <section id="rsvp" className="border-t border-line py-24 md:py-32">
-      <div className="section-shell grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
-        <div>
+    <section id="rsvp" className="site-section site-section--border-t">
+      <div className="section-shell site-section-grid lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="site-section-head">
           <p className="eyebrow">{dict.rsvp.eyebrow}</p>
-          <h2 className="section-title mt-4 text-4xl font-semibold text-mist md:text-5xl">
+          <h2 className="section-title text-4xl font-semibold text-mist md:text-5xl">
             {dict.rsvp.title}
           </h2>
           {notYetOpen && opensLabel ? (
-            <p className="mt-5 max-w-md text-base font-normal leading-7 text-soft">
+            <p className="site-section-lead max-w-md">
               {dict.rsvp.opensPrefix}{" "}
               <span className="meta-date text-champagne">{opensLabel}</span>.
             </p>
           ) : (
-            <p className="mt-5 max-w-md text-base font-normal leading-7 text-soft">
+            <p className="site-section-lead max-w-md">
               {dict.rsvp.deadlinePrefix}{" "}
               <span className="meta-date text-champagne">{deadlineLabel}</span>.
             </p>
@@ -270,7 +270,7 @@ export function RsvpForm({
         {formClosed ? (
           <div
             role="status"
-            className="space-y-3 border border-line bg-white/90 px-6 py-8 md:p-8"
+            className="site-section-panel--lg site-section-stack"
           >
             <p className="section-title text-2xl text-mist">
               {notYetOpen ? dict.rsvp.notYetOpenTitle : dict.rsvp.closedTitle}
@@ -294,7 +294,7 @@ export function RsvpForm({
             ) : null}
           </div>
         ) : (
-          <form onSubmit={onSubmit} className="space-y-5 border border-line bg-white/90 p-6 md:p-8">
+          <form onSubmit={onSubmit} className="site-section-panel--lg site-section-stack--form">
             {capacityFull ? (
               <div
                 role="status"
@@ -304,7 +304,7 @@ export function RsvpForm({
                 <p className="mt-1 text-soft">{dict.rsvp.capacityFullMessage}</p>
               </div>
             ) : null}
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="site-section-cards sm:grid-cols-2">
               <div>
                 <label className="label" htmlFor="name">
                   {dict.rsvp.name}
@@ -362,7 +362,7 @@ export function RsvpForm({
 
             {rsvpConfig.showGuestOf ? (
               structuredGuestOf ? (
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className="site-section-cards sm:grid-cols-2">
                   <div>
                     <label className="label" htmlFor="guestRelation">
                       {dict.rsvp.guestRelation}

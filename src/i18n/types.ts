@@ -20,6 +20,7 @@ export type Dictionary = {
     placeholders: [string, string, string];
     uploadHint: string;
     photoAlt: string;
+    scriptureEyebrow: string;
   };
   countdown: {
     days: string;

@@ -35,6 +35,7 @@ import {
   normalizeAdminPrivacy,
   type AdminPrivacySettings,
 } from "@/lib/admin-privacy";
+import { normalizeStoryContent, emptyStoryScriptureBlock } from "@/lib/story-scripture";
 import { emptyTeeStudio, normalizeTeeStudio, type TeeStudioContent } from "@/lib/tee-studio";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
@@ -84,6 +85,7 @@ const emptyStory: StoryContent = {
   eyebrow: { fr: "", en: "" },
   title: { fr: "", en: "" },
   body: { fr: "", en: "" },
+  scripture: emptyStoryScriptureBlock(),
 };
 
 const emptySchedule: ScheduleContent = {
@@ -377,11 +379,12 @@ export async function saveDesserts(desserts: DessertsContent) {
 }
 
 export async function getStory(): Promise<StoryContent> {
-  return getContent("story", emptyStory);
+  const raw = await getContent<Partial<StoryContent>>("story", emptyStory);
+  return normalizeStoryContent({ ...emptyStory, ...raw });
 }
 
 export async function saveStory(story: StoryContent) {
-  await saveContent("story", story);
+  await saveContent("story", normalizeStoryContent(story));
 }
 
 export async function getSchedule(): Promise<ScheduleContent> {

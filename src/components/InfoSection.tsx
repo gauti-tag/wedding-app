@@ -19,20 +19,20 @@ export function InfoSection({
   const [openId, setOpenId] = useState<string | null>(info.faqs[0]?.id ?? null);
 
   return (
-    <section id="info" className="border-t border-line py-24 md:py-32">
+    <section id="info" className="site-section site-section--border-t">
       <div className="section-shell">
-        <Reveal className="max-w-2xl">
+        <Reveal className="site-section-head max-w-2xl">
           <p className="eyebrow">{t(info.eyebrow, locale) || dict.info.eyebrow}</p>
-          <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
+          <h2 className="section-title text-4xl text-mist md:text-5xl">
             {t(info.title, locale) || dict.info.title}
           </h2>
-          <p className="mt-5 text-base font-normal leading-7 text-soft">
+          <p className="site-section-lead">
             {t(info.intro, locale) || dict.info.intro}
           </p>
         </Reveal>
 
-        <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="space-y-2">
+        <div className="site-section-body site-section-grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div className="site-section-stack">
             <p className="text-xs tracking-[0.16em] text-champagne uppercase">
               {dict.info.faqLabel}
             </p>
@@ -67,7 +67,7 @@ export function InfoSection({
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="site-section-stack">
             <p className="text-xs tracking-[0.16em] text-champagne uppercase">
               {dict.info.mapLabel}
             </p>
@@ -75,7 +75,7 @@ export function InfoSection({
               <p className="text-sm text-soft">{dict.info.emptyMap}</p>
             ) : (
               info.places.map((place) => (
-                <article key={place.id} className="border border-line bg-white/80 p-5">
+                <article key={place.id} className="site-section-panel">
                   <h3 className="section-title text-xl text-mist">{t(place.name, locale)}</h3>
                   <p className="mt-2 text-sm text-soft">{t(place.address, locale)}</p>
                   {t(place.note, locale) ? (

@@ -62,23 +62,23 @@ export function GuestAlbumSection({
   }
 
   return (
-    <section id="guestAlbum" className="border-t border-line py-24 md:py-32">
+    <section id="guestAlbum" className="site-section site-section--border-t">
       <div className="section-shell">
-        <Reveal className="max-w-2xl">
+        <Reveal className="site-section-head max-w-2xl">
           <p className="eyebrow">
             {t(initial.eyebrow, locale) || dict.guestAlbum.eyebrow}
           </p>
-          <h2 className="section-title mt-4 text-4xl text-mist md:text-5xl">
+          <h2 className="section-title text-4xl text-mist md:text-5xl">
             {t(initial.title, locale) || dict.guestAlbum.title}
           </h2>
-          <p className="mt-5 text-base font-normal leading-7 text-soft">
+          <p className="site-section-lead">
             {t(initial.intro, locale) || dict.guestAlbum.intro}
           </p>
         </Reveal>
 
         <form
           onSubmit={onSubmit}
-          className="mt-10 grid max-w-xl gap-4 border border-line bg-white/80 p-5"
+          className="site-section-body site-section-panel site-section-stack max-w-xl"
         >
           <div>
             <label className="label" htmlFor="ga-name">
@@ -124,7 +124,7 @@ export function GuestAlbumSection({
           {feedback ? <p className="text-sm text-soft">{feedback}</p> : null}
         </form>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="site-section-body site-section-cards sm:grid-cols-2 lg:grid-cols-3">
           {photos.length === 0 ? (
             <p className="text-sm text-soft sm:col-span-2 lg:col-span-3">
               {dict.guestAlbum.empty}
@@ -138,7 +138,7 @@ export function GuestAlbumSection({
                   alt={photo.caption || photo.authorName}
                   className="aspect-[4/5] w-full object-cover"
                 />
-                <figcaption className="space-y-1 p-3">
+                <figcaption className="site-section-stack p-3 !gap-1">
                   <p className="text-sm text-mist">{photo.authorName}</p>
                   {photo.caption ? (
                     <p className="text-xs text-soft">{photo.caption}</p>
