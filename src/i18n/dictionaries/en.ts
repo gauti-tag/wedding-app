@@ -131,7 +131,10 @@ const en: Dictionary = {
     title: "Guestbook",
     intro: "Leave us a note.",
     name: "Your name",
+    namePlaceholder: "Enter your name",
     message: "Your message",
+    messagePlaceholder:
+      "A memory, a wish, a thought for the couple…",
     submit: "Post",
     sending: "Sending…",
     success: "Thank you for your message.",

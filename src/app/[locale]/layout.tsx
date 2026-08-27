@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { ThemeStyles } from "@/components/ThemeStyles";
@@ -16,6 +16,16 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
+export async function generateViewport({ params }: Props): Promise<Viewport> {
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) return {};
+
+  const siteContent = await getSiteContent();
+  return {
+    themeColor: siteContent.theme.colors.text,
+  };
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: raw } = await params;
   if (!isLocale(raw)) return {};
@@ -30,7 +40,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    themeColor: siteContent.theme.colors.text,
     alternates: {
       canonical: `/${raw}`,
       languages: {

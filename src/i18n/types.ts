@@ -122,7 +122,9 @@ export type Dictionary = {
     title: string;
     intro: string;
     name: string;
+    namePlaceholder: string;
     message: string;
+    messagePlaceholder: string;
     submit: string;
     sending: string;
     success: string;

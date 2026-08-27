@@ -131,7 +131,10 @@ const fr: Dictionary = {
     title: "Livre d’or",
     intro: "Laissez-nous un mot.",
     name: "Votre nom",
+    namePlaceholder: "Entrez votre nom",
     message: "Votre message",
+    messagePlaceholder:
+      "Un souvenir, un vœu, une pensée pour les mariés…",
     submit: "Publier",
     sending: "Envoi…",
     success: "Merci pour votre message.",

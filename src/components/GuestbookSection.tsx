@@ -77,6 +77,7 @@ export function GuestbookSection({
                 className="field"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                placeholder={dict.guestbook.namePlaceholder}
                 required
                 maxLength={80}
               />
@@ -90,6 +91,7 @@ export function GuestbookSection({
                 className="field min-h-28 resize-y"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                placeholder={dict.guestbook.messagePlaceholder}
                 required
                 maxLength={1000}
               />
