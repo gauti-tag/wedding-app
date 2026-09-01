@@ -360,6 +360,19 @@ export type SiteContent = {
   contactPhone: string;
   /** Nombre max de confirmations « oui » (places) acceptées. */
   guestCapacity: number;
+  /**
+   * Quotas de places par lien (Parent, Ami, etc.).
+   * Appliqués en plus du plafond global quand `enabled` est true.
+   */
+  guestRelationQuotas: {
+    enabled: boolean;
+    capacities: {
+      parent: number;
+      friend: number;
+      colleague: number;
+      religious: number;
+    };
+  };
   /** Rappels WhatsApp planifiés (liste dynamique : libellé + date). */
   whatsappReminders: WhatsAppReminderPlan[];
   /** Visibilité, ordre et libellés des sections du site public. */

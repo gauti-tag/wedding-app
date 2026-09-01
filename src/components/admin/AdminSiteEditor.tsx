@@ -6,6 +6,11 @@ import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import { AdminPwaBannerPreview } from "@/components/admin/AdminPwaBannerPreview";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import {
+  emptyGuestRelationQuotas,
+  normalizeGuestRelationQuotas,
+} from "@/lib/guest-capacity";
+import type { GuestRelation } from "@/lib/guest-of";
+import {
   defaultPwaBanner,
   normalizePwaBanner,
   PWA_BANNER_HEIGHT_OPTIONS,
@@ -134,6 +139,10 @@ export function AdminSiteEditor({
       rsvpDeadline: initialSite.rsvpDeadline || "2026-09-01T23:59:00",
       contactPhone: initialSite.contactPhone || "+2250708345891",
       guestCapacity: initialSite.guestCapacity || 100,
+      guestRelationQuotas: normalizeGuestRelationQuotas(
+        initialSite.guestRelationQuotas,
+        initialSite.guestCapacity || 100,
+      ),
       whatsappReminders: normalizeWhatsAppReminders(initialSite.whatsappReminders, {
         j7: (initialSite as { whatsappReminderJ7?: string }).whatsappReminderJ7,
         j1: (initialSite as { whatsappReminderJ1?: string }).whatsappReminderJ1,
@@ -960,9 +969,77 @@ export function AdminSiteEditor({
             }
           />
           <p className="mt-2 text-xs text-soft">
-            Une fois ce nombre de « oui » atteint, plus aucune confirmation positive n’est
-            acceptée.
+            Plafond global : une fois ce nombre de « oui » atteint (adulte + enfants), plus
+            aucune confirmation positive n’est acceptée.
           </p>
+        </div>
+
+        <div className="space-y-4 border border-line bg-ivory/40 p-4">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
+              checked={content.guestRelationQuotas.enabled}
+              onChange={(e) =>
+                setContent((prev) => ({
+                  ...prev,
+                  guestRelationQuotas: {
+                    ...prev.guestRelationQuotas,
+                    enabled: e.target.checked,
+                    capacities:
+                      prev.guestRelationQuotas.capacities ??
+                      emptyGuestRelationQuotas(prev.guestCapacity).capacities,
+                  },
+                }))
+              }
+            />
+            <span className="text-sm text-mist">
+              Activer des quotas de places par lien (Parent, Ami, etc.)
+            </span>
+          </label>
+          <p className="text-xs text-soft">
+            En plus du plafond global : un « oui » est refusé si le quota du lien choisi est
+            atteint.
+          </p>
+          {content.guestRelationQuotas.enabled ? (
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+              {(
+                [
+                  { key: "parent" as GuestRelation, label: "Parent" },
+                  { key: "friend" as GuestRelation, label: "Ami(e)" },
+                  { key: "colleague" as GuestRelation, label: "Collègue" },
+                  { key: "religious" as GuestRelation, label: "Communauté religieuse" },
+                ] as const
+              ).map(({ key, label }) => (
+                <div key={key}>
+                  <label className="label" htmlFor={`quota-${key}`}>
+                    {label}
+                  </label>
+                  <input
+                    id={`quota-${key}`}
+                    type="number"
+                    min={1}
+                    max={5000}
+                    className="field"
+                    value={content.guestRelationQuotas.capacities[key]}
+                    onChange={(e) => {
+                      const value = Number(e.target.value) || 1;
+                      setContent((prev) => ({
+                        ...prev,
+                        guestRelationQuotas: {
+                          ...prev.guestRelationQuotas,
+                          capacities: {
+                            ...prev.guestRelationQuotas.capacities,
+                            [key]: value,
+                          },
+                        },
+                      }));
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="border-t border-line pt-4">

@@ -4,7 +4,7 @@ import { mapPhoto, mapRsvp, toDbPhoto, toDbRsvp, type DbPhoto, type DbRsvp } fro
 import { getSupabaseAdmin, isSupabaseConfigured } from "@/lib/supabase/server";
 import { defaultHeroCarousel, normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { defaultPwaBanner, normalizePwaBanner } from "@/lib/pwa-banner";
-import { normalizeGuestCapacity } from "@/lib/guest-capacity";
+import { normalizeGuestCapacity, emptyGuestRelationQuotas, normalizeGuestRelationQuotas } from "@/lib/guest-capacity";
 import { emptyMcRundown, normalizeMcRundown } from "@/lib/mc-rundown";
 import { normalizePhotos, requirePersistentStorage } from "@/lib/photo-urls";
 import { normalizeOptionalDatetime } from "@/lib/rsvp-deadline";
@@ -106,6 +106,7 @@ const emptySite: SiteContent = {
   rsvpDeadline: "2026-09-01T23:59:00",
   contactPhone: "+2250708345891",
   guestCapacity: 100,
+  guestRelationQuotas: emptyGuestRelationQuotas(100),
   whatsappReminders: [],
   features: defaultSiteFeatures(),
   theme: defaultSiteTheme(),
@@ -497,6 +498,10 @@ export async function getSiteContent(): Promise<SiteContent> {
     rsvpDeadline: raw.rsvpDeadline || emptySite.rsvpDeadline,
     contactPhone: raw.contactPhone || emptySite.contactPhone,
     guestCapacity: normalizeGuestCapacity(raw.guestCapacity, emptySite.guestCapacity),
+    guestRelationQuotas: normalizeGuestRelationQuotas(
+      (raw as Partial<SiteContent>).guestRelationQuotas,
+      normalizeGuestCapacity(raw.guestCapacity, emptySite.guestCapacity),
+    ),
     whatsappReminders: normalizeWhatsAppReminders(
       (raw as { whatsappReminders?: unknown }).whatsappReminders,
       {
@@ -519,6 +524,13 @@ export async function saveSiteContent(content: SiteContent) {
       fr: content.eventTitle?.fr ?? "",
       en: content.eventTitle?.en ?? "",
     },
+    rsvpDeadline: content.rsvpDeadline,
+    contactPhone: content.contactPhone,
+    guestCapacity: normalizeGuestCapacity(content.guestCapacity, emptySite.guestCapacity),
+    guestRelationQuotas: normalizeGuestRelationQuotas(
+      content.guestRelationQuotas,
+      content.guestCapacity,
+    ),
     features: normalizeSiteFeatures(content.features),
     theme: normalizeSiteTheme(content.theme),
     vocabulary: normalizeEventVocabulary(content.vocabulary),

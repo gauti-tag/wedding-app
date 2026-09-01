@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { normalizePwaBanner } from "@/lib/pwa-banner";
-import { normalizeGuestCapacity } from "@/lib/guest-capacity";
+import { normalizeGuestCapacity, normalizeGuestRelationQuotas } from "@/lib/guest-capacity";
 import {
   normalizeEventType,
   normalizeEventVocabulary,
@@ -168,6 +168,17 @@ const siteSchema = z.object({
     .max(40)
     .refine(isValidCiPhone, { message: "Téléphone invalide." }),
   guestCapacity: z.number().int().min(1).max(5000),
+  guestRelationQuotas: z
+    .object({
+      enabled: z.boolean(),
+      capacities: z.object({
+        parent: z.number().int().min(1).max(5000),
+        friend: z.number().int().min(1).max(5000),
+        colleague: z.number().int().min(1).max(5000),
+        religious: z.number().int().min(1).max(5000),
+      }),
+    })
+    .optional(),
   whatsappReminders: z
     .array(
       z.object({
@@ -287,6 +298,10 @@ export async function PUT(request: Request) {
       rsvpDeadline: withSeconds(parsed.data.rsvpDeadline),
       contactPhone,
       guestCapacity: normalizeGuestCapacity(parsed.data.guestCapacity),
+      guestRelationQuotas: normalizeGuestRelationQuotas(
+        parsed.data.guestRelationQuotas,
+        parsed.data.guestCapacity,
+      ),
       whatsappReminders: serializeWhatsAppReminders(parsed.data.whatsappReminders),
       heroCarousel: normalizeHeroCarousel(parsed.data.heroCarousel),
       pwaBanner: normalizePwaBanner(parsed.data.pwaBanner),

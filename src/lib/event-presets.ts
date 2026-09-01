@@ -7,7 +7,7 @@ import type {
   SiteContent,
   SiteFeatures,
 } from "@/lib/types";
-import { buildStructuredGuestOfOptions, syncGuestOfLabelsFromHosts } from "@/lib/guest-of";
+import { buildStructuredGuestOfOptions, isStructuredGuestOfConfig, syncGuestOfLabelsFromHosts } from "@/lib/guest-of";
 import { defaultSiteFeatures, normalizeSiteFeatures } from "@/lib/site-features";
 
 export { syncGuestOfLabelsFromHosts };
@@ -171,14 +171,23 @@ export function normalizeRsvpConfig(
   const isLegacyGuestOf =
     guestOfOptions.length === 3 &&
     guestOfOptions.every((option) => legacyIds.has(option.id));
-  const resolvedGuestOfOptions = isLegacyGuestOf
-    ? buildStructuredGuestOfOptions(
-        partners?.partnerOne || "Hôte 1",
-        partners?.partnerTwo || "Hôte 2",
-      )
+  const partnersResolved = {
+    partnerOne: partners?.partnerOne || "Hôte 1",
+    partnerTwo: partners?.partnerTwo || "Hôte 2",
+  };
+  let resolvedGuestOfOptions = isLegacyGuestOf
+    ? buildStructuredGuestOfOptions(partnersResolved.partnerOne, partnersResolved.partnerTwo)
     : guestOfOptions.length
       ? guestOfOptions
       : defaults.guestOfOptions;
+
+  // Upgrade partial / legacy structured Lien×Côté sets to the full current matrix.
+  if (isStructuredGuestOfConfig(resolvedGuestOfOptions)) {
+    resolvedGuestOfOptions = buildStructuredGuestOfOptions(
+      partnersResolved.partnerOne,
+      partnersResolved.partnerTwo,
+    );
+  }
 
   return {
     showGuestOf: asBool(raw?.showGuestOf, defaults.showGuestOf),

@@ -82,6 +82,8 @@ const en: Dictionary = {
     guestRelationParent: "Parent",
     guestRelationFriend: "Friend",
     guestRelationColleague: "Colleague",
+    guestRelationReligious: "Religious community",
+    guestHostBoth: "Both",
     childCount: "Accompanying children (0–4 years)",
     childCount0: "None",
     childCount1: "1 child",
@@ -112,9 +114,14 @@ const en: Dictionary = {
     errorNotYetOpen: "Attendance confirmation is not open yet.",
     errorCapacityFull:
       "Attendance confirmation is no longer accepted: the guest capacity has been reached.",
+    errorRelationCapacityFull:
+      "Attendance confirmation is no longer accepted: the capacity for this relation has been reached.",
     capacityFullTitle: "Fully booked",
     capacityFullMessage:
       "The planned number of seats for the event has been reached. “Yes” confirmations are no longer accepted.",
+    relationCapacityFullTitle: "Full for this relation",
+    relationCapacityFullMessage:
+      "The planned number of seats for this relation has been reached. Choose another relation or reply differently.",
   },
   info: {
     eyebrow: "Practical info",

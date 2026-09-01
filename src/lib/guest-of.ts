@@ -1,21 +1,26 @@
 import type { LocalizedText, RsvpConfig, RsvpGuestOfOption } from "@/lib/types";
 
-export const GUEST_RELATIONS = ["parent", "friend", "colleague"] as const;
+export const GUEST_RELATIONS = ["parent", "friend", "colleague", "religious"] as const;
 export type GuestRelation = (typeof GUEST_RELATIONS)[number];
 
-export const GUEST_HOST_SUFFIXES = ["host_one", "host_two"] as const;
+export const GUEST_HOST_SUFFIXES = ["host_one", "host_two", "both"] as const;
 export type GuestHostSuffix = (typeof GUEST_HOST_SUFFIXES)[number];
 
 const RELATION_LABELS: Record<GuestRelation, LocalizedText> = {
   parent: { fr: "Parent de", en: "Parent of" },
   friend: { fr: "Ami de", en: "Friend of" },
-  colleague: { fr: "Collègue de", en: "Collègue of" },
+  colleague: { fr: "Collègue de", en: "Colleague of" },
+  religious: { fr: "Communauté religieuse de", en: "Religious community of" },
 };
 
 const HOST_SUFFIX_LABELS: Record<GuestHostSuffix, { fr: string; en: string }> = {
   host_one: { fr: "Hôte 1", en: "Host 1" },
   host_two: { fr: "Hôte 2", en: "Host 2" },
+  both: { fr: "Les deux", en: "Both" },
 };
+
+const STRUCTURED_GUEST_OF_RE =
+  /^(parent|friend|colleague|religious)_(host_one|host_two|both)$/;
 
 export function composeGuestOfId(relation: GuestRelation, host: GuestHostSuffix): string {
   return `${relation}_${host}`;
@@ -24,12 +29,22 @@ export function composeGuestOfId(relation: GuestRelation, host: GuestHostSuffix)
 export function parseGuestOfId(
   id: string,
 ): { relation: GuestRelation; host: GuestHostSuffix } | null {
-  const match = id.match(/^(parent|friend|colleague)_(host_one|host_two)$/);
+  const match = id.match(STRUCTURED_GUEST_OF_RE);
   if (!match) return null;
   return {
     relation: match[1] as GuestRelation,
     host: match[2] as GuestHostSuffix,
   };
+}
+
+function hostDisplayName(
+  host: GuestHostSuffix,
+  one: string,
+  two: string,
+): string {
+  if (host === "host_one") return one;
+  if (host === "host_two") return two;
+  return two && two !== one ? `${one} & ${two}` : one;
 }
 
 export function buildStructuredGuestOfOptions(
@@ -41,6 +56,7 @@ export function buildStructuredGuestOfOptions(
   const hosts: { suffix: GuestHostSuffix; name: string }[] = [
     { suffix: "host_one", name: one },
     { suffix: "host_two", name: two },
+    { suffix: "both", name: hostDisplayName("both", one, two) },
   ];
 
   return GUEST_RELATIONS.flatMap((relation) =>
@@ -54,14 +70,10 @@ export function buildStructuredGuestOfOptions(
   );
 }
 
+/** True if options look like structured Lien×Côté ids (full or partial / legacy set). */
 export function isStructuredGuestOfConfig(options: RsvpGuestOfOption[]): boolean {
-  if (options.length !== GUEST_RELATIONS.length * GUEST_HOST_SUFFIXES.length) return false;
-  const expected = new Set(
-    GUEST_RELATIONS.flatMap((relation) =>
-      GUEST_HOST_SUFFIXES.map((host) => composeGuestOfId(relation, host)),
-    ),
-  );
-  return options.every((option) => expected.has(option.id));
+  if (options.length === 0) return false;
+  return options.every((option) => parseGuestOfId(option.id) !== null);
 }
 
 export function guestRelationLabel(relation: GuestRelation, locale: "fr" | "en"): string {
@@ -78,6 +90,7 @@ export function guestHostOptions(
   return [
     { id: "host_one", label: one },
     { id: "host_two", label: two },
+    { id: "both", label: hostDisplayName("both", one, two) },
   ];
 }
 
@@ -85,6 +98,7 @@ const RELATION_SHORT_FR: Record<GuestRelation, string> = {
   parent: "Parent",
   friend: "Ami(e)",
   colleague: "Collègue",
+  religious: "Communauté religieuse",
 };
 
 export type CheckInGuestDetails = {
@@ -109,7 +123,7 @@ export function resolveCheckInGuestDetails(
   if (parsed) {
     return {
       relation: RELATION_SHORT_FR[parsed.relation],
-      side: parsed.host === "host_one" ? one : two,
+      side: hostDisplayName(parsed.host, one, two),
       guestOfLabel,
       childCount,
     };
@@ -122,7 +136,7 @@ export function resolveCheckInGuestDetails(
     return { relation: "—", side: two, guestOfLabel, childCount };
   }
   if (rsvp.guestOf === "both") {
-    return { relation: "—", side: two ? `${one} & ${two}` : one, guestOfLabel, childCount };
+    return { relation: "—", side: hostDisplayName("both", one, two), guestOfLabel, childCount };
   }
 
   return { relation: "—", side: "—", guestOfLabel, childCount };
@@ -160,7 +174,7 @@ export function syncGuestOfLabelsFromHosts(
 
   const one = partnerOne.trim() || "Hôte 1";
   const two = partnerTwo.trim();
-  const both = two ? `${one} & ${two}` : one;
+  const both = hostDisplayName("both", one, two || one);
   return {
     ...config,
     guestOfOptions: config.guestOfOptions.map((opt) => {

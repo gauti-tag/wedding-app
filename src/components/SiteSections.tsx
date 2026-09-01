@@ -12,6 +12,7 @@ import type { GuestAlbumContent } from "@/lib/guest-album";
 import type { GuestbookContent } from "@/lib/guestbook";
 import type { InfoContent } from "@/lib/info-content";
 import { orderedEnabledSections } from "@/lib/site-features";
+import type { GuestRelation } from "@/lib/guest-of";
 import type {
   DessertsContent,
   DrinksContent,
@@ -37,6 +38,7 @@ export function SiteSections({
   guestAlbum,
   capacityFull,
   seatsRemaining,
+  seatsTakenByRelation,
 }: {
   locale: Locale;
   dict: Dictionary;
@@ -52,6 +54,7 @@ export function SiteSections({
   guestAlbum: GuestAlbumContent;
   capacityFull: boolean;
   seatsRemaining: number;
+  seatsTakenByRelation: Record<GuestRelation, number>;
 }) {
   const features = siteContent.features;
   const sections = orderedEnabledSections(features);
@@ -121,6 +124,7 @@ export function SiteSections({
             siteContent={siteContent}
             capacityFull={capacityFull}
             seatsRemaining={seatsRemaining}
+            seatsTakenByRelation={seatsTakenByRelation}
           />
         );
       })}

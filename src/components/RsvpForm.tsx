@@ -7,6 +7,7 @@ import {
   childCountOptions,
   normalizeChildCount,
   seatsForRsvp,
+  type GuestRelationQuotas,
 } from "@/lib/guest-capacity";
 import {
   composeGuestOfId,
@@ -52,6 +53,8 @@ function relationDictKey(relation: GuestRelation) {
       return "guestRelationFriend" as const;
     case "colleague":
       return "guestRelationColleague" as const;
+    case "religious":
+      return "guestRelationReligious" as const;
   }
 }
 
@@ -61,6 +64,7 @@ export function RsvpForm({
   siteContent,
   capacityFull = false,
   seatsRemaining,
+  seatsTakenByRelation,
 }: {
   dict: Dictionary;
   locale: Locale;
@@ -73,13 +77,20 @@ export function RsvpForm({
     | "rsvpDeadline"
     | "contactPhone"
     | "guestCapacity"
+    | "guestRelationQuotas"
     | "rsvpConfig"
   >;
   capacityFull?: boolean;
   seatsRemaining?: number;
+  seatsTakenByRelation?: Record<GuestRelation, number>;
 }) {
   const rsvpConfig = siteContent.rsvpConfig;
   const structuredGuestOf = isStructuredGuestOfConfig(rsvpConfig.guestOfOptions);
+  const relationQuotas: GuestRelationQuotas =
+    siteContent.guestRelationQuotas ?? {
+      enabled: false,
+      capacities: { parent: 100, friend: 100, colleague: 100, religious: 100 },
+    };
   const childCountLabel =
     t(rsvpConfig.childCountLabel, locale).trim() || dict.rsvp.childCount;
   const hostOptions = useMemo(
@@ -94,6 +105,19 @@ export function RsvpForm({
   );
   const [guestRelation, setGuestRelation] = useState<GuestRelation>("parent");
   const [guestHost, setGuestHost] = useState<GuestHostSuffix>("host_one");
+
+  const relationRemaining = useMemo(() => {
+    if (!relationQuotas.enabled || !seatsTakenByRelation) return null;
+    const taken = seatsTakenByRelation[guestRelation] ?? 0;
+    const cap = relationQuotas.capacities[guestRelation] ?? 0;
+    return Math.max(0, cap - taken);
+  }, [relationQuotas, seatsTakenByRelation, guestRelation]);
+
+  const relationFull =
+    relationQuotas.enabled &&
+    relationRemaining !== null &&
+    relationRemaining <= 0 &&
+    attendance === "yes";
 
   const notYetOpen = useMemo(
     () => isRsvpNotYetOpen(siteContent.rsvpOpensAt),
@@ -188,6 +212,17 @@ export function RsvpForm({
       return;
     }
 
+    if (
+      payload.status === "yes" &&
+      relationQuotas.enabled &&
+      relationRemaining !== null &&
+      seatsForRsvp({ status: "yes", childCount: payload.childCount }) > relationRemaining
+    ) {
+      setStatus("error");
+      setError(dict.rsvp.errorRelationCapacityFull);
+      return;
+    }
+
     if (!isValidCiPhone(payload.phone)) {
       setStatus("error");
       setError(dict.rsvp.errorPhoneInvalid);
@@ -209,6 +244,8 @@ export function RsvpForm({
               ? dict.rsvp.errorDeadlinePassed
               : data.code === "capacity_full"
                 ? dict.rsvp.errorCapacityFull
+                : data.code === "relation_capacity_full"
+                  ? dict.rsvp.errorRelationCapacityFull
                 : data.code === "phone_taken"
                   ? dict.rsvp.errorPhoneTaken
                   : data.code === "phone_invalid"
@@ -302,6 +339,15 @@ export function RsvpForm({
               >
                 <p className="font-medium">{dict.rsvp.capacityFullTitle}</p>
                 <p className="mt-1 text-soft">{dict.rsvp.capacityFullMessage}</p>
+              </div>
+            ) : null}
+            {!capacityFull && relationFull ? (
+              <div
+                role="status"
+                className="border border-line bg-forest px-4 py-3 text-sm text-champagne"
+              >
+                <p className="font-medium">{dict.rsvp.relationCapacityFullTitle}</p>
+                <p className="mt-1 text-soft">{dict.rsvp.relationCapacityFullMessage}</p>
               </div>
             ) : null}
             <div className="site-section-cards sm:grid-cols-2">

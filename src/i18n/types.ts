@@ -80,6 +80,8 @@ export type Dictionary = {
     guestRelationParent: string;
     guestRelationFriend: string;
     guestRelationColleague: string;
+    guestRelationReligious: string;
+    guestHostBoth: string;
     childCount: string;
     childCount0: string;
     childCount1: string;
@@ -104,8 +106,11 @@ export type Dictionary = {
     errorDeadlinePassed: string;
     errorNotYetOpen: string;
     errorCapacityFull: string;
+    errorRelationCapacityFull: string;
     capacityFullTitle: string;
     capacityFullMessage: string;
+    relationCapacityFullTitle: string;
+    relationCapacityFullMessage: string;
   };
   info: {
     eyebrow: string;

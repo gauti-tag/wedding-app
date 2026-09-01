@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
-import { normalizeChildCount, wouldExceedGuestCapacity } from "@/lib/guest-capacity";
+import { normalizeChildCount, capacityBlockReason } from "@/lib/guest-capacity";
 import { isRsvpDeadlinePassed, isRsvpNotYetOpen } from "@/lib/rsvp-deadline";
 import { getRsvps, getSiteContent, saveRsvps, setRsvpBlocked } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
@@ -128,12 +128,30 @@ export async function POST(request: Request) {
       );
     }
 
-    if (wouldExceedGuestCapacity(siteContent.guestCapacity, rsvps, status, childCount)) {
+    const block = capacityBlockReason(
+      siteContent.guestCapacity,
+      siteContent.guestRelationQuotas,
+      rsvps,
+      guestOf,
+      status,
+      childCount,
+    );
+    if (block === "global") {
       return NextResponse.json(
         {
           error:
             "La confirmation de présence n’est plus acceptée : le nombre de places est atteint.",
           code: "capacity_full",
+        },
+        { status: 403 },
+      );
+    }
+    if (block === "relation") {
+      return NextResponse.json(
+        {
+          error:
+            "La confirmation de présence n’est plus acceptée : le nombre de places pour ce lien est atteint.",
+          code: "relation_capacity_full",
         },
         { status: 403 },
       );

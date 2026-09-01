@@ -82,6 +82,8 @@ const fr: Dictionary = {
     guestRelationParent: "Parent",
     guestRelationFriend: "Ami(e)",
     guestRelationColleague: "Collègue",
+    guestRelationReligious: "Communauté religieuse",
+    guestHostBoth: "Les deux",
     childCount: "Enfants accompagnants",
     childCount0: "Aucun",
     childCount1: "1 enfant",
@@ -112,9 +114,14 @@ const fr: Dictionary = {
     errorNotYetOpen: "La confirmation de présence n’est pas encore ouverte.",
     errorCapacityFull:
       "La confirmation de présence n’est plus acceptée : le nombre de places est atteint.",
+    errorRelationCapacityFull:
+      "La confirmation de présence n’est plus acceptée : le nombre de places pour ce lien est atteint.",
     capacityFullTitle: "Complet",
     capacityFullMessage:
       "Le nombre de places prévu pour l’événement est atteint. Les confirmations « oui » ne sont plus acceptées.",
+    relationCapacityFullTitle: "Complet pour ce lien",
+    relationCapacityFullMessage:
+      "Le nombre de places prévu pour ce type de lien est atteint. Choisissez un autre lien ou confirmez autrement.",
   },
   info: {
     eyebrow: "Infos pratiques",
