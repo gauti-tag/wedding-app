@@ -49,31 +49,31 @@ export const INVITE_CARD_TEMPLATES: InviteCardTemplateMeta[] = [
   {
     id: "classique",
     label: "Classique",
-    description: "Ivoire & cadre blanc",
+    description: "Ivoire, filets or & fleurs d’angle",
     eventTypes: ["wedding"],
-    nameStyle: "script",
-    defaultAccent: "#6b3e2a",
-  },
-  {
-    id: "elegant",
-    label: "Élégant",
-    description: "Double filet doré",
-    eventTypes: ["wedding", "ceremony"],
     nameStyle: "script",
     defaultAccent: "#c4a574",
   },
   {
+    id: "elegant",
+    label: "Élégant",
+    description: "Arches cacao, fleurs & alliances",
+    eventTypes: ["wedding", "ceremony"],
+    nameStyle: "script",
+    defaultAccent: "#c5a059",
+  },
+  {
     id: "minimal",
     label: "Minimal",
-    description: "Épuré, beaucoup d’air",
+    description: "Épuré, date 3 colonnes & air",
     eventTypes: ["wedding", "ceremony", "custom"],
     nameStyle: "script",
-    defaultAccent: "#9a8578",
+    defaultAccent: "#c5a070",
   },
   {
     id: "soiree",
     label: "Soirée",
-    description: "Fond sombre chic",
+    description: "Nuit cacao, fleurs or & cœurs",
     eventTypes: ["wedding", "concert", "custom"],
     nameStyle: "script",
     defaultAccent: "#d4af78",
@@ -81,10 +81,10 @@ export const INVITE_CARD_TEMPLATES: InviteCardTemplateMeta[] = [
   {
     id: "floral",
     label: "Floral",
-    description: "Tons rose poudré",
+    description: "Blush soft 2026 — clean & captivant",
     eventTypes: ["wedding", "baptism"],
     nameStyle: "script",
-    defaultAccent: "#a05a64",
+    defaultAccent: "#9a6b72",
   },
   {
     id: "noir_or",
@@ -97,7 +97,7 @@ export const INVITE_CARD_TEMPLATES: InviteCardTemplateMeta[] = [
   {
     id: "studio",
     label: "Studio Ivoire",
-    description: "Blanc net, bandes velvet",
+    description: "Éditorial 2026 — bande & carte QR",
     eventTypes: ["wedding", "custom"],
     nameStyle: "script",
     defaultAccent: "#6b3e2a",
@@ -762,6 +762,258 @@ function divider(ctx: CanvasRenderingContext2D, y: number, half = 90, color = "r
   ctx.stroke();
 }
 
+function drawHeart(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+) {
+  const s = size;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, y + s * 0.3);
+  ctx.bezierCurveTo(x, y, x - s / 2, y, x - s / 2, y + s * 0.35);
+  ctx.bezierCurveTo(x - s / 2, y + s * 0.65, x, y + s * 0.95, x, y + s);
+  ctx.bezierCurveTo(x, y + s * 0.95, x + s / 2, y + s * 0.65, x + s / 2, y + s * 0.35);
+  ctx.bezierCurveTo(x + s / 2, y, x, y, x, y + s * 0.3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawDiamondDivider(
+  ctx: CanvasRenderingContext2D,
+  y: number,
+  color: string,
+  half = 110,
+) {
+  const mid = W / 2;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  ctx.moveTo(mid - half, y);
+  ctx.lineTo(mid - 14, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(mid + 14, y);
+  ctx.lineTo(mid + half, y);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(mid, y);
+  ctx.rotate(Math.PI / 4);
+  ctx.fillStyle = color;
+  ctx.fillRect(-5.5, -5.5, 11, 11);
+  ctx.restore();
+}
+
+function drawFlourish(ctx: CanvasRenderingContext2D, y: number, color: string) {
+  const mid = W / 2;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.4;
+  ctx.lineCap = "round";
+  // Centre
+  ctx.beginPath();
+  ctx.moveTo(mid - 70, y);
+  ctx.lineTo(mid - 18, y);
+  ctx.moveTo(mid + 18, y);
+  ctx.lineTo(mid + 70, y);
+  ctx.stroke();
+  // Boucles symétriques
+  for (const dir of [-1, 1] as const) {
+    ctx.beginPath();
+    ctx.ellipse(mid + dir * 10, y, 10, 7, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(mid + dir * 20, y);
+    ctx.quadraticCurveTo(mid + dir * 36, y - 14, mid + dir * 48, y - 2);
+    ctx.quadraticCurveTo(mid + dir * 56, y + 8, mid + dir * 42, y + 4);
+    ctx.stroke();
+  }
+}
+
+function drawAnemone(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  petal: string,
+  center: string,
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.ellipse(Math.cos(a) * 18, Math.sin(a) * 18, 16, 10, a, 0, Math.PI * 2);
+    ctx.fillStyle = petal;
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.arc(0, 0, 11, 0, Math.PI * 2);
+  ctx.fillStyle = center;
+  ctx.fill();
+  // graines
+  ctx.fillStyle = "rgba(247,244,240,0.35)";
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * 4.5, Math.sin(a) * 4.5, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawLeaf(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  rot: number,
+  scale: number,
+  color: string,
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.scale(scale, scale);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(18, -14, 42, 0);
+  ctx.quadraticCurveTo(18, 14, 0, 0);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = hexAlpha(color, 0.45);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(2, 0);
+  ctx.lineTo(36, 0);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawGoldSprig(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  rot: number,
+  color: string,
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(30, -8, 58, 4);
+  ctx.stroke();
+  for (const [tx, ty] of [
+    [12, -6],
+    [24, -2],
+    [38, -8],
+    [48, 0],
+  ] as const) {
+    ctx.beginPath();
+    ctx.ellipse(tx, ty, 7, 3.2, -0.5, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** Bouquets fleurs d’angle — haut-gauche & bas-droite (style invitation classique). */
+function drawClassicFlorals(ctx: CanvasRenderingContext2D, accent: string) {
+  const cream = "#f2e6d8";
+  const blush = "#e8d5c4";
+  const leafA = "#8a6b4a";
+  const leafB = "#6b5338";
+  const center = "#3b2416";
+  const gold = accent;
+
+  // —— Haut gauche ——
+  drawLeaf(ctx, 95, 150, -0.9, 1.3, leafA);
+  drawLeaf(ctx, 70, 195, -1.4, 1.1, leafB);
+  drawLeaf(ctx, 145, 95, -0.35, 1.15, leafA);
+  drawLeaf(ctx, 175, 125, 0.2, 0.95, leafB);
+  drawGoldSprig(ctx, 155, 70, -0.55, gold);
+  drawGoldSprig(ctx, 55, 165, -1.1, gold);
+  drawAnemone(ctx, 115, 125, 1.15, cream, center);
+  drawAnemone(ctx, 165, 165, 0.85, blush, center);
+  drawAnemone(ctx, 88, 175, 0.7, cream, center);
+  // points or
+  ctx.fillStyle = hexAlpha(gold, 0.7);
+  for (const [dx, dy] of [
+    [48, 95],
+    [200, 85],
+    [55, 220],
+    [190, 200],
+    [130, 55],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // —— Bas droite (miroir) ——
+  drawLeaf(ctx, W - 95, H - 150, 2.2, 1.3, leafA);
+  drawLeaf(ctx, W - 70, H - 195, 1.7, 1.1, leafB);
+  drawLeaf(ctx, W - 145, H - 95, 2.75, 1.15, leafA);
+  drawLeaf(ctx, W - 175, H - 125, -2.9, 0.95, leafB);
+  drawGoldSprig(ctx, W - 155, H - 70, 2.55, gold);
+  drawGoldSprig(ctx, W - 55, H - 165, 2.0, gold);
+  drawAnemone(ctx, W - 115, H - 125, 1.15, cream, center);
+  drawAnemone(ctx, W - 165, H - 165, 0.85, blush, center);
+  drawAnemone(ctx, W - 88, H - 175, 0.7, cream, center);
+  for (const [dx, dy] of [
+    [W - 48, H - 95],
+    [W - 200, H - 85],
+    [W - 55, H - 220],
+    [W - 190, H - 200],
+    [W - 130, H - 55],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawClassicFrame(ctx: CanvasRenderingContext2D, accent: string) {
+  const m = 42;
+  const inner = 58;
+  // Double filet or
+  ctx.strokeStyle = hexAlpha(accent, 0.75);
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(m, m, W - m * 2, H - m * 2);
+  ctx.strokeStyle = hexAlpha(accent, 0.55);
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(inner, inner, W - inner * 2, H - inner * 2);
+
+  // Encoches / coins décoratifs
+  const notch = 18;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1.75;
+  for (const [x, y, sx, sy] of [
+    [inner, inner, 1, 1],
+    [W - inner, inner, -1, 1],
+    [inner, H - inner, 1, -1],
+    [W - inner, H - inner, -1, -1],
+  ] as const) {
+    ctx.beginPath();
+    ctx.moveTo(x + sx * notch, y);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x, y + sy * notch);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + sx * (notch + 8), y - sy * 6);
+    ctx.lineTo(x - sx * 6, y - sy * 6);
+    ctx.lineTo(x - sx * 6, y + sy * (notch + 8));
+    ctx.stroke();
+  }
+}
+
 function hexAlpha(hex: string, a: number) {
   const h = hex.replace("#", "");
   if (h.length !== 6) return hex;
@@ -794,6 +1046,7 @@ type DrawCtx = {
   nameStyle: InviteCardNameStyle;
   accent: string;
   styles: Record<InviteTextZone, InviteZoneStyle>;
+  locale: InviteCardLocale;
 };
 
 function zone(d: DrawCtx, id: InviteTextZone): InviteZoneStyle {
@@ -977,197 +1230,1303 @@ function paintCardTexts(d: DrawCtx, themeIn: Theme, layout: CardTextLayout) {
 /* ——— Wedding originals ——— */
 
 function drawClassique(d: DrawCtx) {
-  const { ctx, accent } = d;
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#f3ebe3");
-  bg.addColorStop(0.45, "#f7f4f0");
-  bg.addColorStop(1, "#ebe0d4");
+  const { ctx, accent, coupleNames, dateLabel, t, qr } = d;
+
+  // Fond ivoire aquarelle
+  const bg = ctx.createRadialGradient(W * 0.35, H * 0.2, 40, W / 2, H / 2, H * 0.85);
+  bg.addColorStop(0, "#fbf7f1");
+  bg.addColorStop(0.45, "#f5eee6");
+  bg.addColorStop(1, "#ebe0d2");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = hexAlpha(accent, 0.08);
-  ctx.beginPath();
-  ctx.arc(0, 0, 220, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(W, H, 260, 0, Math.PI * 2);
-  ctx.fill();
+  // Légères taches aquarelle aux coins floraux
+  for (const [x, y, r, a] of [
+    [80, 120, 160, 0.18],
+    [W - 90, H - 130, 180, 0.16],
+    [W / 2, H / 2, 420, 0.04],
+  ] as const) {
+    const wash = ctx.createRadialGradient(x, y, 10, x, y, r);
+    wash.addColorStop(0, `rgba(196, 165, 116, ${a})`);
+    wash.addColorStop(1, "rgba(196, 165, 116, 0)");
+    ctx.fillStyle = wash;
+    ctx.fillRect(0, 0, W, H);
+  }
 
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(48, 48, W - 96, H - 96);
-  ctx.strokeStyle = "rgba(59,36,22,0.16)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(48, 48, W - 96, H - 96);
-  ctx.strokeStyle = hexAlpha(accent, 0.35);
-  ctx.lineWidth = 1;
-  ctx.strokeRect(68, 68, W - 136, H - 136);
+  drawClassicFrame(ctx, accent);
+  drawClassicFlorals(ctx, accent);
 
-  drawContentBlock(
-    d,
+  const theme = themeWithZoneColors(
     {
-      eyebrow: accent,
-      invite: "#7a5c4a",
+      eyebrow: "#3b2416",
+      invite: "#5c4333",
       names: "#3b2416",
-      date: accent,
-      body: "#7a5c4a",
-      footer: accent,
-      divider: hexAlpha(accent, 0.35),
-      qrBorder: hexAlpha(accent, 0.4),
+      date: "#3b2416",
+      body: "#5c4333",
+      footer: "#5c4333",
+      divider: accent,
+      qrBorder: accent,
+      qrBg: "#ffffff",
     },
-    { qrSize: 380, qrY: 600 },
+    d.styles,
   );
+
+  ctx.textAlign = "center";
+
+  // Cœur or
+  drawHeart(ctx, W / 2, 118, 18, accent);
+
+  // Sur-titre
+  const eyebrowFont = resolveZoneFont(zone(d, "eyebrow"), "sans");
+  ctx.fillStyle = theme.eyebrow;
+  ctx.font = makeFontFace(eyebrowFont, resolveZoneSize(zone(d, "eyebrow"), 18), "600");
+  ctx.fillText(applyCase(t.eyebrow, zone(d, "eyebrow"), true), W / 2, 175);
+
+  // Ligne d’invitation
+  const inviteFont = resolveZoneFont(zone(d, "invite"), "sans");
+  ctx.fillStyle = theme.invite;
+  ctx.font = makeFontFace(inviteFont, resolveZoneSize(zone(d, "invite"), 20), "400");
+  ctx.fillText(applyCase(t.inviteLine, zone(d, "invite"), false), W / 2, 220);
+
+  // Noms (script)
+  const nameFontId = resolveZoneFont(zone(d, "names"), "script");
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(
+    ctx,
+    coupleNames,
+    W - 220,
+    nameFontId,
+    resolveZoneSize(zone(d, "names"), 78),
+    32,
+    "400",
+  );
+  ctx.fillText(coupleNames, W / 2, 320);
+
+  // Séparateur losange or
+  drawDiamondDivider(ctx, 360, theme.divider, 100);
+
+  // Date
+  const dateFont = resolveZoneFont(zone(d, "date"), "sans");
+  ctx.fillStyle = theme.date;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 22), "500");
+  ctx.fillText(applyCase(dateLabel, zone(d, "date"), true), W / 2, 410);
+
+  // Corps — dernières mots en emphase
+  const bodyFont = resolveZoneFont(zone(d, "body"), "serif");
+  const bodySize = resolveZoneSize(zone(d, "body"), 21);
+  ctx.fillStyle = theme.body;
+  ctx.font = makeFontFace(bodyFont, bodySize, "400");
+  const bodyLines = t.body.slice(0, 3);
+  bodyLines.forEach((line, i) => {
+    const isLast = i === bodyLines.length - 1;
+    const y = 470 + i * 32;
+    if (isLast) {
+      // Mettre en avant « confirmer votre présence » / "confirm your attendance"
+      const boldMatch = line.match(
+        /^(.*?)(confirmer votre présence\.?|confirm your attendance\.?)(.*)$/i,
+      );
+      if (boldMatch) {
+        const [, before, bold, after] = boldMatch;
+        const beforeW = before ? ctx.measureText(before).width : 0;
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        const boldW = ctx.measureText(bold).width;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        const afterW = after ? ctx.measureText(after).width : 0;
+        let cursor = W / 2 - (beforeW + boldW + afterW) / 2;
+        if (before) {
+          ctx.fillText(before, cursor + beforeW / 2, y);
+          cursor += beforeW;
+        }
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        ctx.fillText(bold, cursor + boldW / 2, y);
+        cursor += boldW;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        if (after) ctx.fillText(after, cursor + afterW / 2, y);
+      } else {
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+      }
+    } else {
+      ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+    }
+  });
+
+  // QR encadré or fin
+  const qrSize = 340;
+  const qrY = 600;
+  drawQr(ctx, qr, {
+    size: qrSize,
+    y: qrY,
+    pad: 22,
+    bg: "#ffffff",
+    border: accent,
+  });
+
+  // Arabesque sous le QR
+  drawFlourish(ctx, qrY + qrSize + 55, accent);
+
+  // Pied de carte
+  const footerFont = resolveZoneFont(zone(d, "footer"), "serif");
+  ctx.fillStyle = theme.footer;
+  ctx.font = makeFontFace(footerFont, resolveZoneSize(zone(d, "footer"), 22), "400");
+  ctx.fillText(applyCase(t.footer, zone(d, "footer"), false), W / 2, 1095);
+
+  drawHeart(ctx, W / 2, 1135, 14, accent);
+
+  // Signature script
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(ctx, coupleNames, W - 280, nameFontId, 40, 22, "400");
+  ctx.fillText(coupleNames, W / 2, 1220);
+}
+
+function drawElegantFlorals(ctx: CanvasRenderingContext2D, accent: string) {
+  const cream = "#f7efe6";
+  const blush = "#ebe0d2";
+  const leafA = "#8a6b4a";
+  const leafB = "#6b5338";
+  const center = "#3b2416";
+  const gold = accent;
+
+  // —— Haut droite ——
+  drawLeaf(ctx, W - 95, 150, 0.9, 1.3, leafA);
+  drawLeaf(ctx, W - 70, 195, 1.4, 1.1, leafB);
+  drawLeaf(ctx, W - 145, 95, 0.35, 1.15, leafA);
+  drawLeaf(ctx, W - 175, 125, -0.2, 0.95, leafB);
+  drawGoldSprig(ctx, W - 155, 70, 0.55, gold);
+  drawGoldSprig(ctx, W - 55, 165, 1.1, gold);
+  drawAnemone(ctx, W - 115, 125, 1.15, cream, center);
+  drawAnemone(ctx, W - 165, 165, 0.85, blush, center);
+  drawAnemone(ctx, W - 88, 175, 0.7, cream, center);
+  ctx.fillStyle = hexAlpha(gold, 0.7);
+  for (const [dx, dy] of [
+    [W - 48, 95],
+    [W - 200, 85],
+    [W - 55, 220],
+    [W - 190, 200],
+    [W - 130, 55],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // —— Bas gauche ——
+  drawLeaf(ctx, 95, H - 150, -2.2, 1.3, leafA);
+  drawLeaf(ctx, 70, H - 195, -1.7, 1.1, leafB);
+  drawLeaf(ctx, 145, H - 95, -2.75, 1.15, leafA);
+  drawLeaf(ctx, 175, H - 125, 2.9, 0.95, leafB);
+  drawGoldSprig(ctx, 155, H - 70, -2.55, gold);
+  drawGoldSprig(ctx, 55, H - 165, -2.0, gold);
+  drawAnemone(ctx, 115, H - 125, 1.15, cream, center);
+  drawAnemone(ctx, 165, H - 165, 0.85, blush, center);
+  drawAnemone(ctx, 88, H - 175, 0.7, cream, center);
+  for (const [dx, dy] of [
+    [48, H - 95],
+    [200, H - 85],
+    [55, H - 220],
+    [190, H - 200],
+    [130, H - 55],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/** Arches organiques cacao avec textes d’angle. */
+function drawElegantArches(
+  ctx: CanvasRenderingContext2D,
+  locale: InviteCardLocale,
+) {
+  const cacao = "#3b2416";
+  const caramel = "#6b4a32";
+
+  const topLines =
+    locale === "en"
+      ? ["LOVE", "SHARED", "FOR", "EVER"]
+      : ["AMOUR", "PARTAGE", "POUR", "TOUJOURS"];
+  const bottomLines =
+    locale === "en"
+      ? ["BEAUTIFUL", "STORIES", "BEGIN", "HERE"]
+      : ["DE", "BELLES", "HISTOIRES", "COMMENCENT", "ICI"];
+
+  // Haut gauche
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(290, 0);
+  ctx.quadraticCurveTo(250, 90, 210, 170);
+  ctx.quadraticCurveTo(150, 280, 0, 310);
+  ctx.closePath();
+  ctx.fillStyle = cacao;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(0, 40);
+  ctx.quadraticCurveTo(120, 100, 160, 200);
+  ctx.quadraticCurveTo(90, 250, 0, 270);
+  ctx.closePath();
+  ctx.fillStyle = caramel;
+  ctx.fill();
+
+  ctx.fillStyle = "#f7f4f0";
+  ctx.font = makeFontFace("sans", 13, "600");
+  ctx.textAlign = "left";
+  topLines.forEach((line, i) => {
+    ctx.fillText(line, 28, 70 + i * 22);
+  });
+
+  // Bas droite
+  ctx.beginPath();
+  ctx.moveTo(W, H);
+  ctx.lineTo(W - 290, H);
+  ctx.quadraticCurveTo(W - 250, H - 90, W - 210, H - 170);
+  ctx.quadraticCurveTo(W - 150, H - 280, W, H - 310);
+  ctx.closePath();
+  ctx.fillStyle = cacao;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(W, H - 40);
+  ctx.quadraticCurveTo(W - 120, H - 100, W - 160, H - 200);
+  ctx.quadraticCurveTo(W - 90, H - 250, W, H - 270);
+  ctx.closePath();
+  ctx.fillStyle = caramel;
+  ctx.fill();
+
+  ctx.fillStyle = "#f7f4f0";
+  ctx.font = makeFontFace("sans", 12, "600");
+  ctx.textAlign = "right";
+  const startY = H - 70 - (bottomLines.length - 1) * 20;
+  bottomLines.forEach((line, i) => {
+    ctx.fillText(line, W - 28, startY + i * 20);
+  });
+
+  ctx.textAlign = "center";
+}
+
+function drawWeddingRingsDivider(
+  ctx: CanvasRenderingContext2D,
+  y: number,
+  color: string,
+) {
+  const mid = W / 2;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  ctx.moveTo(mid - 120, y);
+  ctx.lineTo(mid - 36, y);
+  ctx.moveTo(mid + 36, y);
+  ctx.lineTo(mid + 120, y);
+  ctx.stroke();
+
+  // Deux alliances entrelacées
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.arc(mid - 10, y, 14, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(mid + 10, y, 14, 0, Math.PI * 2);
+  ctx.stroke();
+  // Petit brillant
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(mid, y - 16, 2.2, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawElegant(d: DrawCtx) {
-  const { ctx, accent } = d;
-  ctx.fillStyle = "#faf7f2";
-  ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(40, 40, W - 80, H - 80);
-  ctx.strokeStyle = "rgba(59,36,22,0.35)";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(56, 56, W - 112, H - 112);
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(72, 72, W - 144, H - 144);
+  const { ctx, accent, coupleNames, dateLabel, t, qr, locale } = d;
 
-  for (const [cx, cy] of [
-    [100, 100],
-    [W - 100, 100],
-    [100, H - 100],
-    [W - 100, H - 100],
+  // Fond crème aquarelle
+  const bg = ctx.createRadialGradient(W * 0.55, H * 0.25, 60, W / 2, H / 2, H * 0.9);
+  bg.addColorStop(0, "#fdf8f1");
+  bg.addColorStop(0.5, "#f5eee4");
+  bg.addColorStop(1, "#e8dccb");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  for (const [x, y, r, a] of [
+    [W - 90, 130, 170, 0.16],
+    [90, H - 140, 180, 0.14],
+    [W / 2, H / 2, 400, 0.04],
+  ] as const) {
+    const wash = ctx.createRadialGradient(x, y, 10, x, y, r);
+    wash.addColorStop(0, `rgba(197, 160, 89, ${a})`);
+    wash.addColorStop(1, "rgba(197, 160, 89, 0)");
+    ctx.fillStyle = wash;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  drawElegantArches(ctx, locale);
+  drawClassicFrame(ctx, accent);
+  drawElegantFlorals(ctx, accent);
+
+  const theme = themeWithZoneColors(
+    {
+      eyebrow: "#3b2416",
+      invite: "#5c4333",
+      names: "#3b2416",
+      date: "#3b2416",
+      body: "#5c4333",
+      footer: "#5c4333",
+      divider: accent,
+      qrBorder: "#3b2416",
+      qrBg: "#ffffff",
+    },
+    d.styles,
+  );
+
+  ctx.textAlign = "center";
+  drawHeart(ctx, W / 2, 118, 18, accent);
+
+  const eyebrowFont = resolveZoneFont(zone(d, "eyebrow"), "sans");
+  ctx.fillStyle = theme.eyebrow;
+  ctx.font = makeFontFace(eyebrowFont, resolveZoneSize(zone(d, "eyebrow"), 18), "600");
+  ctx.fillText(applyCase(t.eyebrow, zone(d, "eyebrow"), true), W / 2, 175);
+
+  const inviteFont = resolveZoneFont(zone(d, "invite"), "sans");
+  ctx.fillStyle = theme.invite;
+  ctx.font = makeFontFace(inviteFont, resolveZoneSize(zone(d, "invite"), 20), "400");
+  ctx.fillText(applyCase(t.inviteLine, zone(d, "invite"), false), W / 2, 220);
+
+  const nameFontId = resolveZoneFont(zone(d, "names"), "script");
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(
+    ctx,
+    coupleNames,
+    W - 240,
+    nameFontId,
+    resolveZoneSize(zone(d, "names"), 78),
+    32,
+    "400",
+  );
+  ctx.fillText(coupleNames, W / 2, 320);
+
+  drawDiamondDivider(ctx, 360, theme.divider, 100);
+
+  const dateFont = resolveZoneFont(zone(d, "date"), "sans");
+  ctx.fillStyle = theme.date;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 22), "500");
+  ctx.fillText(applyCase(dateLabel, zone(d, "date"), true), W / 2, 410);
+
+  const bodyFont = resolveZoneFont(zone(d, "body"), "serif");
+  const bodySize = resolveZoneSize(zone(d, "body"), 21);
+  ctx.fillStyle = theme.body;
+  ctx.font = makeFontFace(bodyFont, bodySize, "400");
+  const bodyLines = t.body.slice(0, 3);
+  bodyLines.forEach((line, i) => {
+    const isLast = i === bodyLines.length - 1;
+    const y = 470 + i * 32;
+    if (isLast) {
+      const boldMatch = line.match(
+        /^(.*?)(confirmer votre présence\.?|confirm your attendance\.?)(.*)$/i,
+      );
+      if (boldMatch) {
+        const [, before, bold, after] = boldMatch;
+        const beforeW = before ? ctx.measureText(before).width : 0;
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        const boldW = ctx.measureText(bold).width;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        const afterW = after ? ctx.measureText(after).width : 0;
+        let cursor = W / 2 - (beforeW + boldW + afterW) / 2;
+        if (before) {
+          ctx.fillText(before, cursor + beforeW / 2, y);
+          cursor += beforeW;
+        }
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        ctx.fillText(bold, cursor + boldW / 2, y);
+        cursor += boldW;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        if (after) ctx.fillText(after, cursor + afterW / 2, y);
+      } else {
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+      }
+    } else {
+      ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+    }
+  });
+
+  const qrSize = 340;
+  const qrY = 600;
+  drawQr(ctx, qr, {
+    size: qrSize,
+    y: qrY,
+    pad: 22,
+    bg: "#ffffff",
+    border: theme.qrBorder,
+  });
+
+  drawWeddingRingsDivider(ctx, qrY + qrSize + 55, accent);
+
+  const footerFont = resolveZoneFont(zone(d, "footer"), "serif");
+  ctx.fillStyle = theme.footer;
+  ctx.font = makeFontFace(footerFont, resolveZoneSize(zone(d, "footer"), 22), "400");
+  ctx.fillText(applyCase(t.footer, zone(d, "footer"), false), W / 2, 1095);
+
+  drawHeart(ctx, W / 2, 1135, 14, accent);
+
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(ctx, coupleNames, W - 280, nameFontId, 40, 22, "400");
+  ctx.fillText(coupleNames, W / 2, 1220);
+}
+
+function drawInterlockingHearts(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+) {
+  const drawOutline = (ox: number) => {
+    const s = size;
+    ctx.beginPath();
+    ctx.moveTo(ox, y + s * 0.3);
+    ctx.bezierCurveTo(ox, y, ox - s / 2, y, ox - s / 2, y + s * 0.35);
+    ctx.bezierCurveTo(ox - s / 2, y + s * 0.65, ox, y + s * 0.95, ox, y + s);
+    ctx.bezierCurveTo(ox, y + s * 0.95, ox + s / 2, y + s * 0.65, ox + s / 2, y + s * 0.35);
+    ctx.bezierCurveTo(ox + s / 2, y, ox, y, ox, y + s * 0.3);
+    ctx.stroke();
+  };
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = "round";
+  drawOutline(x - size * 0.28);
+  drawOutline(x + size * 0.28);
+}
+
+function drawHeartLineDivider(
+  ctx: CanvasRenderingContext2D,
+  y: number,
+  color: string,
+  half = 130,
+) {
+  const mid = W / 2;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(mid - half, y);
+  ctx.lineTo(mid - 12, y);
+  ctx.moveTo(mid + 12, y);
+  ctx.lineTo(mid + half, y);
+  ctx.stroke();
+  drawHeart(ctx, mid, y - 5, 10, color);
+}
+
+function parseInviteDateParts(
+  dateLabel: string,
+  locale: InviteCardLocale,
+): { weekday: string; day: string; monthYear: string } {
+  const raw = dateLabel.trim();
+  const fr = raw.match(
+    /^([A-Za-zÀ-ÿ'’]+)\s+(\d{1,2})\s+([A-Za-zÀ-ÿ'’]+)\s+(\d{4})$/i,
+  );
+  if (fr) {
+    return {
+      weekday: fr[1].toUpperCase(),
+      day: fr[2],
+      monthYear: `${fr[3].toUpperCase()} ${fr[4]}`,
+    };
+  }
+  const en = raw.match(
+    /^([A-Za-z]+),?\s+([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/i,
+  );
+  if (en) {
+    return {
+      weekday: en[1].toUpperCase(),
+      day: en[3],
+      monthYear: `${en[2].toUpperCase()} ${en[4]}`,
+    };
+  }
+  const parts = raw.split(/\s+/).filter(Boolean);
+  if (parts.length >= 3) {
+    const day = parts.find((p) => /^\d{1,2}$/.test(p)) || "";
+    const year = parts.find((p) => /^\d{4}$/.test(p)) || "";
+    const weekday = parts[0] || (locale === "en" ? "DAY" : "JOUR");
+    const month =
+      parts.find((p) => /^[A-Za-zÀ-ÿ'’]+$/i.test(p) && p !== parts[0]) || "";
+    return {
+      weekday: weekday.toUpperCase(),
+      day: day || "—",
+      monthYear: `${month} ${year}`.trim().toUpperCase() || raw.toUpperCase(),
+    };
+  }
+  return {
+    weekday: locale === "en" ? "DAY" : "JOUR",
+    day: "—",
+    monthYear: raw.toUpperCase() || "—",
+  };
+}
+
+function drawMinimalCornerLeaves(
+  ctx: CanvasRenderingContext2D,
+  accent: string,
+) {
+  const wash = "#e8dcc8";
+  const leaf = "#b08d57";
+
+  const softBlob = (x: number, y: number, rx: number, ry: number, a: number) => {
+    const g = ctx.createRadialGradient(x, y, 4, x, y, Math.max(rx, ry));
+    g.addColorStop(0, hexAlpha(wash, a));
+    g.addColorStop(1, hexAlpha(wash, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  softBlob(W - 110, 110, 90, 70, 0.55);
+  softBlob(W - 70, 150, 55, 45, 0.4);
+  drawLeaf(ctx, W - 130, 95, 0.4, 1.05, hexAlpha(leaf, 0.55));
+  drawLeaf(ctx, W - 95, 130, 1.0, 0.9, hexAlpha(leaf, 0.45));
+  drawLeaf(ctx, W - 155, 140, -0.2, 0.85, hexAlpha(leaf, 0.4));
+  drawGoldSprig(ctx, W - 80, 75, 0.7, accent);
+  ctx.fillStyle = hexAlpha(accent, 0.65);
+  for (const [dx, dy] of [
+    [W - 55, 70],
+    [W - 170, 60],
+    [W - 45, 160],
+    [W - 140, 175],
   ] as const) {
     ctx.beginPath();
-    ctx.moveTo(cx, cy - 10);
-    ctx.lineTo(cx + 10, cy);
-    ctx.lineTo(cx, cy + 10);
-    ctx.lineTo(cx - 10, cy);
-    ctx.closePath();
-    ctx.fillStyle = accent;
+    ctx.arc(dx, dy, 2, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  drawContentBlock(
-    d,
-    accentTheme(
-      {
-        eyebrow: "#8a6a3a",
-        invite: "#7a5c4a",
-        names: "#3b2416",
-        date: "#8a6a3a",
-        body: "#7a5c4a",
-        footer: "#8a6a3a",
-        divider: accent,
-        qrBorder: accent,
-      },
-      accent,
-    ),
-  );
+  softBlob(110, H - 110, 90, 70, 0.55);
+  softBlob(70, H - 150, 55, 45, 0.4);
+  drawLeaf(ctx, 130, H - 95, -2.7, 1.05, hexAlpha(leaf, 0.55));
+  drawLeaf(ctx, 95, H - 130, -2.1, 0.9, hexAlpha(leaf, 0.45));
+  drawLeaf(ctx, 155, H - 140, 2.9, 0.85, hexAlpha(leaf, 0.4));
+  drawGoldSprig(ctx, 80, H - 75, -2.4, accent);
+  for (const [dx, dy] of [
+    [55, H - 70],
+    [170, H - 60],
+    [45, H - 160],
+    [140, H - 175],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 function drawMinimal(d: DrawCtx) {
-  const { ctx, accent } = d;
-  ctx.fillStyle = "#ffffff";
+  const { ctx, accent, coupleNames, dateLabel, t, qr, locale } = d;
+
+  ctx.fillStyle = "#fdfbf7";
   ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = "rgba(59,36,22,0.12)";
+
+  const m = 52;
+  ctx.strokeStyle = hexAlpha(accent, 0.85);
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(m, m, W - m * 2, H - m * 2);
+
+  drawMinimalCornerLeaves(ctx, accent);
+
+  const topCorner =
+    locale === "en"
+      ? ["LOVE", "TODAY", "TOMORROW", "ALWAYS"]
+      : ["AMOUR", "AUJOURD'HUI", "DEMAIN", "TOUJOURS"];
+  const bottomCorner =
+    locale === "en"
+      ? ["BEAUTIFUL", "STORIES", "BEGIN", "HERE"]
+      : ["DE", "BELLES", "HISTOIRES", "COMMENCENT", "ICI"];
+
+  ctx.fillStyle = hexAlpha("#3b2416", 0.55);
+  ctx.font = makeFontFace("sans", 12, "500");
+  ctx.textAlign = "left";
+  topCorner.forEach((line, i) => {
+    ctx.fillText(line, m + 28, m + 48 + i * 20);
+  });
+  ctx.strokeStyle = hexAlpha(accent, 0.6);
   ctx.lineWidth = 1;
-  ctx.strokeRect(64, 64, W - 128, H - 128);
-  drawContentBlock(
-    d,
-    accentTheme(
-      {
-        eyebrow: "#9a8578",
-        invite: "#9a8578",
-        names: "#3b2416",
-        date: "#9a8578",
-        body: "#7a5c4a",
-        footer: "#9a8578",
-        divider: "rgba(59,36,22,0.15)",
-        qrBorder: "rgba(59,36,22,0.12)",
-      },
-      accent,
-    ),
-    { qrSize: 340, qrY: 640, upperCaseDate: false },
+  ctx.beginPath();
+  ctx.moveTo(m + 28, m + 48 + topCorner.length * 20 + 4);
+  ctx.lineTo(m + 88, m + 48 + topCorner.length * 20 + 4);
+  ctx.stroke();
+
+  ctx.textAlign = "right";
+  const bStart = H - m - 36 - (bottomCorner.length - 1) * 18;
+  bottomCorner.forEach((line, i) => {
+    ctx.fillText(line, W - m - 28, bStart + i * 18);
+  });
+  ctx.beginPath();
+  ctx.moveTo(W - m - 28, bStart + bottomCorner.length * 18 + 6);
+  ctx.lineTo(W - m - 100, bStart + bottomCorner.length * 18 + 6);
+  ctx.stroke();
+
+  const theme = themeWithZoneColors(
+    {
+      eyebrow: "#3b2416",
+      invite: "#5c4333",
+      names: "#3b2416",
+      date: "#3b2416",
+      body: "#5c4333",
+      footer: "#3b2416",
+      divider: accent,
+      qrBorder: accent,
+      qrBg: "#ffffff",
+    },
+    d.styles,
   );
+
+  ctx.textAlign = "center";
+  drawInterlockingHearts(ctx, W / 2, 135, 22, accent);
+
+  const eyebrowFont = resolveZoneFont(zone(d, "eyebrow"), "sans");
+  ctx.fillStyle = theme.eyebrow;
+  ctx.font = makeFontFace(eyebrowFont, resolveZoneSize(zone(d, "eyebrow"), 17), "500");
+  ctx.fillText(applyCase(t.eyebrow, zone(d, "eyebrow"), true), W / 2, 210);
+
+  const inviteFont = resolveZoneFont(zone(d, "invite"), "sans");
+  ctx.fillStyle = theme.invite;
+  ctx.font = makeFontFace(inviteFont, resolveZoneSize(zone(d, "invite"), 18), "400");
+  ctx.fillText(applyCase(t.inviteLine, zone(d, "invite"), false), W / 2, 248);
+
+  const nameFontId = resolveZoneFont(zone(d, "names"), "script");
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(
+    ctx,
+    coupleNames,
+    W - 260,
+    nameFontId,
+    resolveZoneSize(zone(d, "names"), 76),
+    32,
+    "400",
+  );
+  ctx.fillText(coupleNames, W / 2, 340);
+
+  drawHeartLineDivider(ctx, 380, accent, 160);
+
+  const { weekday, day, monthYear } = parseInviteDateParts(dateLabel, locale);
+  const dateFont = resolveZoneFont(zone(d, "date"), "serif");
+  const dateY = 445;
+  const colGap = 28;
+  ctx.fillStyle = theme.date;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 18), "500");
+  const leftW = ctx.measureText(weekday).width;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 52), "600");
+  const dayW = ctx.measureText(day).width;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 18), "500");
+  const rightW = ctx.measureText(monthYear).width;
+  const total = leftW + dayW + rightW + colGap * 2 + 20;
+  let x = W / 2 - total / 2;
+
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 18), "500");
+  ctx.fillText(weekday, x + leftW / 2, dateY);
+  x += leftW + colGap / 2;
+  ctx.strokeStyle = hexAlpha(accent, 0.55);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x, dateY - 28);
+  ctx.lineTo(x, dateY + 10);
+  ctx.stroke();
+  x += colGap / 2 + 4;
+
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 52), "600");
+  ctx.fillText(day, x + dayW / 2, dateY + 4);
+  x += dayW + colGap / 2;
+  ctx.beginPath();
+  ctx.moveTo(x, dateY - 28);
+  ctx.lineTo(x, dateY + 10);
+  ctx.stroke();
+  x += colGap / 2 + 4;
+
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 18), "500");
+  ctx.fillText(monthYear, x + rightW / 2, dateY);
+
+  drawHeartLineDivider(ctx, 490, accent, 160);
+
+  const bodyFont = resolveZoneFont(zone(d, "body"), "serif");
+  const bodySize = resolveZoneSize(zone(d, "body"), 20);
+  ctx.fillStyle = theme.body;
+  ctx.font = makeFontFace(bodyFont, bodySize, "400");
+  const bodyLines = t.body.slice(0, 3);
+  bodyLines.forEach((line, i) => {
+    const isLast = i === bodyLines.length - 1;
+    const y = 535 + i * 30;
+    if (isLast) {
+      const boldMatch = line.match(
+        /^(.*?)(confirmer votre présence\.?|confirm your attendance\.?)(.*)$/i,
+      );
+      if (boldMatch) {
+        const [, before, bold, after] = boldMatch;
+        const beforeW = before ? ctx.measureText(before).width : 0;
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        const boldW = ctx.measureText(bold).width;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        const afterW = after ? ctx.measureText(after).width : 0;
+        let cursor = W / 2 - (beforeW + boldW + afterW) / 2;
+        if (before) {
+          ctx.fillText(before, cursor + beforeW / 2, y);
+          cursor += beforeW;
+        }
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        ctx.fillText(bold, cursor + boldW / 2, y);
+        cursor += boldW;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        if (after) ctx.fillText(after, cursor + afterW / 2, y);
+      } else {
+        ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+      }
+    } else {
+      ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+    }
+  });
+
+  const qrSize = 320;
+  const qrY = 650;
+  drawQr(ctx, qr, {
+    size: qrSize,
+    y: qrY,
+    pad: 24,
+    bg: "#ffffff",
+    border: accent,
+  });
+
+  drawHeartLineDivider(ctx, qrY + qrSize + 58, accent, 140);
+
+  const footerFont = resolveZoneFont(zone(d, "footer"), "sans");
+  ctx.fillStyle = theme.footer;
+  ctx.font = makeFontFace(footerFont, resolveZoneSize(zone(d, "footer"), 16), "500");
+  ctx.fillText(applyCase(t.footer, zone(d, "footer"), true), W / 2, 1105);
+
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(ctx, coupleNames, W - 300, nameFontId, 38, 20, "400");
+  ctx.fillText(coupleNames, W / 2, 1175);
 }
 
-function drawSoiree(d: DrawCtx) {
-  const { ctx, accent } = d;
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#2a1810");
-  bg.addColorStop(0.5, "#3b2416");
-  bg.addColorStop(1, "#241510");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = hexAlpha(accent, 0.5);
-  ctx.lineWidth = 2;
-  ctx.strokeRect(48, 48, W - 96, H - 96);
-  ctx.strokeStyle = "rgba(247, 244, 240, 0.12)";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(68, 68, W - 136, H - 136);
-  drawContentBlock(
-    d,
-    accentTheme(
-      {
-        eyebrow: accent,
-        invite: "rgba(247,244,240,0.75)",
-        names: "#f7f4f0",
-        date: accent,
-        body: "rgba(247,244,240,0.8)",
-        footer: "rgba(247,244,240,0.85)",
-        divider: hexAlpha(accent, 0.4),
-        qrBorder: hexAlpha(accent, 0.55),
-      },
-      accent,
-      true,
-    ),
-  );
-}
+function drawSoireeFlorals(ctx: CanvasRenderingContext2D, accent: string) {
+  const petal = "#f0e4d4";
+  const petalSoft = "#d9c4a8";
+  const leaf = "#a67c52";
+  const center = "#2a1810";
 
-function drawFloral(d: DrawCtx) {
-  const { ctx, accent } = d;
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#f8ecec");
-  bg.addColorStop(0.5, "#faf4f0");
-  bg.addColorStop(1, "#f0e4e0");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  for (const [x, y, r] of [
-    [80, 120, 90],
-    [W - 90, 140, 100],
-    [70, H - 140, 110],
-    [W - 80, H - 120, 95],
-    [W / 2, 80, 60],
+  // Haut gauche
+  drawLeaf(ctx, 90, 140, -0.85, 1.2, hexAlpha(leaf, 0.85));
+  drawLeaf(ctx, 130, 95, -0.3, 1.0, hexAlpha(leaf, 0.7));
+  drawLeaf(ctx, 70, 185, -1.3, 0.95, hexAlpha(accent, 0.55));
+  drawGoldSprig(ctx, 150, 70, -0.5, accent);
+  drawAnemone(ctx, 110, 130, 1.05, petal, center);
+  drawAnemone(ctx, 155, 170, 0.75, petalSoft, center);
+  drawHeart(ctx, 185, 95, 12, accent);
+  ctx.fillStyle = hexAlpha(accent, 0.75);
+  for (const [dx, dy] of [
+    [50, 90],
+    [200, 75],
+    [60, 210],
+    [175, 210],
   ] as const) {
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fillStyle = hexAlpha(accent, 0.1);
+    ctx.arc(dx, dy, 2.2, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(70, 90, W - 140, H - 180);
-  ctx.strokeStyle = hexAlpha(accent, 0.3);
+  // Bas droite
+  drawLeaf(ctx, W - 90, H - 140, 2.25, 1.2, hexAlpha(leaf, 0.85));
+  drawLeaf(ctx, W - 130, H - 95, 2.8, 1.0, hexAlpha(leaf, 0.7));
+  drawLeaf(ctx, W - 70, H - 185, 1.85, 0.95, hexAlpha(accent, 0.55));
+  drawGoldSprig(ctx, W - 150, H - 70, 2.55, accent);
+  drawAnemone(ctx, W - 110, H - 130, 1.05, petal, center);
+  drawAnemone(ctx, W - 155, H - 170, 0.75, petalSoft, center);
+  drawHeart(ctx, W - 185, H - 95, 12, accent);
+  for (const [dx, dy] of [
+    [W - 50, H - 90],
+    [W - 200, H - 75],
+    [W - 60, H - 210],
+    [W - 175, H - 210],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawSoiree(d: DrawCtx) {
+  const { ctx, accent, coupleNames, dateLabel, t, qr, locale } = d;
+
+  // Nuit cacao chaude — glow champagne central
+  const bg = ctx.createRadialGradient(W / 2, H * 0.35, 40, W / 2, H * 0.55, H * 0.85);
+  bg.addColorStop(0, "#4a2f1f");
+  bg.addColorStop(0.45, "#2f1a12");
+  bg.addColorStop(1, "#1a0f0a");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Halo or doux
+  for (const [x, y, r, a] of [
+    [W / 2, 220, 220, 0.12],
+    [120, 160, 140, 0.08],
+    [W - 120, H - 180, 150, 0.08],
+  ] as const) {
+    const glow = ctx.createRadialGradient(x, y, 10, x, y, r);
+    glow.addColorStop(0, hexAlpha(accent, a));
+    glow.addColorStop(1, hexAlpha(accent, 0));
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Double cadre soirée
+  ctx.strokeStyle = hexAlpha(accent, 0.65);
   ctx.lineWidth = 2;
-  ctx.strokeRect(70, 90, W - 140, H - 180);
-  drawContentBlock(
-    d,
-    accentTheme(
-      {
-        eyebrow: accent,
-        invite: "#8a6a6a",
-        names: "#4a2c2c",
-        date: accent,
-        body: "#8a6a6a",
-        footer: accent,
-        divider: hexAlpha(accent, 0.35),
-        qrBorder: hexAlpha(accent, 0.3),
-      },
-      accent,
-    ),
+  ctx.strokeRect(42, 42, W - 84, H - 84);
+  ctx.strokeStyle = "rgba(247,244,240,0.14)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(58, 58, W - 116, H - 116);
+
+  drawSoireeFlorals(ctx, accent);
+
+  // Motifs coin « AMOUR »
+  const loveWord = locale === "en" ? "LOVE" : "AMOUR";
+  const foreverWord = locale === "en" ? "FOREVER" : "POUR TOUJOURS";
+  ctx.fillStyle = hexAlpha(accent, 0.85);
+  ctx.font = makeFontFace("sans", 11, "600");
+  ctx.textAlign = "left";
+  ctx.fillText(loveWord, 78, 250);
+  ctx.strokeStyle = hexAlpha(accent, 0.5);
+  ctx.beginPath();
+  ctx.moveTo(78, 258);
+  ctx.lineTo(78 + ctx.measureText(loveWord).width, 258);
+  ctx.stroke();
+  ctx.textAlign = "right";
+  ctx.fillText(foreverWord, W - 78, H - 250);
+  ctx.beginPath();
+  ctx.moveTo(W - 78, H - 242);
+  ctx.lineTo(W - 78 - ctx.measureText(foreverWord).width, H - 242);
+  ctx.stroke();
+
+  const theme = themeWithZoneColors(
+    {
+      eyebrow: accent,
+      invite: "rgba(247,244,240,0.72)",
+      names: "#f7f4f0",
+      date: accent,
+      body: "rgba(247,244,240,0.8)",
+      footer: "rgba(247,244,240,0.88)",
+      divider: hexAlpha(accent, 0.5),
+      qrBorder: accent,
+      qrBg: "#ffffff",
+    },
+    d.styles,
   );
+
+  ctx.textAlign = "center";
+  drawInterlockingHearts(ctx, W / 2, 115, 20, accent);
+
+  const eyebrowFont = resolveZoneFont(zone(d, "eyebrow"), "sans");
+  ctx.fillStyle = theme.eyebrow;
+  ctx.font = makeFontFace(eyebrowFont, resolveZoneSize(zone(d, "eyebrow"), 17), "600");
+  ctx.fillText(applyCase(t.eyebrow, zone(d, "eyebrow"), true), W / 2, 185);
+
+  const inviteFont = resolveZoneFont(zone(d, "invite"), "sans");
+  ctx.fillStyle = theme.invite;
+  ctx.font = makeFontFace(inviteFont, resolveZoneSize(zone(d, "invite"), 19), "400");
+  ctx.fillText(applyCase(t.inviteLine, zone(d, "invite"), false), W / 2, 225);
+
+  const nameFontId = resolveZoneFont(zone(d, "names"), "script");
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(
+    ctx,
+    coupleNames,
+    W - 220,
+    nameFontId,
+    resolveZoneSize(zone(d, "names"), 76),
+    30,
+    "400",
+  );
+  ctx.fillText(coupleNames, W / 2, 320);
+
+  drawDiamondDivider(ctx, 360, theme.divider, 105);
+
+  const dateFont = resolveZoneFont(zone(d, "date"), "sans");
+  ctx.fillStyle = theme.date;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 22), "500");
+  ctx.fillText(applyCase(dateLabel, zone(d, "date"), true), W / 2, 410);
+
+  // Capsule « soirée d’amour »
+  const capsule =
+    locale === "en" ? "AN EVENING OF LOVE" : "UNE SOIRÉE D’AMOUR";
+  ctx.font = makeFontFace("sans", 12, "600");
+  const capW = Math.max(180, ctx.measureText(capsule).width + 40);
+  ctx.strokeStyle = hexAlpha(accent, 0.55);
+  ctx.lineWidth = 1.25;
+  ctx.strokeRect(W / 2 - capW / 2, 435, capW, 30);
+  ctx.fillStyle = hexAlpha(accent, 0.12);
+  ctx.fillRect(W / 2 - capW / 2, 435, capW, 30);
+  ctx.fillStyle = accent;
+  ctx.fillText(capsule, W / 2, 455);
+
+  const bodyFont = resolveZoneFont(zone(d, "body"), "serif");
+  const bodySize = resolveZoneSize(zone(d, "body"), 20);
+  ctx.fillStyle = theme.body;
+  ctx.font = makeFontFace(bodyFont, bodySize, "400");
+  t.body.slice(0, 3).forEach((line, i, arr) => {
+    const y = 500 + i * 30;
+    const isLast = i === arr.length - 1;
+    if (isLast) {
+      const boldMatch = line.match(
+        /^(.*?)(confirmer votre présence\.?|confirm your attendance\.?)(.*)$/i,
+      );
+      if (boldMatch) {
+        const [, before, bold, after] = boldMatch;
+        const beforeW = before ? ctx.measureText(before).width : 0;
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        const boldW = ctx.measureText(bold).width;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        const afterW = after ? ctx.measureText(after).width : 0;
+        let cursor = W / 2 - (beforeW + boldW + afterW) / 2;
+        if (before) {
+          ctx.fillText(before, cursor + beforeW / 2, y);
+          cursor += beforeW;
+        }
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        ctx.fillText(bold, cursor + boldW / 2, y);
+        cursor += boldW;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        if (after) ctx.fillText(after, cursor + afterW / 2, y);
+      } else {
+        ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+      }
+    } else {
+      ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+    }
+  });
+
+  const qrSize = 320;
+  const qrY = 620;
+  // Carte QR lumineuse
+  const pad = 24;
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillRect(W / 2 - qrSize / 2 - pad + 4, qrY - pad + 6, qrSize + pad * 2, qrSize + pad * 2);
+  drawQr(ctx, qr, {
+    size: qrSize,
+    y: qrY,
+    pad,
+    bg: "#ffffff",
+    border: accent,
+  });
+  drawHeart(ctx, W / 2 - qrSize / 2 - pad - 8, qrY - 8, 11, accent);
+  drawHeart(ctx, W / 2 + qrSize / 2 + pad - 2, qrY - 8, 11, accent);
+
+  drawHeartLineDivider(ctx, qrY + qrSize + 52, accent, 120);
+
+  const footerFont = resolveZoneFont(zone(d, "footer"), "serif");
+  ctx.fillStyle = theme.footer;
+  ctx.font = makeFontFace(footerFont, resolveZoneSize(zone(d, "footer"), 20), "400");
+  ctx.fillText(applyCase(t.footer, zone(d, "footer"), false), W / 2, 1090);
+
+  drawHeart(ctx, W / 2, 1125, 14, accent);
+
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(ctx, coupleNames, W - 280, nameFontId, 38, 20, "400");
+  ctx.fillText(coupleNames, W / 2, 1205);
+}
+
+/** Pivoine douce — pétales superposés, rendu soft 2026 */
+function drawSoftPeony(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  petal: string,
+  center: string,
+) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + 0.2;
+    ctx.beginPath();
+    ctx.ellipse(Math.cos(a) * 14, Math.sin(a) * 14, 15, 9, a, 0, Math.PI * 2);
+    ctx.fillStyle = petal;
+    ctx.fill();
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.ellipse(Math.cos(a) * 7, Math.sin(a) * 7, 9, 6, a, 0, Math.PI * 2);
+    ctx.fillStyle = hexAlpha(petal, 0.85);
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.arc(0, 0, 6, 0, Math.PI * 2);
+  ctx.fillStyle = center;
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawFloralSoftMotifs(ctx: CanvasRenderingContext2D, accent: string) {
+  const blush = "#f0d9de";
+  const blushDeep = "#e4c4cb";
+  const leaf = "#b89a8c";
+  const center = "#6b3e3e";
+
+  // Haut gauche — bouquet aéré
+  drawLeaf(ctx, 88, 150, -0.9, 1.05, hexAlpha(leaf, 0.7));
+  drawLeaf(ctx, 125, 100, -0.35, 0.9, hexAlpha(leaf, 0.55));
+  drawLeaf(ctx, 65, 195, -1.35, 0.85, hexAlpha(accent, 0.4));
+  drawGoldSprig(ctx, 155, 78, -0.55, hexAlpha(accent, 0.75));
+  drawSoftPeony(ctx, 108, 135, 1.0, blush, center);
+  drawSoftPeony(ctx, 158, 175, 0.68, blushDeep, center);
+  drawAnemone(ctx, 175, 115, 0.55, "#f7ecef", center);
+  drawHeart(ctx, 195, 88, 10, hexAlpha(accent, 0.85));
+  ctx.fillStyle = hexAlpha(accent, 0.55);
+  for (const [dx, dy] of [
+    [55, 95],
+    [210, 70],
+    [48, 220],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Bas droite — miroir
+  drawLeaf(ctx, W - 88, H - 150, 2.2, 1.05, hexAlpha(leaf, 0.7));
+  drawLeaf(ctx, W - 125, H - 100, 2.75, 0.9, hexAlpha(leaf, 0.55));
+  drawLeaf(ctx, W - 65, H - 195, 1.8, 0.85, hexAlpha(accent, 0.4));
+  drawGoldSprig(ctx, W - 155, H - 78, 2.5, hexAlpha(accent, 0.75));
+  drawSoftPeony(ctx, W - 108, H - 135, 1.0, blush, center);
+  drawSoftPeony(ctx, W - 158, H - 175, 0.68, blushDeep, center);
+  drawAnemone(ctx, W - 175, H - 115, 0.55, "#f7ecef", center);
+  drawHeart(ctx, W - 195, H - 88, 10, hexAlpha(accent, 0.85));
+  for (const [dx, dy] of [
+    [W - 55, H - 95],
+    [W - 210, H - 70],
+    [W - 48, H - 220],
+  ] as const) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawFloral(d: DrawCtx) {
+  const { ctx, accent, coupleNames, dateLabel, t, qr, locale } = d;
+
+  // Fond blush ivoire — soft, clean, 2026
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#fbf6f4");
+  bg.addColorStop(0.4, "#f7efec");
+  bg.addColorStop(1, "#f1e6e4");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Lavis blush discrets (pas de « blobs » lourds)
+  for (const [x, y, r, a] of [
+    [90, 110, 160, 0.1],
+    [W - 100, H - 130, 170, 0.09],
+    [W / 2, H * 0.42, 220, 0.05],
+  ] as const) {
+    const wash = ctx.createRadialGradient(x, y, 20, x, y, r);
+    wash.addColorStop(0, hexAlpha(accent, a));
+    wash.addColorStop(1, hexAlpha(accent, 0));
+    ctx.fillStyle = wash;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Cadre hairline double — protocole clean
+  const m = 44;
+  ctx.strokeStyle = hexAlpha(accent, 0.45);
+  ctx.lineWidth = 1.25;
+  ctx.strokeRect(m, m, W - m * 2, H - m * 2);
+  ctx.strokeStyle = "rgba(59,36,38,0.08)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(m + 12, m + 12, W - (m + 12) * 2, H - (m + 12) * 2);
+
+  drawFloralSoftMotifs(ctx, accent);
+
+  // Mentions protocolaires (Directeurs / invitation d’exception)
+  const topLabel =
+    locale === "en" ? "WITH HONOUR" : "AVEC HONNEUR";
+  const bottomLabel =
+    locale === "en" ? "PRIVATE INVITATION" : "INVITATION PRIVÉE";
+  ctx.fillStyle = hexAlpha(accent, 0.9);
+  ctx.font = makeFontFace("sans", 11, "600");
+  ctx.textAlign = "left";
+  ctx.fillText(topLabel, m + 28, m + 38);
+  ctx.strokeStyle = hexAlpha(accent, 0.45);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(m + 28, m + 46);
+  ctx.lineTo(m + 28 + ctx.measureText(topLabel).width, m + 46);
+  ctx.stroke();
+  ctx.textAlign = "right";
+  ctx.fillText(bottomLabel, W - m - 28, H - m - 28);
+  ctx.beginPath();
+  ctx.moveTo(W - m - 28, H - m - 20);
+  ctx.lineTo(W - m - 28 - ctx.measureText(bottomLabel).width, H - m - 20);
+  ctx.stroke();
+
+  const theme = themeWithZoneColors(
+    {
+      eyebrow: accent,
+      invite: "#6e5558",
+      names: "#3b2428",
+      date: "#3b2428",
+      body: "#6e5558",
+      footer: accent,
+      divider: hexAlpha(accent, 0.45),
+      qrBorder: accent,
+      qrBg: "#ffffff",
+    },
+    d.styles,
+  );
+
+  ctx.textAlign = "center";
+
+  // Capsule soft
+  const chip =
+    locale === "en" ? "SOFT FLORAL · 2026" : "FLORAL SOFT · 2026";
+  ctx.font = makeFontFace("sans", 11, "600");
+  const chipW = Math.max(150, ctx.measureText(chip).width + 36);
+  ctx.fillStyle = hexAlpha(accent, 0.1);
+  ctx.fillRect(W / 2 - chipW / 2, 118, chipW, 26);
+  ctx.strokeStyle = hexAlpha(accent, 0.35);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(W / 2 - chipW / 2, 118, chipW, 26);
+  ctx.fillStyle = accent;
+  ctx.fillText(chip, W / 2, 136);
+
+  drawInterlockingHearts(ctx, W / 2, 168, 18, accent);
+
+  const eyebrowFont = resolveZoneFont(zone(d, "eyebrow"), "sans");
+  ctx.fillStyle = theme.eyebrow;
+  ctx.font = makeFontFace(
+    eyebrowFont,
+    resolveZoneSize(zone(d, "eyebrow"), 16),
+    "600",
+  );
+  ctx.fillText(applyCase(t.eyebrow, zone(d, "eyebrow"), true), W / 2, 230);
+
+  const inviteFont = resolveZoneFont(zone(d, "invite"), "sans");
+  ctx.fillStyle = theme.invite;
+  ctx.font = makeFontFace(
+    inviteFont,
+    resolveZoneSize(zone(d, "invite"), 18),
+    "400",
+  );
+  ctx.fillText(applyCase(t.inviteLine, zone(d, "invite"), false), W / 2, 268);
+
+  const nameFontId = resolveZoneFont(zone(d, "names"), "script");
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(
+    ctx,
+    coupleNames,
+    W - 240,
+    nameFontId,
+    resolveZoneSize(zone(d, "names"), 74),
+    30,
+    "400",
+  );
+  ctx.fillText(coupleNames, W / 2, 355);
+
+  drawHeartLineDivider(ctx, 392, accent, 140);
+
+  const { weekday, day, monthYear } = parseInviteDateParts(dateLabel, locale);
+  const dateFont = resolveZoneFont(zone(d, "date"), "serif");
+  const dateY = 450;
+  const colGap = 26;
+  ctx.fillStyle = theme.date;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 17), "500");
+  const leftW = ctx.measureText(weekday).width;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 48), "600");
+  const dayW = ctx.measureText(day).width;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 17), "500");
+  const rightW = ctx.measureText(monthYear).width;
+  const total = leftW + dayW + rightW + colGap * 2 + 16;
+  let cursor = W / 2 - total / 2;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 17), "500");
+  ctx.fillText(weekday, cursor + leftW / 2, dateY);
+  cursor += leftW + colGap;
+  ctx.fillStyle = accent;
+  ctx.fillRect(cursor, dateY - 28, 1, 36);
+  cursor += 8 + colGap / 2;
+  ctx.fillStyle = theme.date;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 48), "600");
+  ctx.fillText(day, cursor + dayW / 2, dateY + 4);
+  cursor += dayW + colGap / 2 + 8;
+  ctx.fillStyle = accent;
+  ctx.fillRect(cursor, dateY - 28, 1, 36);
+  cursor += 8 + colGap;
+  ctx.fillStyle = theme.date;
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 17), "500");
+  ctx.fillText(monthYear, cursor + rightW / 2, dateY);
+
+  const bodyFont = resolveZoneFont(zone(d, "body"), "serif");
+  const bodySize = resolveZoneSize(zone(d, "body"), 19);
+  ctx.fillStyle = theme.body;
+  ctx.font = makeFontFace(bodyFont, bodySize, "400");
+  t.body.slice(0, 3).forEach((line, i, arr) => {
+    const y = 510 + i * 28;
+    const isLast = i === arr.length - 1;
+    if (isLast) {
+      const boldMatch = line.match(
+        /^(.*?)(confirmer votre présence\.?|confirm your attendance\.?)(.*)$/i,
+      );
+      if (boldMatch) {
+        const [, before, bold, after] = boldMatch;
+        const beforeW = before ? ctx.measureText(before).width : 0;
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        const boldW = ctx.measureText(bold).width;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        const afterW = after ? ctx.measureText(after).width : 0;
+        let c = W / 2 - (beforeW + boldW + afterW) / 2;
+        if (before) {
+          ctx.fillText(before, c + beforeW / 2, y);
+          c += beforeW;
+        }
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        ctx.fillText(bold, c + boldW / 2, y);
+        c += boldW;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        if (after) ctx.fillText(after, c + afterW / 2, y);
+      } else {
+        ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+      }
+    } else {
+      ctx.fillText(applyCase(line, zone(d, "body"), false), W / 2, y);
+    }
+  });
+
+  const qrSize = 300;
+  const qrY = 620;
+  const pad = 22;
+  // Carte QR soft — ombre blush légère
+  ctx.fillStyle = hexAlpha(accent, 0.12);
+  ctx.fillRect(
+    W / 2 - qrSize / 2 - pad + 3,
+    qrY - pad + 5,
+    qrSize + pad * 2,
+    qrSize + pad * 2,
+  );
+  drawQr(ctx, qr, {
+    size: qrSize,
+    y: qrY,
+    pad,
+    bg: "#ffffff",
+    border: accent,
+  });
+  drawHeart(ctx, W / 2 - qrSize / 2 - pad - 6, qrY - 6, 9, accent);
+  drawHeart(ctx, W / 2 + qrSize / 2 + pad - 4, qrY - 6, 9, accent);
+
+  drawDiamondDivider(ctx, qrY + qrSize + 48, theme.divider, 100);
+
+  const footerFont = resolveZoneFont(zone(d, "footer"), "serif");
+  ctx.fillStyle = theme.footer;
+  ctx.font = makeFontFace(
+    footerFont,
+    resolveZoneSize(zone(d, "footer"), 19),
+    "400",
+  );
+  ctx.fillText(applyCase(t.footer, zone(d, "footer"), false), W / 2, 1085);
+
+  drawHeart(ctx, W / 2, 1118, 12, accent);
+
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(ctx, coupleNames, W - 280, nameFontId, 36, 20, "400");
+  ctx.fillText(coupleNames, W / 2, 1195);
 }
 
 function drawNoirOr(d: DrawCtx) {
@@ -1217,34 +2576,188 @@ function drawNoirOr(d: DrawCtx) {
 }
 
 function drawStudio(d: DrawCtx) {
-  const { ctx, accent } = d;
-  ctx.fillStyle = P.forest;
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = P.white;
-  ctx.fillRect(48, 48, W - 96, H - 96);
-  ctx.fillStyle = accent;
-  ctx.fillRect(48, 48, W - 96, 14);
-  ctx.fillRect(48, H - 62, W - 96, 14);
-  ctx.strokeStyle = hexAlpha(accent, 0.3);
-  ctx.lineWidth = 1;
-  ctx.strokeRect(48, 48, W - 96, H - 96);
+  const { ctx, accent, coupleNames, dateLabel, t, qr, locale } = d;
 
-  drawContentBlock(
-    d,
-    accentTheme(
-      {
-        eyebrow: accent,
-        invite: P.mocha,
-        names: P.cacao,
-        date: accent,
-        body: P.mocha,
-        footer: accent,
-        divider: hexAlpha(accent, 0.35),
-        qrBorder: accent,
-      },
-      accent,
-    ),
+  // Fond studio ivoire mat (léger dégradé chaud)
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#faf7f3");
+  bg.addColorStop(0.55, "#f3ebe3");
+  bg.addColorStop(1, "#ebe2d8");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Bande verticale éditoriale (signature 2026)
+  const rail = 36;
+  ctx.fillStyle = accent;
+  ctx.fillRect(0, 0, rail, H);
+  ctx.fillStyle = hexAlpha(accent, 0.35);
+  ctx.fillRect(rail, 0, 6, H);
+
+  // Micro-grille discrète à droite
+  ctx.strokeStyle = "rgba(59,36,22,0.045)";
+  ctx.lineWidth = 1;
+  for (let y = 80; y < H - 80; y += 28) {
+    ctx.beginPath();
+    ctx.moveTo(rail + 48, y);
+    ctx.lineTo(W - 48, y);
+    ctx.stroke();
+  }
+
+  // Panneau contenu blanc doux
+  const panelX = rail + 36;
+  const panelY = 56;
+  const panelW = W - panelX - 48;
+  const panelH = H - panelY * 2;
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.fillRect(panelX, panelY, panelW, panelH);
+  ctx.strokeStyle = "rgba(59,36,22,0.08)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(panelX, panelY, panelW, panelH);
+
+  // Filet accent haut du panneau
+  ctx.fillStyle = accent;
+  ctx.fillRect(panelX, panelY, panelW, 5);
+
+  const cx = panelX + panelW / 2;
+  const theme = themeWithZoneColors(
+    {
+      eyebrow: accent,
+      invite: P.mocha,
+      names: P.cacao,
+      date: P.cacao,
+      body: P.mocha,
+      footer: accent,
+      divider: hexAlpha(accent, 0.35),
+      qrBorder: accent,
+      qrBg: "#ffffff",
+    },
+    d.styles,
   );
+
+  ctx.textAlign = "center";
+
+  // Micro-étiquette studio
+  ctx.fillStyle = hexAlpha(accent, 0.12);
+  const tag = locale === "en" ? "STUDIO INVITE · 2026" : "STUDIO INVITE · 2026";
+  ctx.font = makeFontFace("sans", 12, "600");
+  const tagW = Math.max(160, ctx.measureText(tag).width + 36);
+  ctx.fillRect(cx - tagW / 2, panelY + 36, tagW, 28);
+  ctx.fillStyle = accent;
+  ctx.fillText(tag, cx, panelY + 55);
+
+  const eyebrowFont = resolveZoneFont(zone(d, "eyebrow"), "sans");
+  ctx.fillStyle = theme.eyebrow;
+  ctx.font = makeFontFace(eyebrowFont, resolveZoneSize(zone(d, "eyebrow"), 16), "600");
+  ctx.fillText(applyCase(t.eyebrow, zone(d, "eyebrow"), true), cx, panelY + 120);
+
+  const inviteFont = resolveZoneFont(zone(d, "invite"), "sans");
+  ctx.fillStyle = theme.invite;
+  ctx.font = makeFontFace(inviteFont, resolveZoneSize(zone(d, "invite"), 18), "400");
+  ctx.fillText(applyCase(t.inviteLine, zone(d, "invite"), false), cx, panelY + 155);
+
+  // Noms grands, aérés
+  const nameFontId = resolveZoneFont(zone(d, "names"), "script");
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(
+    ctx,
+    coupleNames,
+    panelW - 80,
+    nameFontId,
+    resolveZoneSize(zone(d, "names"), 74),
+    30,
+    "400",
+  );
+  ctx.fillText(coupleNames, cx, panelY + 250);
+
+  // Date en « chip » moderne
+  const dateFont = resolveZoneFont(zone(d, "date"), "sans");
+  const dateText = applyCase(dateLabel, zone(d, "date"), true);
+  ctx.font = makeFontFace(dateFont, resolveZoneSize(zone(d, "date"), 18), "600");
+  const dateChipW = Math.min(panelW - 100, Math.max(220, ctx.measureText(dateText).width + 48));
+  const dateChipY = panelY + 290;
+  ctx.strokeStyle = hexAlpha(accent, 0.55);
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(cx - dateChipW / 2, dateChipY, dateChipW, 42);
+  ctx.fillStyle = hexAlpha(accent, 0.06);
+  ctx.fillRect(cx - dateChipW / 2, dateChipY, dateChipW, 42);
+  ctx.fillStyle = theme.date;
+  ctx.fillText(dateText, cx, dateChipY + 28);
+
+  // Corps
+  const bodyFont = resolveZoneFont(zone(d, "body"), "sans");
+  const bodySize = resolveZoneSize(zone(d, "body"), 19);
+  ctx.fillStyle = theme.body;
+  ctx.font = makeFontFace(bodyFont, bodySize, "400");
+  t.body.slice(0, 3).forEach((line, i, arr) => {
+    const y = panelY + 380 + i * 28;
+    const isLast = i === arr.length - 1;
+    if (isLast) {
+      const boldMatch = line.match(
+        /^(.*?)(confirmer votre présence\.?|confirm your attendance\.?)(.*)$/i,
+      );
+      if (boldMatch) {
+        const [, before, bold, after] = boldMatch;
+        const beforeW = before ? ctx.measureText(before).width : 0;
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        const boldW = ctx.measureText(bold).width;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        const afterW = after ? ctx.measureText(after).width : 0;
+        let cursor = cx - (beforeW + boldW + afterW) / 2;
+        if (before) {
+          ctx.fillText(before, cursor + beforeW / 2, y);
+          cursor += beforeW;
+        }
+        ctx.font = makeFontFace(bodyFont, bodySize, "700");
+        ctx.fillText(bold, cursor + boldW / 2, y);
+        cursor += boldW;
+        ctx.font = makeFontFace(bodyFont, bodySize, "400");
+        if (after) ctx.fillText(after, cursor + afterW / 2, y);
+      } else {
+        ctx.fillText(applyCase(line, zone(d, "body"), false), cx, y);
+      }
+    } else {
+      ctx.fillText(applyCase(line, zone(d, "body"), false), cx, y);
+    }
+  });
+
+  // Carte QR flottante
+  const qrSize = 300;
+  const qrY = panelY + 500;
+  const cardPad = 28;
+  const cardX = cx - qrSize / 2 - cardPad;
+  const cardY = qrY - cardPad;
+  const cardSize = qrSize + cardPad * 2;
+  // ombre douce
+  ctx.fillStyle = "rgba(59,36,22,0.08)";
+  ctx.fillRect(cardX + 6, cardY + 8, cardSize, cardSize);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(cardX, cardY, cardSize, cardSize);
+  ctx.strokeStyle = hexAlpha(accent, 0.35);
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(cardX, cardY, cardSize, cardSize);
+  // micro-label RSVP
+  ctx.fillStyle = accent;
+  ctx.font = makeFontFace("sans", 11, "700");
+  ctx.fillText("RSVP", cx, cardY - 12);
+  ctx.drawImage(qr, cx - qrSize / 2, qrY, qrSize, qrSize);
+
+  // Pied
+  const footerFont = resolveZoneFont(zone(d, "footer"), "sans");
+  ctx.fillStyle = theme.footer;
+  ctx.font = makeFontFace(footerFont, resolveZoneSize(zone(d, "footer"), 15), "500");
+  ctx.fillText(applyCase(t.footer, zone(d, "footer"), true), cx, panelY + panelH - 90);
+
+  // Ligne signature
+  ctx.strokeStyle = hexAlpha(accent, 0.35);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - 70, panelY + panelH - 68);
+  ctx.lineTo(cx + 70, panelY + panelH - 68);
+  ctx.stroke();
+
+  ctx.fillStyle = theme.names;
+  ctx.font = fitName(ctx, coupleNames, panelW - 120, nameFontId, 34, 18, "400");
+  ctx.fillText(coupleNames, cx, panelY + panelH - 32);
 }
 
 function drawNavy(d: DrawCtx) {
@@ -2252,6 +3765,7 @@ async function renderInviteCardCanvas(input: BuildInviteCardInput) {
     nameStyle: meta.nameStyle,
     accent,
     styles: custom.styles,
+    locale: input.locale,
   });
 
   return canvas;
