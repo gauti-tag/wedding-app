@@ -38,7 +38,7 @@ const fr: Dictionary = {
   desserts: {
     eyebrow: "Pour finir",
     title: "Desserts",
-    subtitle: "Douceurs pour toute la table — yaourt, fruits, gâteau…",
+    subtitle: "Douceurs pour toute la table",
     empty: "La carte des desserts sera bientôt dévoilée.",
   },
   drinks: {
