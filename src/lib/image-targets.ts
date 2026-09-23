@@ -6,19 +6,16 @@ export type ImageTarget = {
   label: string;
 };
 
-/** Dimensions cibles alignées sur les cadres d’affichage du site. */
+/** Boîte maximale : l’image est réduite si besoin, jamais recadrée. */
 export const ALBUM_IMAGE_TARGETS: Record<PhotoAlbum, ImageTarget> = {
-  hero: { width: 1920, height: 1080, label: "1920 × 1080" },
-  story: { width: 1600, height: 1000, label: "1600 × 1000" },
-  gallery: { width: 1200, height: 1500, label: "1200 × 1500" },
+  hero: { width: 2400, height: 2400, label: "entier, max 2400 px" },
+  story: { width: 2000, height: 2000, label: "entier, max 2000 px" },
+  gallery: { width: 2000, height: 2000, label: "entier, max 2000 px" },
 };
 
-/** Story : 1ʳᵉ paysage, suivantes portrait. */
-export function storyImageTarget(existingStoryCount: number): ImageTarget {
-  if (existingStoryCount <= 0) {
-    return { width: 1600, height: 1000, label: "1600 × 1000" };
-  }
-  return { width: 1200, height: 1500, label: "1200 × 1500" };
+/** Même limite pour toutes les photos « Notre histoire ». */
+export function storyImageTarget(_existingStoryCount: number): ImageTarget {
+  return ALBUM_IMAGE_TARGETS.story;
 }
 
 export function resolveImageTarget(album: PhotoAlbum, existingStoryCount = 0): ImageTarget {

@@ -167,27 +167,27 @@ const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-audit", label: "Audit", permission: "view_audit" },
 ];
 
-/** Formats alignés sur les cadres d’affichage (remplissage du cadre prévu). */
+/** L’image envoyée est conservée en entier (aucun recadrage). */
 const albumSizeGuides: Record<
   PhotoAlbum,
   { ratio: string; size: string; tip: string; slots?: string }
 > = {
   hero: {
-    ratio: "Paysage 16:9",
-    size: `${ALBUM_IMAGE_TARGETS.hero.label} — remplit le cadre hero`,
-    tip: "Jusqu’à 6 photos plein écran. Redimensionnées à 1920×1080 pour occuper tout le hero.",
+    ratio: "Format d’origine",
+    size: `${ALBUM_IMAGE_TARGETS.hero.label} — plein cadre, du mobile au bureau`,
+    tip: "Jusqu’à 6 photos. Chacune couvre tout le hero. Le cadrage s’adapte à l’écran, sans bandes.",
     slots: "1 à 6 images — défilement en boucle",
   },
   story: {
-    ratio: "1ʳᵉ photo 16:10 · 2ᵉ et 3ᵉ en 4:5",
-    size: "1600 × 1000 puis 1200 × 1500 — remplit chaque emplacement",
-    tip: "Seules les 3 premières photos « Notre histoire » s’affichent, chacune dans son cadre.",
-    slots: "Grande (haut) : paysage · Deux petites : portrait",
+    ratio: "Format d’origine",
+    size: `${ALBUM_IMAGE_TARGETS.story.label} — photo entière`,
+    tip: "Seules les 3 premières photos « Notre histoire » s’affichent, chacune en entier.",
+    slots: "Jusqu’à 3 photos, dans leur format d’origine",
   },
   gallery: {
-    ratio: "Portrait 4:5",
-    size: `${ALBUM_IMAGE_TARGETS.gallery.label} — remplit la tuile galerie`,
-    tip: "Chaque photo occupe un cadre 4:5 (1200×1500).",
+    ratio: "Format d’origine",
+    size: `${ALBUM_IMAGE_TARGETS.gallery.label} — photo entière`,
+    tip: "Chaque photo s’affiche en entier dans la galerie, sans recadrage.",
   },
 };
 
@@ -318,7 +318,7 @@ export function AdminPanel({
     setCaption("");
     showSuccess(
       data.resizedTo
-        ? `Photo ajoutée et ajustée au cadre ${data.resizedTo.label}.`
+        ? `Photo ajoutée (${data.resizedTo.label}), affichée en entier.`
         : "Photo ajoutée.",
     );
   }
@@ -639,7 +639,7 @@ export function AdminPanel({
             ) : null}
             <p>{albumSizeGuides[album].tip}</p>
             <p className="text-xs text-soft/90">
-              Fichier JPG ou WebP, max 8 Mo. L’image remplit le cadre prévu (sans être étirée).
+              Fichier JPG ou WebP, max 8 Mo. L’image est conservée en entier et affichée à 100 % dans son cadre.
             </p>
           </aside>
 

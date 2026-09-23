@@ -167,7 +167,7 @@ export function AdminPhotosList({
                       <img
                         src={photo.url}
                         alt={photo.caption || "Photo"}
-                        className="aspect-[4/3] h-auto w-full object-cover pointer-events-none"
+                        className="block h-auto w-full object-contain pointer-events-none"
                         draggable={false}
                       />
                       <div className="space-y-2 p-3">

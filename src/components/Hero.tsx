@@ -2,7 +2,6 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { HeroCarouselBackground } from "@/components/HeroCarouselBackground";
-import { ParallaxMedia } from "@/components/motion/ParallaxMedia";
 import type { Locale } from "@/i18n/config";
 import { normalizeHeroCarousel } from "@/lib/hero-carousel";
 import { t } from "@/lib/localized";
@@ -38,15 +37,12 @@ export function Hero({
   return (
     <section id="top" className="relative h-dvh min-h-svh w-full overflow-hidden scroll-mt-0">
       <div className="absolute inset-0 overflow-hidden bg-cacao">
-        <ParallaxMedia className="absolute inset-0 size-full" strength={10}>
-          <HeroCarouselBackground
-            photos={heroPhotos}
-            settings={carousel}
-            fallbackAlt={names}
-          />
-        </ParallaxMedia>
-        <div className="absolute inset-0 bg-gradient-to-b from-cacao/25 via-cacao/45 to-cacao/90" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />
+        <HeroCarouselBackground
+          photos={heroPhotos}
+          settings={carousel}
+          fallbackAlt={names}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cacao/20 via-transparent to-cacao/75" />
       </div>
 
       <div className="section-shell relative z-10 flex h-full min-h-svh flex-col justify-end pb-16 pt-28 md:pb-20">

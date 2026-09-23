@@ -6,7 +6,7 @@ type Props = {
   className?: string;
 };
 
-/** Image qui remplit son cadre (responsive, sans déformation). */
+/** Photo hero : remplit tout le cadre (cover), responsive, sans bandes. */
 export function PhotoFill({
   src,
   alt,
@@ -20,7 +20,7 @@ export function PhotoFill({
       src={src}
       alt={alt}
       sizes={sizes}
-      className={`photo-fill ${className}`.trim()}
+      className={`hero-cover ${className}`.trim()}
       draggable={false}
       decoding="async"
       loading={priority ? "eager" : "lazy"}

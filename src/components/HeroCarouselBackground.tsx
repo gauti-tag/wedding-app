@@ -48,7 +48,7 @@ export function HeroCarouselBackground({ photos, settings, fallbackAlt }: Props)
       {slides.map((photo, i) => (
         <div
           key={photo.id}
-          className="absolute inset-0 size-full transition-opacity"
+          className="absolute inset-0 size-full overflow-hidden transition-opacity"
           style={{
             opacity: i === index ? 1 : 0,
             transitionDuration: `${settings.transitionMs}ms`,

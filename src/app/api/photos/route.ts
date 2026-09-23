@@ -99,13 +99,17 @@ export async function POST(request: Request) {
       user,
       "create",
       "photo",
-      `${album}: ${uploaded.filename} (${target.width}x${target.height})`,
+      `${album}: ${uploaded.filename} (${resized.width}x${resized.height})`,
     );
 
     return NextResponse.json({
       ok: true,
       photo: entry,
-      resizedTo: { width: target.width, height: target.height, label: target.label },
+      resizedTo: {
+        width: resized.width,
+        height: resized.height,
+        label: `${resized.width} × ${resized.height}`,
+      },
     });
   } catch (err) {
     console.error("Photo upload failed:", err);

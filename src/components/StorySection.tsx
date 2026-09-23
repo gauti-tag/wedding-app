@@ -1,4 +1,3 @@
-import { PhotoFill } from "@/components/PhotoFill";
 import { Reveal } from "@/components/Reveal";
 import { StoryScriptureBlock } from "@/components/StoryScriptureBlock";
 import type { Locale } from "@/i18n/config";
@@ -26,29 +25,24 @@ function StoryPhotoTile({
   index: number;
   className?: string;
 }) {
-  const layoutClass =
-    index === 0 ? "col-span-2 aspect-[16/10]" : "aspect-[4/5]";
+  const spanClass = index === 0 ? "col-span-2" : "";
+  const placeholderAspect = index === 0 ? "aspect-[16/10]" : "aspect-[4/5]";
 
   return (
     <div
-      className={`relative overflow-hidden border border-line bg-forest/60 ${layoutClass} ${className}`}
+      className={`relative overflow-hidden border border-line bg-forest/60 ${spanClass} ${className}`}
     >
       {photo.url ? (
-        <>
-          <PhotoFill
-            src={photo.url}
-            alt={photo.caption || photoAlt}
-            sizes={
-              index === 0
-                ? "(max-width: 1023px) 100vw, 55vw"
-                : "(max-width: 1023px) 50vw, 28vw"
-            }
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-cacao/15 via-cacao/25 to-cacao/55 md:from-cacao/25 md:via-cacao/45 md:to-cacao/90" />
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(59,36,22,0.28),transparent_50%,rgba(59,36,22,0.16))] md:bg-[linear-gradient(90deg,rgba(59,36,22,0.45),transparent_50%,rgba(59,36,22,0.25))]" />
-        </>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={photo.url}
+          alt={photo.caption || photoAlt}
+          className="block h-auto w-full max-w-full object-contain"
+          draggable={false}
+          decoding="async"
+        />
       ) : (
-        <div className="flex h-full w-full items-end bg-[linear-gradient(145deg,#efe8e0,#e5d9cc_40%,#d4c0a8)] p-4">
+        <div className={`flex h-full w-full items-end bg-[linear-gradient(145deg,#efe8e0,#e5d9cc_40%,#d4c0a8)] p-4 ${placeholderAspect}`}>
           <span className="text-xs tracking-[0.18em] text-champagne uppercase">
             {photo.caption} — {uploadHint}
           </span>
