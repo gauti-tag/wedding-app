@@ -64,19 +64,24 @@ html {
   html {
     scroll-padding-top: 4rem;
     /* Limite le pinch-zoom / double-tap zoom (complète viewport.userScalable) */
-    touch-action: pan-x pan-y;
+    touch-action: pan-y;
     overflow-x: clip;
+    max-width: 100%;
   }
 
   body {
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-x pan-y;
+    touch-action: pan-y;
     overscroll-behavior-x: none;
+    overflow-x: clip;
+    width: 100%;
     max-width: 100%;
   }
 
-  .section-shell {
-    width: min(1120px, calc(100% - 1.5rem));
+  main {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   /* Évite un flou résiduel GPU (Safari / Chrome mobile) */
@@ -123,10 +128,18 @@ p {
 }
 
 .section-shell {
-  width: min(1120px, calc(100% - 2.5rem));
-  max-width: 100%;
+  width: 100%;
+  max-width: 1120px;
+  min-width: 0;
   margin-inline: auto;
+  padding-inline: 1.25rem;
   box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .section-shell {
+    padding-inline: 1rem;
+  }
 }
 
 /*
@@ -202,6 +215,13 @@ p {
 .site-section-grid {
   display: grid;
   gap: 3rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.site-section-grid > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .site-section-cards {
@@ -344,6 +364,7 @@ html.is-admin {
   overflow-x: clip;
   max-width: 100%;
   width: 100%;
+  touch-action: pan-x pan-y;
 }
 
 html.is-admin body {
@@ -351,6 +372,7 @@ html.is-admin body {
   max-width: 100%;
   width: 100%;
   overscroll-behavior-x: none;
+  touch-action: pan-x pan-y;
 }
 
 /* Scanner QR : html5-qrcode injecte parfois des largeurs fixes */
@@ -504,8 +526,6 @@ img.hero-cover {
   display: block;
   width: 100%;
   height: 100%;
-  min-width: 100%;
-  min-height: 100%;
   max-width: none;
   max-height: none;
   object-fit: cover;
@@ -663,6 +683,34 @@ img.hero-cover {
 .btn-primary-light:hover {
   background: #ffffff;
   transform: translateY(-1px);
+}
+
+/* Hero : ivoire et cacao fixes, lisibles sur la photo, indépendants du thème de page. */
+.hero-copy,
+.hero-copy .couple-name,
+.hero-copy .meta-date {
+  color: #f7f4f0;
+}
+
+.hero-copy .btn-primary-light {
+  background: rgba(247, 244, 240, 0.96);
+  color: #3b2416;
+  border-color: rgba(247, 244, 240, 0.9);
+}
+
+.hero-copy .btn-ghost-light {
+  background: transparent;
+  color: #f7f4f0;
+  border-color: rgba(247, 244, 240, 0.7);
+}
+
+@media (max-width: 767px) {
+  .hero-copy .btn-primary-light,
+  .hero-copy .btn-ghost-light {
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
 }
 
 .field {

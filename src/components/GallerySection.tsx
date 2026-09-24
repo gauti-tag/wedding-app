@@ -171,7 +171,7 @@ export function GallerySection({
                 : undefined
             }
           >
-            <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
+            <div className="columns-1 gap-4 min-w-0 max-w-full sm:columns-2 lg:columns-3">
               {gallery.length === 0
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <Reveal key={i} delay={i * 0.05} className="mb-4 break-inside-avoid">

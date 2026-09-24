@@ -120,7 +120,7 @@ export function StorySection({
           </Reveal>
 
           <Reveal delay={0.12}>
-            <div className="grid grid-cols-2 gap-3 md:gap-4">
+            <div className="grid min-w-0 max-w-full grid-cols-2 gap-3 md:gap-4 [&>*]:min-w-0">
               {items.map((photo, index) => (
                 <StoryPhotoTile
                   key={photo.id}
