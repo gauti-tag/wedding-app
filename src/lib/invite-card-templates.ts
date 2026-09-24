@@ -2146,7 +2146,7 @@ function drawSoiree(d: DrawCtx) {
 
   // Capsule « soirée d’amour »
   const capsule =
-    locale === "en" ? "AN EVENING OF LOVE" : "UNE SOIRÉE D’AMOUR";
+    locale === "en" ? "AN EVENING OF LOVE" : "Une journée D’AMOUR";
   ctx.font = makeFontFace("sans", 12, "600");
   const capW = Math.max(180, ctx.measureText(capsule).width + 40);
   ctx.strokeStyle = hexAlpha(accent, 0.55);

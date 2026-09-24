@@ -281,7 +281,7 @@ export function getEventPreset(
         rsvpConfig: { ...rsvpBase, showGuestOf: true, showMaybe: true },
         eventTitle: emptyL(),
         heroTagline: {
-          fr: "Une soirée pour célébrer l’amour, entourés de ceux qui comptent.",
+          fr: "Une journée pour célébrer l’amour, entourés de ceux qui comptent.",
           en: "An evening to celebrate love, surrounded by those who matter most.",
         },
       };
@@ -384,7 +384,7 @@ export function getEventPreset(
           en: partners.partnerOne || "Concert",
         },
         heroTagline: {
-          fr: "Une soirée live — réservez votre place.",
+          fr: "Une journée live — réservez votre place.",
           en: "A live evening — reserve your seat.",
         },
       };
