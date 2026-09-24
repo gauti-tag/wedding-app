@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { resolveImageTarget } from "@/lib/image-targets";
-import { resizeImageToTarget } from "@/lib/image-resize";
 import { deleteUpload, getPhotos, savePhotos, saveUpload } from "@/lib/storage";
 import type { Photo, PhotoAlbum } from "@/lib/types";
 
@@ -60,6 +59,7 @@ export async function POST(request: Request) {
     const target = resolveImageTarget(album, existingStoryCount);
 
     const rawBuffer = Buffer.from(await file.arrayBuffer());
+    const { resizeImageToTarget } = await import("@/lib/image-resize");
     const resized = await resizeImageToTarget(rawBuffer, target);
     const uploaded = await saveUpload(resized.buffer, {
       filenameHint: file.name,
