@@ -50,7 +50,7 @@ const fr: Dictionary = {
   gallery: {
     eyebrow: "Souvenirs",
     title: "Galerie",
-    subtitle: "Uploadez vos photos depuis l’espace admin pour animer cette galerie.",
+    subtitle: "",
     placeholder: "Emplacement photo",
     photoAlt: "Photo du couple",
     openPhoto: "Agrandir la photo",

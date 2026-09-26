@@ -50,7 +50,7 @@ const en: Dictionary = {
   gallery: {
     eyebrow: "Memories",
     title: "Gallery",
-    subtitle: "Upload your photos from the admin space to bring this gallery to life.",
+    subtitle: "",
     placeholder: "Photo placeholder",
     photoAlt: "Couple photo",
     openPhoto: "Enlarge photo",
