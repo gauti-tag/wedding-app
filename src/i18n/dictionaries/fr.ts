@@ -44,7 +44,7 @@ const fr: Dictionary = {
   drinks: {
     eyebrow: "À boire",
     title: "Boissons",
-    subtitle: "Une sélection pour toute la salle — vin, bière, softs et saveurs d’ici.",
+    subtitle: "Une sélection pour toute la salle - vin, bière, softs et saveurs d’ici.",
     empty: "La carte des boissons sera bientôt dévoilée.",
   },
   gallery: {
