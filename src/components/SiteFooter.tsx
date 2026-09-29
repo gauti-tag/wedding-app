@@ -43,12 +43,14 @@ export function SiteFooter({
           {pwa.showFooterButton ? (
             <PwaInstallButton label={pwaCopy.footerInstall} />
           ) : null}
+          {/*
           <a
             href="/admin"
             className="text-xs tracking-[0.18em] text-soft uppercase no-underline hover:text-champagne"
           >
             {dict.footer.coupleSpace}
           </a>
+          */}
         </div>
       </div>
     </footer>
