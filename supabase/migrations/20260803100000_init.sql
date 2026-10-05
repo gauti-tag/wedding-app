@@ -43,6 +43,7 @@ create table if not exists public.rsvps (
   blocked_at timestamptz,
   table_label text not null default '',
   seat_label text not null default '',
+  child_seats jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   constraint rsvps_email_unique unique (email),
   constraint rsvps_phone_unique unique (phone),

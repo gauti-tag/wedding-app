@@ -239,7 +239,8 @@ export async function getRsvps(): Promise<Rsvp[]> {
         r.blockedAt === undefined ||
         r.tableLabel === undefined ||
         r.seatLabel === undefined ||
-        r.childCount === undefined,
+        r.childCount === undefined ||
+        r.childSeats === undefined,
     );
     if (needsPersist && rsvps.length) {
       await writeJsonFile(path.join(dataDir, "rsvps.json"), rsvps);

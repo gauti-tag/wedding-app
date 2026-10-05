@@ -1,4 +1,12 @@
-import { countConfirmedSeats, normalizeGuestCapacity } from "@/lib/guest-capacity";
+import {
+  countConfirmedSeats,
+  countConfirmedSeatsForRelation,
+  normalizeGuestCapacity,
+  normalizeGuestRelationQuotas,
+  relationFromGuestOf,
+  seatsRemainingForRelation,
+} from "@/lib/guest-capacity";
+import { GUEST_RELATIONS, type GuestRelation } from "@/lib/guest-of";
 import { hasSeating } from "@/lib/seating";
 import type { GuestOf, Rsvp, SiteContent } from "@/lib/types";
 
@@ -11,6 +19,18 @@ export type FollowUpReason =
 export type FollowUpItem = {
   rsvp: Rsvp;
   reasons: FollowUpReason[];
+};
+
+export type RelationSeatRow = {
+  key: GuestRelation;
+  taken: number;
+  capacity: number;
+  remaining: number;
+};
+
+export type RelationChildrenRow = {
+  key: GuestRelation;
+  children: number;
 };
 
 export type RsvpInsights = {
@@ -27,6 +47,9 @@ export type RsvpInsights = {
   byGuestOf: Record<string, { total: number; yes: number }>;
   statusBars: { key: "yes" | "no" | "maybe"; count: number; pct: number }[];
   guestOfYesBars: { key: GuestOf; count: number; pct: number }[];
+  relationQuotasEnabled: boolean;
+  relationSeats: RelationSeatRow[];
+  childrenByRelation: RelationChildrenRow[];
   followUps: FollowUpItem[];
   unseatedYes: number;
 };
@@ -55,9 +78,22 @@ export function followUpReasonLabel(reason: FollowUpReason): string {
 
 export function computeRsvpInsights(
   rsvps: Rsvp[],
-  site: Pick<SiteContent, "guestCapacity" | "rsvpConfig">,
+  site: Pick<SiteContent, "guestCapacity" | "rsvpConfig" | "guestRelationQuotas">,
 ): RsvpInsights {
   const capacity = normalizeGuestCapacity(site.guestCapacity);
+  const quotas = normalizeGuestRelationQuotas(site.guestRelationQuotas, capacity);
+  const relationSeats: RelationSeatRow[] = quotas.enabled
+    ? GUEST_RELATIONS.map((key) => {
+        const relationCapacity = normalizeGuestCapacity(quotas.capacities[key]);
+        const taken = countConfirmedSeatsForRelation(rsvps, key);
+        return {
+          key,
+          taken,
+          capacity: relationCapacity,
+          remaining: seatsRemainingForRelation(quotas, rsvps, key) ?? 0,
+        };
+      })
+    : [];
   const yes = rsvps.filter((r) => r.status === "yes").length;
   const no = rsvps.filter((r) => r.status === "no").length;
   const maybe = rsvps.filter((r) => r.status === "maybe").length;
@@ -66,9 +102,15 @@ export function computeRsvpInsights(
   const seatsTaken = countConfirmedSeats(rsvps);
   const seatsRemaining = Math.max(0, capacity - seatsTaken);
   const capacityPct = capacity > 0 ? Math.min(100, Math.round((seatsTaken / capacity) * 100)) : 0;
-  const totalChildren = rsvps
-    .filter((r) => r.status === "yes")
-    .reduce((sum, r) => sum + (r.childCount ?? 0), 0);
+  const confirmed = rsvps.filter((r) => r.status === "yes");
+  const totalChildren = confirmed.reduce((sum, r) => sum + (r.childCount ?? 0), 0);
+  const childrenByRelation: RelationChildrenRow[] = GUEST_RELATIONS.map((key) => ({
+    key,
+    children: confirmed.reduce((sum, rsvp) => {
+      if (relationFromGuestOf(rsvp.guestOf) !== key) return sum;
+      return sum + (rsvp.childCount ?? 0);
+    }, 0),
+  }));
 
   const optionIds =
     site.rsvpConfig?.guestOfOptions?.map((o) => o.id) ??
@@ -134,6 +176,9 @@ export function computeRsvpInsights(
     byGuestOf,
     statusBars,
     guestOfYesBars,
+    relationQuotasEnabled: quotas.enabled,
+    relationSeats,
+    childrenByRelation,
     followUps,
     unseatedYes: rsvps.filter((r) => r.status === "yes" && !r.blockedAt && !hasSeating(r)).length,
   };

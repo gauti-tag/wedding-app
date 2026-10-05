@@ -1,4 +1,5 @@
 import { coupleLabel } from "@/lib/site";
+import { formatSeatingLabel, isCompleteSeat, normalizeChildSeats } from "@/lib/seating";
 import { ticketPageUrl } from "@/lib/tickets";
 import type { EventType, Rsvp, SiteContent } from "@/lib/types";
 import {
@@ -236,6 +237,7 @@ export function buildSeatingWhatsAppMessage(input: {
   coupleNames: string;
   tableLabel: string;
   seatLabel: string;
+  childPlaces?: string[];
   locale?: "fr" | "en";
 }) {
   const locale = input.locale || "fr";
@@ -250,6 +252,8 @@ export function buildSeatingWhatsAppMessage(input: {
   const placeEn = [table && `Table ${table}`, seat && `Seat ${seat}`]
     .filter(Boolean)
     .join(" · ");
+  const childLines = input.childPlaces || [];
+  const adultLine = locale === "en" ? placeEn : placeFr;
 
   if (locale === "en") {
     return joinWhatsAppLines([
@@ -257,7 +261,8 @@ export function buildSeatingWhatsAppMessage(input: {
       "",
       `Your place for the celebration with *${couple}*:`,
       "",
-      `🪑 *${placeEn}*`,
+      adultLine ? `🪑 *${adultLine}*` : false,
+      ...childLines,
       "",
       "See you very soon!",
       "",
@@ -270,7 +275,8 @@ export function buildSeatingWhatsAppMessage(input: {
     "",
     `Voici votre place pour la célébration de *${couple}* :`,
     "",
-    `🪑 *${placeFr}*`,
+    adultLine ? `🪑 *${adultLine}*` : false,
+    ...childLines,
     "",
     "À très bientôt !",
     "",
@@ -280,7 +286,8 @@ export function buildSeatingWhatsAppMessage(input: {
 
 /** Message WhatsApp dédié table/siège — null si placement incomplet ou numéro invalide (envoi invité). */
 export function seatingWhatsAppForRsvp(
-  rsvp: Pick<Rsvp, "name" | "phone" | "tableLabel" | "seatLabel">,
+  rsvp: Pick<Rsvp, "name" | "phone" | "tableLabel" | "seatLabel"> &
+    Partial<Pick<Rsvp, "childCount" | "childSeats">>,
   siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo"> & {
     eventTitle?: SiteContent["eventTitle"];
   },
@@ -288,9 +295,17 @@ export function seatingWhatsAppForRsvp(
 ) {
   const tableLabel = (rsvp.tableLabel || "").trim();
   const seatLabel = (rsvp.seatLabel || "").trim();
-  if (!tableLabel && !seatLabel) return null;
-
   const locale = options?.locale || "fr";
+  const childPlaces = normalizeChildSeats(rsvp.childSeats, rsvp.childCount ?? 0).flatMap(
+    (seat, index) => {
+      if (!isCompleteSeat(seat)) return [];
+      const place = formatSeatingLabel(seat.tableLabel, seat.seatLabel);
+      if (!place) return [];
+      return [locale === "en" ? `Child ${index + 1}: ${place}` : `Enfant ${index + 1} : ${place}`];
+    },
+  );
+  if (!tableLabel && !seatLabel && childPlaces.length === 0) return null;
+
   const toGuest = options?.toGuest !== false;
   const digits = toGuest ? phoneToWhatsAppDigits(rsvp.phone) : null;
   if (toGuest && !digits) return null;
@@ -300,6 +315,7 @@ export function seatingWhatsAppForRsvp(
     coupleNames: coupleLabel(siteContent, locale),
     tableLabel,
     seatLabel,
+    childPlaces,
     locale,
   });
 

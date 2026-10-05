@@ -6,6 +6,7 @@ import type { Dictionary } from "@/i18n/types";
 import {
   childCountOptions,
   normalizeChildCount,
+  relationFromGuestOf,
   seatsForRsvp,
   type GuestRelationQuotas,
 } from "@/lib/guest-capacity";
@@ -105,6 +106,16 @@ export function RsvpForm({
   );
   const [guestRelation, setGuestRelation] = useState<GuestRelation>("parent");
   const [guestHost, setGuestHost] = useState<GuestHostSuffix>("host_one");
+  const [guestOfId, setGuestOfId] = useState(
+    rsvpConfig.guestOfOptions[0]?.id || "parent_host_one",
+  );
+  const selectedRelation: GuestRelation | null = structuredGuestOf
+    ? guestRelation
+    : relationFromGuestOf(
+        rsvpConfig.showGuestOf
+          ? guestOfId
+          : rsvpConfig.guestOfOptions[0]?.id || "parent_host_one",
+      );
 
   const relationRemaining = useMemo(() => {
     if (!relationQuotas.enabled || !seatsTakenByRelation) return null;
@@ -149,7 +160,10 @@ export function RsvpForm({
       : "";
   const formClosed = notYetOpen || deadlinePassed;
   const showChildCountField =
-    rsvpConfig.showChildCount && attendance === "yes" && !capacityFull;
+    rsvpConfig.showChildCount &&
+    attendance === "yes" &&
+    !capacityFull &&
+    selectedRelation === "parent";
 
   function resolveGuestOf(form: FormData): string {
     if (!rsvpConfig.showGuestOf) {
@@ -185,13 +199,20 @@ export function RsvpForm({
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
     const nextStatus = String(form.get("status") || (capacityFull ? "maybe" : "yes"));
-    const childCount = normalizeChildCount(form.get("childCount") ?? 0);
+    const guestOf = resolveGuestOf(form);
+    const allowChildren =
+      nextStatus === "yes" &&
+      rsvpConfig.showChildCount &&
+      relationFromGuestOf(guestOf) === "parent";
+    const childCount = allowChildren
+      ? normalizeChildCount(form.get("childCount") ?? 0)
+      : 0;
     const payload = {
       name: formatFullName(String(form.get("name") || "")),
       phone: String(form.get("phone") || ""),
       status: nextStatus,
-      guestOf: resolveGuestOf(form),
-      childCount: nextStatus === "yes" && rsvpConfig.showChildCount ? childCount : 0,
+      guestOf,
+      childCount,
       message: "",
       locale,
     };
@@ -458,7 +479,8 @@ export function RsvpForm({
                     id="guestOf"
                     name="guestOf"
                     className="field"
-                    defaultValue={rsvpConfig.guestOfOptions[0]?.id || "parent_host_one"}
+                    value={guestOfId}
+                    onChange={(e) => setGuestOfId(e.target.value)}
                     required
                   >
                     {rsvpConfig.guestOfOptions.map((option) => (

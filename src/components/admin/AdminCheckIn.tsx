@@ -7,7 +7,7 @@ import {
   formatCheckInGuestLines,
   resolveCheckInGuestDetails,
 } from "@/lib/guest-of";
-import { formatSeatingLabel } from "@/lib/seating";
+import { formatFamilyPlace } from "@/lib/seating";
 import type { Rsvp, SiteContent } from "@/lib/types";
 import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
 
@@ -64,7 +64,7 @@ export function AdminCheckIn({
   );
 
   const seatingLabel = useMemo(
-    () => (lastGuest ? formatSeatingLabel(lastGuest.tableLabel, lastGuest.seatLabel) : null),
+    () => (lastGuest ? formatFamilyPlace(lastGuest) : ""),
     [lastGuest],
   );
 
@@ -140,9 +140,7 @@ export function AdminCheckIn({
       const guest = data.rsvp || null;
       setLastGuest(guest);
 
-      const place = guest
-        ? formatSeatingLabel(guest.tableLabel, guest.seatLabel)
-        : null;
+      const place = guest ? formatFamilyPlace(guest) : "";
       const guestLines = guest
         ? formatCheckInGuestLines(resolveCheckInGuestDetails(guest, site, guestOfLabels))
         : "";
@@ -158,7 +156,7 @@ export function AdminCheckIn({
           [
             `${guest?.name || "Invité"} est déjà enregistré(e).`,
             guestLines ? `\n\n${guestLines}` : "",
-            place ? `\n\nPlace : ${place}` : "\n\nAucune table / siège assigné.",
+            place ? `\n\n${place}` : "\n\nAucune table / siège assigné.",
           ].join(""),
           "Déjà check-in",
           waAction,
@@ -169,7 +167,7 @@ export function AdminCheckIn({
           [
             `${guest?.name || "Invité"} — présence enregistrée.`,
             guestLines ? `\n\n${guestLines}` : "",
-            place ? `\n\nPlace : ${place}` : "\n\nAucune table / siège assigné.",
+            place ? `\n\n${place}` : "\n\nAucune table / siège assigné.",
           ].join(""),
           "Check-in réussi",
           waAction,
@@ -277,7 +275,7 @@ export function AdminCheckIn({
                 </dl>
               ) : null}
               {seatingLabel ? (
-                <p className="meta-date mt-3 text-xl tracking-[0.06em] text-champagne">
+                <p className="meta-date mt-3 text-xl tracking-[0.06em] text-champagne whitespace-pre-line">
                   {seatingLabel}
                 </p>
               ) : (

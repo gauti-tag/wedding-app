@@ -30,6 +30,7 @@ import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
 import { formatOptionalDatetimeLabel } from "@/lib/rsvp-deadline";
+import { downloadRsvpExcel } from "@/lib/rsvp-excel";
 import { formatSeatingLabel } from "@/lib/seating";
 import { hasPermission, roleLabel, type Permission } from "@/lib/roles";
 import type {
@@ -521,6 +522,14 @@ export function AdminPanel({
     URL.revokeObjectURL(url);
   }
 
+  async function exportExcel() {
+    try {
+      await downloadRsvpExcel(rsvps, guestOfLabels, showGuestPii, maskName, maskPhone);
+    } catch {
+      showError("Export Excel impossible.");
+    }
+  }
+
   return (
     <div className="admin-panel min-w-0 max-w-full">
       {AlertDialog}
@@ -576,6 +585,7 @@ export function AdminPanel({
           site={site}
           guestOfLabels={guestOfLabels}
           onExportCsv={exportCsv}
+          onExportExcel={() => void exportExcel()}
           canExport={can("view_rsvp")}
           showGuestPii={showGuestPii}
         />
@@ -717,9 +727,19 @@ export function AdminPanel({
       <section id="admin-rsvp" className="mt-14 min-w-0 max-w-full scroll-mt-28">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 className="section-title text-3xl font-semibold text-mist">RSVP</h2>
-          <button type="button" onClick={exportCsv} className="btn-ghost" disabled={!rsvps.length}>
-            Exporter CSV
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={exportCsv} className="btn-ghost" disabled={!rsvps.length}>
+              Exporter CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => void exportExcel()}
+              className="btn-ghost"
+              disabled={!rsvps.length}
+            >
+              Exporter Excel
+            </button>
+          </div>
         </div>
 
         {can("manage_rsvp") ? (
@@ -1125,6 +1145,7 @@ export function AdminPanel({
           rsvps={rsvps}
           initialPlan={initialSeatingPlan}
           site={site}
+          guestOfLabels={guestOfLabels}
           canEdit={can("manage_rsvp")}
           showGuestPii={showGuestPii}
           onUpdated={(updated) =>

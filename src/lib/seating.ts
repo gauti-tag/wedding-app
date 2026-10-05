@@ -1,4 +1,5 @@
-import type { Rsvp, SeatingPlanContent, SeatingPlanTable } from "@/lib/types";
+import { normalizeChildCount } from "@/lib/guest-capacity";
+import type { ChildSeat, Rsvp, SeatingPlanContent, SeatingPlanTable } from "@/lib/types";
 
 export function createSeatingTableId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -37,6 +38,109 @@ export function formatSeatingLabel(
 
 export function hasSeating(rsvp: Pick<Rsvp, "tableLabel" | "seatLabel">) {
   return Boolean(normalizeSeatingLabel(rsvp.tableLabel) || normalizeSeatingLabel(rsvp.seatLabel));
+}
+
+export function emptyChildSeat(): ChildSeat {
+  return { tableLabel: "", seatLabel: "" };
+}
+
+/** Aligne les places enfants sur childCount (les places en trop sont ignorées). */
+export function normalizeChildSeats(raw: unknown, childCount: number): ChildSeat[] {
+  const count = normalizeChildCount(childCount);
+  const list = Array.isArray(raw) ? raw : [];
+  return Array.from({ length: count }, (_, index) => {
+    const item = list[index];
+    if (!item || typeof item !== "object") return emptyChildSeat();
+    const seat = item as Partial<ChildSeat>;
+    return {
+      tableLabel: normalizeSeatingLabel(seat.tableLabel),
+      seatLabel: normalizeSeatingLabel(seat.seatLabel),
+    };
+  });
+}
+
+export function isCompleteSeat(seat: Pick<ChildSeat, "tableLabel" | "seatLabel">) {
+  return Boolean(normalizeSeatingLabel(seat.tableLabel) && normalizeSeatingLabel(seat.seatLabel));
+}
+
+/** Place de l’invité, puis une ligne par enfant déjà assis. */
+export function formatFamilyPlace(
+  rsvp: Pick<Rsvp, "tableLabel" | "seatLabel" | "childCount" | "childSeats">,
+): string {
+  const lines: string[] = [];
+  const adult = formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel);
+  if (adult) lines.push(adult);
+  normalizeChildSeats(rsvp.childSeats, rsvp.childCount).forEach((seat, index) => {
+    if (!isCompleteSeat(seat)) return;
+    const label = formatSeatingLabel(seat.tableLabel, seat.seatLabel);
+    if (label) lines.push(`Enfant ${index + 1} · ${label}`);
+  });
+  return lines.join("\n");
+}
+
+/** Prochains sièges libres après `afterSeat`, puis le reste de la table. */
+export function nextFreeSeatsOnTable(
+  seats: string[],
+  occupied: Set<string>,
+  tableLabel: string,
+  afterSeat: string,
+  count: number,
+): string[] {
+  if (count <= 0) return [];
+  const start = seats.findIndex(
+    (seat) => seat.toLowerCase() === normalizeSeatingLabel(afterSeat).toLowerCase(),
+  );
+  const ordered =
+    start >= 0 ? [...seats.slice(start + 1), ...seats.slice(0, start)] : [...seats];
+  const free: string[] = [];
+  for (const seat of ordered) {
+    if (occupied.has(seatingKey(tableLabel, seat))) continue;
+    free.push(seat);
+    if (free.length === count) break;
+  }
+  return free;
+}
+
+export type SeatOccupant = {
+  rsvpId: string;
+  name: string;
+  childIndex: number | null;
+};
+
+/** Qui occupe ce siège : l’invité ou l’un de ses enfants. */
+export function findSeatOccupant(
+  rsvps: Pick<Rsvp, "id" | "name" | "status" | "blockedAt" | "tableLabel" | "seatLabel" | "childCount" | "childSeats">[],
+  tableLabel: string,
+  seatLabel: string,
+): SeatOccupant | null {
+  const key = seatingKey(tableLabel, seatLabel);
+  for (const rsvp of rsvps) {
+    if (rsvp.status === "no" || rsvp.blockedAt) continue;
+    if (isCompleteSeat(rsvp) && seatingKey(rsvp.tableLabel, rsvp.seatLabel) === key) {
+      return { rsvpId: rsvp.id, name: rsvp.name, childIndex: null };
+    }
+    const children = normalizeChildSeats(rsvp.childSeats, rsvp.childCount);
+    for (let index = 0; index < children.length; index += 1) {
+      const child = children[index]!;
+      if (!isCompleteSeat(child)) continue;
+      if (seatingKey(child.tableLabel, child.seatLabel) === key) {
+        return { rsvpId: rsvp.id, name: rsvp.name, childIndex: index };
+      }
+    }
+  }
+  return null;
+}
+
+export function guestUsesTable(
+  rsvp: Pick<Rsvp, "tableLabel" | "childCount" | "childSeats">,
+  tableLabel: string,
+) {
+  const key = normalizeSeatingLabel(tableLabel).toLowerCase();
+  if (!key) return false;
+  if (normalizeSeatingLabel(rsvp.tableLabel).toLowerCase() === key) return true;
+  return normalizeChildSeats(rsvp.childSeats, rsvp.childCount).some(
+    (child) => normalizeSeatingLabel(child.tableLabel).toLowerCase() === key,
+  );
 }
 
 export function createEmptySeatingTable(
@@ -127,25 +231,37 @@ export function findPlanTable(
   return plan.tables.find((t) => t.label.toLowerCase() === key);
 }
 
-/** Sièges déjà pris (table+siège), hors un RSVP donné. */
+type OccupancyRsvp = Pick<
+  Rsvp,
+  "id" | "tableLabel" | "seatLabel" | "status" | "blockedAt" | "childCount" | "childSeats"
+>;
+
+function addOccupiedSeat(occupied: Set<string>, tableLabel: string, seatLabel: string) {
+  const table = normalizeSeatingLabel(tableLabel);
+  const seat = normalizeSeatingLabel(seatLabel);
+  if (!table || !seat) return;
+  occupied.add(seatingKey(table, seat));
+}
+
+/** Sièges déjà pris (invité + enfants), hors un RSVP donné. */
 export function occupiedSeatingKeys(
-  rsvps: Pick<Rsvp, "id" | "tableLabel" | "seatLabel" | "status" | "blockedAt">[],
+  rsvps: OccupancyRsvp[],
   exceptRsvpId?: string,
 ): Set<string> {
   const occupied = new Set<string>();
   for (const rsvp of rsvps) {
     if (exceptRsvpId && rsvp.id === exceptRsvpId) continue;
     if (rsvp.status === "no" || rsvp.blockedAt) continue;
-    const table = normalizeSeatingLabel(rsvp.tableLabel);
-    const seat = normalizeSeatingLabel(rsvp.seatLabel);
-    if (!table || !seat) continue;
-    occupied.add(seatingKey(table, seat));
+    addOccupiedSeat(occupied, rsvp.tableLabel, rsvp.seatLabel);
+    for (const child of normalizeChildSeats(rsvp.childSeats, rsvp.childCount)) {
+      addOccupiedSeat(occupied, child.tableLabel, child.seatLabel);
+    }
   }
   return occupied;
 }
 
 export function isSeatTaken(
-  rsvps: Pick<Rsvp, "id" | "tableLabel" | "seatLabel" | "status" | "blockedAt">[],
+  rsvps: OccupancyRsvp[],
   tableLabel: string,
   seatLabel: string,
   exceptRsvpId?: string,

@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { site } from "@/lib/site";
 import type { Rsvp } from "@/lib/types";
 import { normalizeChildCount } from "@/lib/guest-capacity";
+import { normalizeChildSeats } from "@/lib/seating";
 import { formatFullName } from "@/lib/validation";
 
 export function createTicketToken() {
@@ -44,5 +45,9 @@ export function ensureRsvpTicketFields(rsvp: Rsvp): Rsvp {
     tableLabel: rsvp.tableLabel ?? "",
     seatLabel: rsvp.seatLabel ?? "",
     childCount: normalizeChildCount(rsvp.childCount ?? 0),
+    childSeats: normalizeChildSeats(
+      rsvp.childSeats,
+      normalizeChildCount(rsvp.childCount ?? 0),
+    ),
   };
 }

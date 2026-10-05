@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Reveal } from "@/components/Reveal";
+import { DirectionalReveal, Reveal } from "@/components/Reveal";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/types";
 import { t } from "@/lib/localized";
@@ -108,12 +108,12 @@ export function GuestbookSection({
             <p className="text-sm text-soft">{dict.guestbook.empty}</p>
           ) : (
             entries.map((entry) => (
-              <article key={entry.id} className="site-section-panel">
+              <DirectionalReveal key={entry.id} className="site-section-panel">
                 <p className="text-sm font-medium text-mist">{entry.name}</p>
                 <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-soft">
                   {entry.message}
                 </p>
-              </article>
+              </DirectionalReveal>
             ))
           )}
         </div>

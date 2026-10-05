@@ -1,6 +1,7 @@
 import type {
   AdminUser,
   AuditEntry,
+  ChildSeat,
   Photo,
   PhotoAlbum,
   Rsvp,
@@ -8,6 +9,7 @@ import type {
   GuestOf,
 } from "@/lib/types";
 import { normalizeChildCount } from "@/lib/guest-capacity";
+import { normalizeChildSeats } from "@/lib/seating";
 import { formatFullName } from "@/lib/validation";
 import { normalizeRole } from "@/lib/roles";
 
@@ -38,6 +40,7 @@ export type DbRsvp = {
   blocked_at: string | null;
   table_label: string;
   seat_label: string;
+  child_seats: ChildSeat[];
   created_at: string;
 };
 
@@ -107,6 +110,7 @@ export function mapRsvp(row: DbRsvp): Rsvp {
     blockedAt: row.blocked_at ?? null,
     tableLabel: row.table_label ?? "",
     seatLabel: row.seat_label ?? "",
+    childSeats: normalizeChildSeats(row.child_seats, row.child_count ?? 0),
     createdAt: row.created_at,
   };
 }
@@ -129,6 +133,7 @@ export function toDbRsvp(rsvp: Rsvp): DbRsvp {
     blocked_at: rsvp.blockedAt ?? null,
     table_label: rsvp.tableLabel || "",
     seat_label: rsvp.seatLabel || "",
+    child_seats: normalizeChildSeats(rsvp.childSeats, rsvp.childCount ?? 0),
     created_at: rsvp.createdAt,
   };
 }

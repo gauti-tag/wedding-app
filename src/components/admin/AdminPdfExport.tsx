@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
-import { formatSeatingLabel } from "@/lib/seating";
+import { findSeatOccupant, formatSeatingLabel, isCompleteSeat, normalizeChildSeats } from "@/lib/seating";
 import type { Rsvp, SeatingPlanContent, SiteContent } from "@/lib/types";
 
 type Props = {
@@ -71,26 +71,30 @@ export function AdminPdfExport({ rsvps, site, seatingPlan, guestOfLabels }: Prop
       const rows: string[][] = [];
 
       for (const table of seatingPlan.tables) {
-        const seated = yes.filter(
-          (r) =>
-            (r.tableLabel || "").trim().toLowerCase() === table.label.trim().toLowerCase(),
-        );
+        const seated = table.seats.flatMap((seat) => {
+          const occupant = findSeatOccupant(yes, table.label, seat);
+          const label = occupant
+            ? occupant.childIndex === null
+              ? occupant.name
+              : `Enfant ${occupant.childIndex + 1} · ${occupant.name}`
+            : "";
+          return occupant ? [[`Table ${table.label}`, label, seat]] : [];
+        });
         if (seated.length === 0) {
           rows.push([`Table ${table.label}`, "—", table.seats.join(", ") || "—"]);
         } else {
-          for (const g of seated) {
-            rows.push([
-              `Table ${table.label}`,
-              g.name,
-              g.seatLabel || "—",
-            ]);
-          }
+          rows.push(...seated);
         }
       }
 
-      const unassigned = yes.filter((r) => !(r.tableLabel || "").trim());
-      for (const g of unassigned) {
-        rows.push(["Sans table", g.name, "—"]);
+      for (const guest of yes) {
+        if (!(guest.tableLabel || "").trim()) {
+          rows.push(["Sans table", guest.name, "—"]);
+        }
+        normalizeChildSeats(guest.childSeats, guest.childCount).forEach((seat, index) => {
+          if (isCompleteSeat(seat)) return;
+          rows.push(["Sans table", `Enfant ${index + 1} · ${guest.name}`, "—"]);
+        });
       }
 
       autoTable(doc, {

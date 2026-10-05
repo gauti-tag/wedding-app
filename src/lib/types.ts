@@ -18,6 +18,12 @@ export type GuestOf = string;
 /** Nombre d’enfants accompagnants */
 export type ChildCount = 0 | 1 | 2 | 3 | 4;
 
+/** Place d’un enfant accompagnant. Vide = non assigné. */
+export type ChildSeat = {
+  tableLabel: string;
+  seatLabel: string;
+};
+
 export type Rsvp = {
   id: string;
   name: string;
@@ -27,6 +33,8 @@ export type Rsvp = {
   guestOf: GuestOf;
   /** Enfants accompagnants (comptent dans la capacité si présence = oui). */
   childCount: ChildCount;
+  /** Table et siège de chaque enfant accompagnant (même ordre, longueur = childCount). */
+  childSeats: ChildSeat[];
   message: string;
   createdAt: string;
   /** Jeton unique pour le QR code / check-in le jour J. */

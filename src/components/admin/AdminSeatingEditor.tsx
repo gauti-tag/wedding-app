@@ -1,25 +1,75 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import {
   createEmptySeatingTable,
   createSeatingTableId,
+  findSeatOccupant,
   formatSeatingLabel,
-  groupRsvpsByTable,
+  guestUsesTable,
+  isCompleteSeat,
+  nextFreeSeatsOnTable,
+  normalizeChildSeats,
   normalizeSeatingLabel,
   occupiedSeatingKeys,
   parseSeatListInput,
   seatingKey,
 } from "@/lib/seating";
-import type { Rsvp, SeatingPlanContent, SeatingPlanTable, SiteContent } from "@/lib/types";
-import { maskName } from "@/lib/mask-pii";
+import type { ChildSeat, Rsvp, SeatingPlanContent, SeatingPlanTable, SiteContent } from "@/lib/types";
+import { maskName, maskPhone } from "@/lib/mask-pii";
 import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
+
+type SeatDraft = {
+  tableLabel: string;
+  seatLabel: string;
+  childSeats: ChildSeat[];
+};
+
+function GuestAssignmentFacts({
+  lien,
+  phone,
+  childCount,
+  message,
+}: {
+  lien: string;
+  phone: string;
+  childCount: number;
+  message: string;
+}) {
+  return (
+    <dl className="mt-1 space-y-0.5 text-xs leading-5 text-soft">
+      <div>
+        <span className="text-mist">Lien</span>
+        {" · "}
+        {lien || "—"}
+      </div>
+      <div>
+        <span className="text-mist">Tél.</span>
+        {" · "}
+        {phone || "—"}
+      </div>
+      <div>
+        <span className="text-mist">Enfants</span>
+        {" · "}
+        {childCount}
+      </div>
+      {message.trim() ? (
+        <div className="break-words">
+          <span className="text-mist">Message</span>
+          {" · "}
+          {message.trim()}
+        </div>
+      ) : null}
+    </dl>
+  );
+}
 
 type Props = {
   rsvps: Rsvp[];
   initialPlan: SeatingPlanContent;
   site: Pick<SiteContent, "partnerOne" | "partnerTwo">;
+  guestOfLabels: Record<string, string>;
   onUpdated: (rsvp: Rsvp) => void;
   canEdit: boolean;
   showGuestPii?: boolean;
@@ -29,6 +79,7 @@ export function AdminSeatingEditor({
   rsvps,
   initialPlan,
   site,
+  guestOfLabels,
   onUpdated,
   canEdit,
   showGuestPii = true,
@@ -41,12 +92,11 @@ export function AdminSeatingEditor({
   const [query, setQuery] = useState("");
   const [onlyUnassigned, setOnlyUnassigned] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, { tableLabel: string; seatLabel: string }>>(
-    {},
-  );
+  const [drafts, setDrafts] = useState<Record<string, SeatDraft>>({});
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
 
   const displayGuestName = (name: string) => (showGuestPii ? name : maskName(name));
+  const displayPhone = (phone: string) => (showGuestPii ? phone || "—" : maskPhone(phone || ""));
 
   const yesGuests = useMemo(
     () =>
@@ -64,30 +114,102 @@ export function AdminSeatingEditor({
       );
       if (onlyUnassigned && assigned) return false;
       if (!q) return true;
-      const hay = `${r.name} ${r.tableLabel} ${r.seatLabel}`.toLowerCase();
+      const lien = guestOfLabels[r.guestOf] || r.guestOf || "";
+      const hay = `${r.name} ${r.phone} ${lien} ${r.message} ${r.tableLabel} ${r.seatLabel}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [yesGuests, query, onlyUnassigned]);
+  }, [yesGuests, query, onlyUnassigned, guestOfLabels]);
 
-  const groups = useMemo(() => groupRsvpsByTable(yesGuests), [yesGuests]);
+  function savedDraft(rsvp: Rsvp): SeatDraft {
+    return {
+      tableLabel: rsvp.tableLabel || "",
+      seatLabel: rsvp.seatLabel || "",
+      childSeats: normalizeChildSeats(rsvp.childSeats, rsvp.childCount),
+    };
+  }
 
-  function draftFor(rsvp: Rsvp) {
+  function draftFor(rsvp: Rsvp): SeatDraft {
+    return drafts[rsvp.id] || savedDraft(rsvp);
+  }
+
+  function setDraft(id: string, patch: Partial<SeatDraft>) {
+    setDrafts((prev) => {
+      const rsvp = yesGuests.find((r) => r.id === id);
+      const current = prev[id] || (rsvp ? savedDraft(rsvp) : { tableLabel: "", seatLabel: "", childSeats: [] });
+      return { ...prev, [id]: { ...current, ...patch } };
+    });
+  }
+
+  function setChildDraft(id: string, index: number, patch: Partial<ChildSeat>) {
+    const rsvp = yesGuests.find((guest) => guest.id === id);
+    if (!rsvp) return;
+    const draft = draftFor(rsvp);
+    setDraft(id, {
+      childSeats: draft.childSeats.map((seat, seatIndex) =>
+        seatIndex === index ? { ...seat, ...patch } : seat,
+      ),
+    });
+  }
+
+  function slotsMatch(a: ChildSeat, b: ChildSeat) {
     return (
-      drafts[rsvp.id] || {
-        tableLabel: rsvp.tableLabel || "",
-        seatLabel: rsvp.seatLabel || "",
-      }
+      normalizeSeatingLabel(a.tableLabel) === normalizeSeatingLabel(b.tableLabel) &&
+      normalizeSeatingLabel(a.seatLabel) === normalizeSeatingLabel(b.seatLabel)
     );
   }
 
-  function setDraft(id: string, patch: Partial<{ tableLabel: string; seatLabel: string }>) {
-    setDrafts((prev) => {
-      const current = prev[id] || {
-        tableLabel: yesGuests.find((r) => r.id === id)?.tableLabel || "",
-        seatLabel: yesGuests.find((r) => r.id === id)?.seatLabel || "",
-      };
-      return { ...prev, [id]: { ...current, ...patch } };
+  function isDirty(rsvp: Rsvp, draft: SeatDraft) {
+    const saved = savedDraft(rsvp);
+    if (!slotsMatch(draft, saved)) return true;
+    return draft.childSeats.some((seat, index) => !slotsMatch(seat, saved.childSeats[index] || { tableLabel: "", seatLabel: "" }));
+  }
+
+  function occupiedFor(rsvp: Rsvp, draft: SeatDraft, skip: "adult" | number) {
+    const occupied = occupiedSeatingKeys(rsvps, rsvp.id);
+    if (skip !== "adult" && isCompleteSeat(draft)) {
+      occupied.add(seatingKey(draft.tableLabel, draft.seatLabel));
+    }
+    draft.childSeats.forEach((seat, index) => {
+      if (skip === index || !isCompleteSeat(seat)) return;
+      occupied.add(seatingKey(seat.tableLabel, seat.seatLabel));
     });
+    return occupied;
+  }
+
+  function placeChildrenBeside(rsvp: Rsvp) {
+    const draft = draftFor(rsvp);
+    if (!isCompleteSeat(draft)) {
+      showError("Placez d’abord l’invité, puis les enfants à côté.");
+      return;
+    }
+    const table = plan.tables.find(
+      (item) => item.label.toLowerCase() === normalizeSeatingLabel(draft.tableLabel).toLowerCase(),
+    );
+    if (!table) {
+      showError("Cette table n’est pas dans le plan.");
+      return;
+    }
+    const occupied = occupiedSeatingKeys(rsvps, rsvp.id);
+    occupied.add(seatingKey(table.label, draft.seatLabel));
+    const free = nextFreeSeatsOnTable(
+      table.seats,
+      occupied,
+      table.label,
+      draft.seatLabel,
+      rsvp.childCount,
+    );
+    setDraft(rsvp.id, {
+      childSeats: Array.from({ length: rsvp.childCount }, (_, index) =>
+        free[index]
+          ? { tableLabel: table.label, seatLabel: free[index] }
+          : { tableLabel: "", seatLabel: "" },
+      ),
+    });
+    if (free.length < rsvp.childCount) {
+      showError(
+        `Seulement ${free.length} siège${free.length > 1 ? "s" : ""} libre${free.length > 1 ? "s" : ""} à la table ${table.label}. Placez le reste sur une autre table.`,
+      );
+    }
   }
 
   async function persistPlan(next: SeatingPlanContent) {
@@ -163,9 +285,7 @@ export function AdminSeatingEditor({
   }
 
   async function removeTable(table: SeatingPlanTable) {
-    const assigned = yesGuests.filter(
-      (r) => normalizeSeatingLabel(r.tableLabel).toLowerCase() === table.label.toLowerCase(),
-    );
+    const assigned = yesGuests.filter((r) => guestUsesTable(r, table.label));
     if (assigned.length) {
       showError(
         `Impossible de supprimer la table ${table.label} : ${assigned.length} invité(s) y sont placés.`,
@@ -188,6 +308,7 @@ export function AdminSeatingEditor({
           id: rsvp.id,
           tableLabel: draft.tableLabel,
           seatLabel: draft.seatLabel,
+          childSeats: draft.childSeats,
         }),
       });
       const data = await res.json();
@@ -219,7 +340,8 @@ export function AdminSeatingEditor({
         <h2 className="section-title text-2xl text-mist sm:text-3xl">Plan de table</h2>
         <p className="mt-2 max-w-2xl text-sm font-normal leading-relaxed text-soft">
           Préenregistrez les tables et leurs sièges, puis attribuez-les aux confirmations « oui ».
-          Une même place ne peut pas être donnée deux fois. Le placement s’affiche au check-in.
+          Les enfants accompagnants ont leur propre place : « Enfants à côté » les assoit aux
+          sièges libres suivants, et chaque enfant peut ensuite être déplacé.
         </p>
       </div>
 
@@ -346,7 +468,7 @@ export function AdminSeatingEditor({
                 className="field"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Nom, table…"
+                placeholder="Nom, lien, téléphone, table…"
                 autoComplete="off"
               />
             </div>
@@ -376,21 +498,25 @@ export function AdminSeatingEditor({
             ) : (
               filtered.map((rsvp) => {
                 const draft = draftFor(rsvp);
-                const dirty =
-                  normalizeSeatingLabel(draft.tableLabel) !==
-                    normalizeSeatingLabel(rsvp.tableLabel) ||
-                  normalizeSeatingLabel(draft.seatLabel) !==
-                    normalizeSeatingLabel(rsvp.seatLabel);
+                const dirty = isDirty(rsvp, draft);
                 const selectedTable = plan.tables.find(
                   (t) =>
                     t.label.toLowerCase() ===
                     normalizeSeatingLabel(draft.tableLabel).toLowerCase(),
                 );
-                const occupied = occupiedSeatingKeys(rsvps, rsvp.id);
+                const occupied = occupiedFor(rsvp, draft, "adult");
                 const wa = seatingWhatsAppForRsvp(rsvp, site, { toGuest: true });
                 return (
                   <article key={rsvp.id} className="space-y-3 border border-line p-3">
-                    <p className="font-medium text-mist">{displayGuestName(rsvp.name)}</p>
+                    <div>
+                      <p className="font-medium text-mist">{displayGuestName(rsvp.name)}</p>
+                      <GuestAssignmentFacts
+                        lien={guestOfLabels[rsvp.guestOf] || rsvp.guestOf}
+                        phone={displayPhone(rsvp.phone)}
+                        childCount={rsvp.childCount ?? 0}
+                        message={rsvp.message}
+                      />
+                    </div>
                     {canEdit ? (
                       <div className="admin-grid-2 grid gap-2">
                         <div>
@@ -449,6 +575,86 @@ export function AdminSeatingEditor({
                         {formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "Non assigné"}
                       </p>
                     )}
+                    {rsvp.childCount > 0 ? (
+                      <div className="space-y-2 border-t border-line pt-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs tracking-[0.14em] text-champagne uppercase">
+                            Enfants accompagnants
+                          </p>
+                          {canEdit ? (
+                            <button
+                              type="button"
+                              className="text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist"
+                              onClick={() => placeChildrenBeside(rsvp)}
+                            >
+                              Enfants à côté
+                            </button>
+                          ) : null}
+                        </div>
+                        {draft.childSeats.map((child, index) => {
+                          const childTable = plan.tables.find(
+                            (table) =>
+                              table.label.toLowerCase() ===
+                              normalizeSeatingLabel(child.tableLabel).toLowerCase(),
+                          );
+                          const childOccupied = occupiedFor(rsvp, draft, index);
+                          return (
+                            <div key={`${rsvp.id}-child-${index}`} className="space-y-2">
+                              <p className="text-sm text-mist">Enfant {index + 1}</p>
+                              {canEdit ? (
+                                <div className="admin-grid-2 grid gap-2">
+                                  <select
+                                    className="field !py-2"
+                                    aria-label={`Table enfant ${index + 1}`}
+                                    value={child.tableLabel}
+                                    onChange={(e) =>
+                                      setChildDraft(rsvp.id, index, {
+                                        tableLabel: e.target.value,
+                                        seatLabel: "",
+                                      })
+                                    }
+                                  >
+                                    <option value="">—</option>
+                                    {plan.tables.map((table) => (
+                                      <option key={table.id} value={table.label}>
+                                        {table.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    className="field !py-2"
+                                    aria-label={`Siège enfant ${index + 1}`}
+                                    value={child.seatLabel}
+                                    disabled={!childTable}
+                                    onChange={(e) =>
+                                      setChildDraft(rsvp.id, index, { seatLabel: e.target.value })
+                                    }
+                                  >
+                                    <option value="">—</option>
+                                    {(childTable?.seats || []).map((seat) => {
+                                      const taken = childOccupied.has(
+                                        seatingKey(childTable?.label || "", seat),
+                                      );
+                                      return (
+                                        <option key={seat} value={seat} disabled={taken}>
+                                          {seat}
+                                          {taken ? " (pris)" : ""}
+                                        </option>
+                                      );
+                                    })}
+                                  </select>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-soft">
+                                  {formatSeatingLabel(child.tableLabel, child.seatLabel) ||
+                                    "Non assigné"}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                     <div className="flex flex-wrap gap-3">
                       {wa?.url ? (
                         <a
@@ -499,21 +705,35 @@ export function AdminSeatingEditor({
                 ) : (
                   filtered.map((rsvp) => {
                     const draft = draftFor(rsvp);
-                    const dirty =
-                      normalizeSeatingLabel(draft.tableLabel) !==
-                        normalizeSeatingLabel(rsvp.tableLabel) ||
-                      normalizeSeatingLabel(draft.seatLabel) !==
-                        normalizeSeatingLabel(rsvp.seatLabel);
+                    const dirty = isDirty(rsvp, draft);
                     const selectedTable = plan.tables.find(
                       (t) =>
                         t.label.toLowerCase() ===
                         normalizeSeatingLabel(draft.tableLabel).toLowerCase(),
                     );
-                    const occupied = occupiedSeatingKeys(rsvps, rsvp.id);
+                    const occupied = occupiedFor(rsvp, draft, "adult");
                     const wa = seatingWhatsAppForRsvp(rsvp, site, { toGuest: true });
                     return (
-                      <tr key={rsvp.id} className="border-t border-line">
-                        <td className="px-3 py-2 text-mist">{displayGuestName(rsvp.name)}</td>
+                      <Fragment key={rsvp.id}>
+                      <tr className="border-t border-line">
+                        <td className="px-3 py-2 text-mist">
+                          <p>{displayGuestName(rsvp.name)}</p>
+                          <GuestAssignmentFacts
+                            lien={guestOfLabels[rsvp.guestOf] || rsvp.guestOf}
+                            phone={displayPhone(rsvp.phone)}
+                            childCount={rsvp.childCount ?? 0}
+                            message={rsvp.message}
+                          />
+                          {rsvp.childCount > 0 && canEdit ? (
+                            <button
+                              type="button"
+                              className="mt-1 text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist"
+                              onClick={() => placeChildrenBeside(rsvp)}
+                            >
+                              Enfants à côté
+                            </button>
+                          ) : null}
+                        </td>
                         <td className="px-3 py-2">
                           {canEdit ? (
                             <select
@@ -591,6 +811,74 @@ export function AdminSeatingEditor({
                           </td>
                         ) : null}
                       </tr>
+                      {draft.childSeats.map((child, index) => {
+                        const childTable = plan.tables.find(
+                          (table) =>
+                            table.label.toLowerCase() ===
+                            normalizeSeatingLabel(child.tableLabel).toLowerCase(),
+                        );
+                        const childOccupied = occupiedFor(rsvp, draft, index);
+                        return (
+                          <tr key={`${rsvp.id}-child-${index}`} className="border-t border-line/70 bg-ivory/40">
+                            <td className="px-3 py-2 pl-6 text-sm text-soft">Enfant {index + 1}</td>
+                            <td className="px-3 py-2">
+                              {canEdit ? (
+                                <select
+                                  className="field !py-1.5"
+                                  aria-label={`Table enfant ${index + 1}`}
+                                  value={child.tableLabel}
+                                  onChange={(e) =>
+                                    setChildDraft(rsvp.id, index, {
+                                      tableLabel: e.target.value,
+                                      seatLabel: "",
+                                    })
+                                  }
+                                >
+                                  <option value="">—</option>
+                                  {plan.tables.map((table) => (
+                                    <option key={table.id} value={table.label}>
+                                      {table.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-soft">{child.tableLabel || "—"}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {canEdit ? (
+                                <select
+                                  className="field !py-1.5"
+                                  aria-label={`Siège enfant ${index + 1}`}
+                                  value={child.seatLabel}
+                                  disabled={!childTable}
+                                  onChange={(e) =>
+                                    setChildDraft(rsvp.id, index, { seatLabel: e.target.value })
+                                  }
+                                >
+                                  <option value="">—</option>
+                                  {(childTable?.seats || []).map((seat) => {
+                                    const taken = childOccupied.has(
+                                      seatingKey(childTable?.label || "", seat),
+                                    );
+                                    return (
+                                      <option key={seat} value={seat} disabled={taken}>
+                                        {seat}
+                                        {taken ? " (pris)" : ""}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              ) : (
+                                <span className="text-soft">{child.seatLabel || "—"}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-xs text-soft">—</td>
+                            {canEdit ? <td className="px-3 py-2" /> : null}
+                          </tr>
+                        );
+                      })}
+                      </Fragment>
                     );
                   })
                 )}
@@ -602,36 +890,35 @@ export function AdminSeatingEditor({
         <div className="border border-line bg-white p-4 md:p-5">
           <p className="text-xs tracking-[0.16em] text-champagne uppercase">Aperçu par table</p>
           <div className="mt-4 grid max-h-none grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:max-h-[32rem] lg:grid-cols-1 lg:gap-4">
-            {plan.tables.length === 0 && groups.length === 0 ? (
+            {plan.tables.length === 0 && yesGuests.length === 0 ? (
               <p className="text-sm text-soft">Pas encore de confirmation « oui ».</p>
             ) : (
               <>
                 {plan.tables.map((table) => {
-                  const guests =
-                    groups.find(
-                      (g) =>
-                        g.tableLabel.toLowerCase() === table.label.toLowerCase(),
-                    )?.guests || [];
+                  const filled = table.seats.filter((seat) =>
+                    findSeatOccupant(yesGuests, table.label, seat),
+                  ).length;
                   return (
                     <div key={table.id} className="border border-line p-3">
                       <p className="text-sm text-mist">
                         Table {table.label}{" "}
                         <span className="text-xs text-soft">
-                          ({guests.length}/{table.seats.length})
+                          ({filled}/{table.seats.length})
                         </span>
                       </p>
                       <ul className="mt-2 space-y-1 text-sm text-soft">
                         {table.seats.map((seat) => {
-                          const guest = guests.find(
-                            (g) =>
-                              normalizeSeatingLabel(g.seatLabel).toLowerCase() ===
-                              seat.toLowerCase(),
-                          );
+                          const occupant = findSeatOccupant(yesGuests, table.label, seat);
+                          const label = occupant
+                            ? occupant.childIndex === null
+                              ? displayGuestName(occupant.name)
+                              : `Enfant ${occupant.childIndex + 1} · ${displayGuestName(occupant.name)}`
+                            : "libre";
                           return (
                             <li key={seat} className="break-words">
                               <span className="text-champagne">{seat}</span>
                               {" · "}
-                              {guest ? displayGuestName(guest.name) : "libre"}
+                              {label}
                             </li>
                           );
                         })}
@@ -639,34 +926,39 @@ export function AdminSeatingEditor({
                     </div>
                   );
                 })}
-                {groups
-                  .filter(
-                    (g) =>
-                      !g.tableLabel ||
-                      !plan.tables.some(
-                        (t) => t.label.toLowerCase() === g.tableLabel.toLowerCase(),
-                      ),
-                  )
-                  .map((group) => (
-                    <div key={group.tableLabel || "__none"} className="border border-line p-3">
-                      <p className="text-sm text-mist">
-                        {group.tableLabel
-                          ? `Hors plan · Table ${group.tableLabel}`
-                          : "Sans table"}{" "}
-                        <span className="text-xs text-soft">({group.guests.length})</span>
-                      </p>
-                      <ul className="mt-2 space-y-1 text-sm text-soft">
-                        {group.guests.map((g) => (
-                          <li key={g.id} className="break-words">
-                            {displayGuestName(g.name)}
-                            {g.seatLabel ? (
-                              <span className="text-champagne"> · {g.seatLabel}</span>
-                            ) : null}
+                {yesGuests.some(
+                  (guest) =>
+                    !normalizeSeatingLabel(guest.tableLabel) ||
+                    normalizeChildSeats(guest.childSeats, guest.childCount).some(
+                      (seat) => !isCompleteSeat(seat),
+                    ),
+                ) ? (
+                  <div className="border border-line p-3">
+                    <p className="text-sm text-mist">Sans table</p>
+                    <ul className="mt-2 space-y-1 text-sm text-soft">
+                      {yesGuests.flatMap((guest) => {
+                        const items: { key: string; label: string }[] = [];
+                        if (!normalizeSeatingLabel(guest.tableLabel)) {
+                          items.push({ key: guest.id, label: displayGuestName(guest.name) });
+                        }
+                        normalizeChildSeats(guest.childSeats, guest.childCount).forEach(
+                          (seat, index) => {
+                            if (isCompleteSeat(seat)) return;
+                            items.push({
+                              key: `${guest.id}-child-${index}`,
+                              label: `Enfant ${index + 1} · ${displayGuestName(guest.name)}`,
+                            });
+                          },
+                        );
+                        return items.map((item) => (
+                          <li key={item.key} className="break-words">
+                            {item.label}
                           </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                        ));
+                      })}
+                    </ul>
+                  </div>
+                ) : null}
               </>
             )}
           </div>

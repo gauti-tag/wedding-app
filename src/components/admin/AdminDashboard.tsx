@@ -6,14 +6,26 @@ import {
   followUpReasonLabel,
   type FollowUpReason,
 } from "@/lib/rsvp-insights";
+import type { GuestRelation } from "@/lib/guest-of";
 import { maskName } from "@/lib/mask-pii";
 import type { Rsvp, SiteContent } from "@/lib/types";
 
+const relationLabels: Record<GuestRelation, string> = {
+  parent: "Parent",
+  friend: "Ami(e)",
+  colleague: "Collègue",
+  religious: "Communauté religieuse",
+};
+
 type Props = {
   rsvps: Rsvp[];
-  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "guestCapacity" | "rsvpConfig">;
+  site: Pick<
+    SiteContent,
+    "partnerOne" | "partnerTwo" | "guestCapacity" | "rsvpConfig" | "guestRelationQuotas"
+  >;
   guestOfLabels: Record<string, string>;
   onExportCsv: () => void;
+  onExportExcel: () => void;
   canExport: boolean;
   showGuestPii?: boolean;
 };
@@ -29,6 +41,7 @@ export function AdminDashboard({
   site,
   guestOfLabels,
   onExportCsv,
+  onExportExcel,
   canExport,
   showGuestPii = true,
 }: Props) {
@@ -44,14 +57,24 @@ export function AdminDashboard({
           </p>
         </div>
         {canExport ? (
-          <button
-            type="button"
-            onClick={onExportCsv}
-            className="btn-ghost"
-            disabled={!rsvps.length}
-          >
-            Exporter CSV
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onExportCsv}
+              className="btn-ghost"
+              disabled={!rsvps.length}
+            >
+              Exporter CSV
+            </button>
+            <button
+              type="button"
+              onClick={onExportExcel}
+              className="btn-ghost"
+              disabled={!rsvps.length}
+            >
+              Exporter Excel
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -133,6 +156,39 @@ export function AdminDashboard({
               .map(([key, value]) => `${guestOfLabels[key] || key} ${value.total}`)
               .join(" · ")}
           </p>
+          <div className="mt-6 border-t border-line pt-5">
+            <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+              Enfants par lien
+            </p>
+            <ul className="mt-4 space-y-3">
+              {insights.childrenByRelation.map((row) => (
+                <li key={row.key} className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="text-mist">{relationLabels[row.key]}</span>
+                  <span className="meta-date text-xs text-soft">
+                    {row.children} enfant{row.children > 1 ? "s" : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {insights.relationQuotasEnabled ? (
+            <div className="mt-6 border-t border-line pt-5">
+              <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+                Places restantes par lien
+              </p>
+              <ul className="mt-4 space-y-3">
+                {insights.relationSeats.map((row) => (
+                  <li key={row.key} className="flex items-baseline justify-between gap-3 text-sm">
+                    <span className="text-mist">{relationLabels[row.key]}</span>
+                    <span className="meta-date text-xs text-soft">
+                      {row.remaining} restante{row.remaining > 1 ? "s" : ""} · {row.taken}/
+                      {row.capacity}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </div>
         ) : null}
       </div>

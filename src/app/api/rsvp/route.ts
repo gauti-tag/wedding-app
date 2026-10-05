@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
-import { normalizeChildCount, capacityBlockReason } from "@/lib/guest-capacity";
+import {
+  capacityBlockReason,
+  normalizeChildCount,
+  relationFromGuestOf,
+} from "@/lib/guest-capacity";
 import { isRsvpDeadlinePassed, isRsvpNotYetOpen } from "@/lib/rsvp-deadline";
 import { getRsvps, getSiteContent, saveRsvps, setRsvpBlocked } from "@/lib/storage";
 import { createTicketToken } from "@/lib/tickets";
@@ -117,7 +121,13 @@ export async function POST(request: Request) {
     if (!rsvpConfig.showMessage) message = "";
 
     let childCount = normalizeChildCount(parsed.data.childCount);
-    if (!rsvpConfig.showChildCount || status !== "yes") childCount = 0;
+    if (
+      !rsvpConfig.showChildCount ||
+      status !== "yes" ||
+      relationFromGuestOf(guestOf) !== "parent"
+    ) {
+      childCount = 0;
+    }
 
     const rsvps = await getRsvps();
 
@@ -176,6 +186,7 @@ export async function POST(request: Request) {
       blockedAt: null,
       tableLabel: "",
       seatLabel: "",
+      childSeats: [],
     };
 
     rsvps.unshift(entry);

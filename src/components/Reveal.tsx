@@ -1,9 +1,28 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState, type ReactNode } from "react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const luxuryEase = [0.16, 1, 0.3, 1] as const;
+
+const scrollDirection = { current: 1 };
+let scrollDirectionBound = false;
+
+function bindScrollDirection() {
+  if (scrollDirectionBound || typeof window === "undefined") return;
+  scrollDirectionBound = true;
+  let last = window.scrollY;
+  window.addEventListener(
+    "scroll",
+    () => {
+      const y = window.scrollY;
+      if (Math.abs(y - last) < 2) return;
+      scrollDirection.current = y > last ? 1 : -1;
+      last = y;
+    },
+    { passive: true },
+  );
+}
 
 export function Reveal({
   children,
@@ -44,5 +63,48 @@ export function Reveal({
     >
       {children}
     </motion.div>
+  );
+}
+
+/** Réapparaît à chaque entrée dans l’écran, vers le haut ou vers le bas. */
+export function DirectionalReveal({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const reduceMotion = useReducedMotion();
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: false, amount: 0.28, margin: "0px 0px -6% 0px" });
+  const [lite, setLite] = useState(true);
+
+  useEffect(() => {
+    bindScrollDirection();
+    const mobile =
+      window.matchMedia("(pointer: coarse)").matches ||
+      window.matchMedia("(max-width: 767px)").matches;
+    setLite(mobile);
+  }, []);
+
+  if (reduceMotion) {
+    return <article className={className}>{children}</article>;
+  }
+
+  const offset = lite ? 14 : 26;
+
+  return (
+    <motion.article
+      ref={ref}
+      className={className}
+      initial={{ opacity: 0, y: offset }}
+      animate={{
+        opacity: inView ? 1 : 0,
+        y: inView ? 0 : scrollDirection.current * offset,
+      }}
+      transition={{ duration: lite ? 0.4 : 0.65, ease: luxuryEase }}
+    >
+      {children}
+    </motion.article>
   );
 }
