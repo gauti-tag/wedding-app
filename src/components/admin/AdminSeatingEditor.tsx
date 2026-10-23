@@ -909,6 +909,12 @@ export function AdminSeatingEditor({
                       <ul className="mt-2 space-y-1 text-sm text-soft">
                         {table.seats.map((seat) => {
                           const occupant = findSeatOccupant(yesGuests, table.label, seat);
+                          const guest = occupant
+                            ? yesGuests.find((item) => item.id === occupant.rsvpId)
+                            : undefined;
+                          const lien = guest
+                            ? guestOfLabels[guest.guestOf] || guest.guestOf
+                            : "";
                           const label = occupant
                             ? occupant.childIndex === null
                               ? displayGuestName(occupant.name)
@@ -919,6 +925,7 @@ export function AdminSeatingEditor({
                               <span className="text-champagne">{seat}</span>
                               {" · "}
                               {label}
+                              {lien ? <span className="text-mist"> · {lien}</span> : null}
                             </li>
                           );
                         })}
@@ -937,16 +944,23 @@ export function AdminSeatingEditor({
                     <p className="text-sm text-mist">Sans table</p>
                     <ul className="mt-2 space-y-1 text-sm text-soft">
                       {yesGuests.flatMap((guest) => {
+                        const lien = guestOfLabels[guest.guestOf] || guest.guestOf;
+                        const withLien = (name: string) => (lien ? `${name} · ${lien}` : name);
                         const items: { key: string; label: string }[] = [];
                         if (!normalizeSeatingLabel(guest.tableLabel)) {
-                          items.push({ key: guest.id, label: displayGuestName(guest.name) });
+                          items.push({
+                            key: guest.id,
+                            label: withLien(displayGuestName(guest.name)),
+                          });
                         }
                         normalizeChildSeats(guest.childSeats, guest.childCount).forEach(
                           (seat, index) => {
                             if (isCompleteSeat(seat)) return;
                             items.push({
                               key: `${guest.id}-child-${index}`,
-                              label: `Enfant ${index + 1} · ${displayGuestName(guest.name)}`,
+                              label: withLien(
+                                `Enfant ${index + 1} · ${displayGuestName(guest.name)}`,
+                              ),
                             });
                           },
                         );
