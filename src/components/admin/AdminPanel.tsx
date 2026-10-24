@@ -52,6 +52,13 @@ import type {
 
 const ADMIN_NAV_OFFSET = 96;
 
+function formatCheckInAccount(rsvp: Rsvp) {
+  const name = (rsvp.checkedInByName || "").trim();
+  const email = (rsvp.checkedInByEmail || "").trim();
+  if (name && email) return `${name} · ${email}`;
+  return name || email;
+}
+
 function formatAdminDate(iso: string, withTime = false) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -895,7 +902,16 @@ export function AdminPanel({
                     <div className="col-span-2" suppressHydrationWarning>
                       <dt className="tracking-[0.12em] uppercase">Check-in</dt>
                       <dd className="mt-0.5">
-                        {rsvp.checkedInAt ? formatAdminDate(rsvp.checkedInAt, true) : "—"}
+                        {rsvp.checkedInAt ? (
+                          <>
+                            <span>{formatAdminDate(rsvp.checkedInAt, true)}</span>
+                            <span className="mt-0.5 block text-mist">
+                              {formatCheckInAccount(rsvp) || "Compte non enregistré"}
+                            </span>
+                          </>
+                        ) : (
+                          "—"
+                        )}
                       </dd>
                     </div>
                   </dl>
@@ -1055,7 +1071,16 @@ export function AdminPanel({
                       ) : null}
                     </td>
                     <td className="px-4 py-3 text-soft" suppressHydrationWarning>
-                      {rsvp.checkedInAt ? formatAdminDate(rsvp.checkedInAt, true) : "—"}
+                      {rsvp.checkedInAt ? (
+                        <>
+                          <div>{formatAdminDate(rsvp.checkedInAt, true)}</div>
+                          <div className="mt-0.5 text-xs text-mist">
+                            {formatCheckInAccount(rsvp) || "Compte non enregistré"}
+                          </div>
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex min-w-[9rem] flex-wrap items-center gap-2">
