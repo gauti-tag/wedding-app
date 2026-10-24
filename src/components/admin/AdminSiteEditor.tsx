@@ -1047,8 +1047,8 @@ export function AdminSiteEditor({
             Rappels WhatsApp (dynamiques)
           </p>
           <p className="mt-2 text-xs text-soft">
-            Ajoutez autant de rappels que nécessaire. Les raccourcis J-7 / J-1 calculent la date
-            automatiquement à partir de la date de l’événement.
+            Ajoutez autant de rappels que nécessaire. Les raccourcis Jour J / J-1 / J-7 calculent
+            la date à partir de la date de l’événement. Le message renvoie aussi le lien du QR.
           </p>
 
           <div className="mt-3 space-y-3">
@@ -1106,6 +1106,14 @@ export function AdminSiteEditor({
               onClick={() => addReminder()}
             >
               Ajouter un rappel
+            </button>
+            <button
+              type="button"
+              className="btn-ghost !px-4 !py-2 text-xs"
+              disabled={content.whatsappReminders.length >= 12}
+              onClick={() => addReminder({ label: "Jour J", daysBefore: 0 })}
+            >
+              + Jour J (auto)
             </button>
             <button
               type="button"

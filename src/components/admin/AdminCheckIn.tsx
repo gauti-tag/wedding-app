@@ -7,7 +7,8 @@ import {
   formatCheckInGuestLines,
   resolveCheckInGuestDetails,
 } from "@/lib/guest-of";
-import { formatFamilyPlace } from "@/lib/seating";
+import { formatSeatingLabel, normalizeChildSeats } from "@/lib/seating";
+import { maskName, maskPhone } from "@/lib/mask-pii";
 import type { Rsvp, SiteContent } from "@/lib/types";
 import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
 
@@ -34,6 +35,37 @@ type CheckInResult = {
   rsvp?: Rsvp;
 };
 
+function formatScanPlace(guest: Rsvp, repeat: boolean) {
+  const table = (guest.tableLabel || "").trim();
+  const seat = (guest.seatLabel || "").trim();
+  const lines = repeat
+    ? [
+        table ? `Table : ${table}` : "Table : non assignée",
+        seat ? `Siège : ${seat}` : "Siège : non assigné",
+      ]
+    : [seat ? `Numéro de siège : ${seat}` : "Numéro de siège : non assigné"];
+
+  normalizeChildSeats(guest.childSeats, guest.childCount).forEach((child, index) => {
+    if (repeat) {
+      const place = formatSeatingLabel(child.tableLabel, child.seatLabel);
+      lines.push(
+        place
+          ? `Enfant ${index + 1} : ${place}`
+          : `Enfant ${index + 1} : table et siège non assignés`,
+      );
+      return;
+    }
+    const childSeat = (child.seatLabel || "").trim();
+    lines.push(
+      childSeat
+        ? `Enfant ${index + 1} · siège ${childSeat}`
+        : `Enfant ${index + 1} · siège non assigné`,
+    );
+  });
+
+  return lines.join("\n");
+}
+
 function vibrate(pattern: number | number[]) {
   if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
     navigator.vibrate(pattern);
@@ -42,18 +74,41 @@ function vibrate(pattern: number | number[]) {
 
 export function AdminCheckIn({
   site,
+  rsvps,
+  showGuestPii = true,
+  onCheckedIn,
 }: {
   site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig">;
+  rsvps: Rsvp[];
+  showGuestPii?: boolean;
+  onCheckedIn?: (rsvp: Rsvp) => void;
 }) {
   const [manualToken, setManualToken] = useState("");
+  const [lookup, setLookup] = useState("");
+  const [resendId, setResendId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [lastGuest, setLastGuest] = useState<Rsvp | null>(null);
+  const [repeatScan, setRepeatScan] = useState(false);
   const { showSuccess, showError, showInfo, AlertDialog } = useAdminAlert();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanRef = useRef("");
 
   const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
+  const displayName = (name: string) => (showGuestPii ? name : maskName(name));
+  const displayPhone = (phone: string) => (showGuestPii ? phone || "—" : maskPhone(phone || ""));
+
+  const lostQrMatches = useMemo(() => {
+    const q = lookup.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return rsvps
+      .filter((rsvp) => {
+        if (rsvp.status === "no" || rsvp.blockedAt) return false;
+        const lien = guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "";
+        return `${rsvp.name} ${rsvp.phone} ${lien}`.toLowerCase().includes(q);
+      })
+      .slice(0, 8);
+  }, [lookup, rsvps, guestOfLabels]);
 
   const lastGuestDetails = useMemo(
     () =>
@@ -64,8 +119,8 @@ export function AdminCheckIn({
   );
 
   const seatingLabel = useMemo(
-    () => (lastGuest ? formatFamilyPlace(lastGuest) : ""),
-    [lastGuest],
+    () => (lastGuest ? formatScanPlace(lastGuest, repeatScan) : ""),
+    [lastGuest, repeatScan],
   );
 
   const seatingWa = useMemo(
@@ -132,15 +187,19 @@ export function AdminCheckIn({
       const data = (await res.json()) as CheckInResult;
       if (!res.ok) {
         setLastGuest(data.rsvp || null);
+        setRepeatScan(false);
         vibrate([40, 30, 40, 30, 80]);
         showError(data.error || "Check-in refusé.");
         return;
       }
 
       const guest = data.rsvp || null;
+      const repeat = Boolean(data.alreadyCheckedIn);
+      if (guest) onCheckedIn?.(guest);
       setLastGuest(guest);
+      setRepeatScan(repeat);
 
-      const place = guest ? formatFamilyPlace(guest) : "";
+      const place = guest ? formatScanPlace(guest, repeat) : "";
       const guestLines = guest
         ? formatCheckInGuestLines(resolveCheckInGuestDetails(guest, site, guestOfLabels))
         : "";
@@ -156,7 +215,7 @@ export function AdminCheckIn({
           [
             `${guest?.name || "Invité"} est déjà enregistré(e).`,
             guestLines ? `\n\n${guestLines}` : "",
-            place ? `\n\n${place}` : "\n\nAucune table / siège assigné.",
+            place ? `\n\n${place}` : "",
           ].join(""),
           "Déjà check-in",
           waAction,
@@ -167,7 +226,7 @@ export function AdminCheckIn({
           [
             `${guest?.name || "Invité"} — présence enregistrée.`,
             guestLines ? `\n\n${guestLines}` : "",
-            place ? `\n\n${place}` : "\n\nAucune table / siège assigné.",
+            place ? `\n\n${place}` : "",
           ].join(""),
           "Check-in réussi",
           waAction,
@@ -185,6 +244,31 @@ export function AdminCheckIn({
     }
   }
 
+  async function onResendTicket(rsvp: Rsvp) {
+    setResendId(rsvp.id);
+    try {
+      const res = await fetch("/api/rsvp/resend-ticket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: rsvp.id }),
+      });
+      const data = (await res.json()) as { error?: string; whatsappUrl?: string };
+      if (!res.ok || !data.whatsappUrl) {
+        showError(data.error || "Impossible de préparer le WhatsApp.");
+        return;
+      }
+      window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
+      showSuccess(
+        `WhatsApp est ouvert pour ${displayName(rsvp.name)}. Il reste à appuyer sur Envoyer.`,
+        "QR renvoyé",
+      );
+    } catch {
+      showError("Erreur réseau lors du renvoi du QR.");
+    } finally {
+      setResendId(null);
+    }
+  }
+
   return (
     <section id="admin-checkin" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-6">
       {AlertDialog}
@@ -192,8 +276,9 @@ export function AdminCheckIn({
         <div>
           <h2 className="section-title text-3xl text-mist">Check-in jour J</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Scannez le QR code de la carte d’invitation pour marquer la présence. La table et le
-            siège s’affichent au succès ; vous pouvez les envoyer séparément par WhatsApp.
+            Scannez le QR code de la carte d’invitation pour marquer la présence. Le premier scan
+            affiche le numéro de siège ; un second scan rappelle la table et le siège. Si le QR
+            est perdu, retrouvez l’invité ci-dessous et renvoyez sa carte sur WhatsApp.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -240,6 +325,62 @@ export function AdminCheckIn({
           >
             {busy ? "Vérification…" : "Enregistrer la présence"}
           </button>
+
+          <div className="border-t border-line pt-4">
+            <label className="label" htmlFor="lost-qr">
+              QR perdu
+            </label>
+            <input
+              id="lost-qr"
+              className="field"
+              value={lookup}
+              onChange={(e) => setLookup(e.target.value)}
+              placeholder="Nom, téléphone ou lien"
+              autoComplete="off"
+            />
+            {lookup.trim().length >= 2 ? (
+              lostQrMatches.length === 0 ? (
+                <p className="mt-3 text-xs text-soft">Aucun invité confirmé ou en attente.</p>
+              ) : (
+                <ul className="mt-3 space-y-3">
+                  {lostQrMatches.map((rsvp) => {
+                    const place = formatScanPlace(rsvp, true);
+                    const lien = guestOfLabels[rsvp.guestOf] || "";
+                    return (
+                      <li key={rsvp.id} className="border border-line p-3 text-sm">
+                        <p className="text-mist">{displayName(rsvp.name)}</p>
+                        <p className="mt-1 text-xs text-soft">
+                          {displayPhone(rsvp.phone)}
+                          {lien ? ` · ${lien}` : ""}
+                        </p>
+                        <p className="mt-2 whitespace-pre-line text-xs text-champagne">{place}</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={busy || !rsvp.ticketToken}
+                            onClick={() => void onCheckIn(rsvp.ticketToken)}
+                            className="btn-primary !px-3 !py-2 text-xs disabled:opacity-60"
+                          >
+                            Check-in
+                          </button>
+                          <button
+                            type="button"
+                            disabled={resendId === rsvp.id}
+                            onClick={() => void onResendTicket(rsvp)}
+                            className="btn-ghost !px-3 !py-2 text-xs disabled:opacity-60"
+                          >
+                            {resendId === rsvp.id ? "Préparation…" : "Renvoyer le QR"}
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            ) : (
+              <p className="mt-3 text-xs text-soft">Saisissez au moins 2 caractères.</p>
+            )}
+          </div>
 
           {lastGuest ? (
             <div className="border border-line bg-forest p-4 text-sm">

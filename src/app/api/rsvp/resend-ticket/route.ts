@@ -11,8 +11,10 @@ const schema = z.object({
 
 /** Prépare le lien WhatsApp et marque la carte comme envoyée. */
 export async function POST(request: Request) {
-  const { user, error } = await requirePermission("manage_rsvp");
-  if (error) return error;
+  const managed = await requirePermission("manage_rsvp");
+  const scanned = managed.error ? await requirePermission("check_in") : managed;
+  if (scanned.error || !scanned.user) return scanned.error;
+  const user = scanned.user;
 
   try {
     const body = await request.json();

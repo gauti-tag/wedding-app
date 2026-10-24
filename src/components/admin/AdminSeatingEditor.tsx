@@ -15,10 +15,48 @@ import {
   occupiedSeatingKeys,
   parseSeatListInput,
   seatingKey,
+  seatingOccupancy,
 } from "@/lib/seating";
+import type { SeatPresence } from "@/lib/seating";
 import type { ChildSeat, Rsvp, SeatingPlanContent, SeatingPlanTable, SiteContent } from "@/lib/types";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
+
+const seatStateClass: Record<SeatPresence, string> = {
+  free: "bg-forest text-soft",
+  allocated: "bg-champagne text-forest",
+  occupied: "bg-red-700 text-white",
+};
+
+const seatStateLabel: Record<SeatPresence, string> = {
+  free: "libre",
+  allocated: "alloué",
+  occupied: "occupé",
+};
+
+function seatCountLabel(count: number, one: string, many: string) {
+  return `${count} ${count === 1 ? one : many}`;
+}
+
+function SeatPresenceBar({
+  allocated,
+  occupied,
+  total,
+}: {
+  free: number;
+  allocated: number;
+  occupied: number;
+  total: number;
+}) {
+  const allocatedPct = total > 0 ? (allocated / total) * 100 : 0;
+  const occupiedPct = total > 0 ? (occupied / total) * 100 : 0;
+  return (
+    <div className="mt-3 flex h-2 overflow-hidden bg-forest">
+      <div className="h-full bg-red-700" style={{ width: `${occupiedPct}%` }} />
+      <div className="h-full bg-champagne" style={{ width: `${allocatedPct}%` }} />
+    </div>
+  );
+}
 
 type SeatDraft = {
   tableLabel: string;
@@ -71,6 +109,7 @@ type Props = {
   site: Pick<SiteContent, "partnerOne" | "partnerTwo">;
   guestOfLabels: Record<string, string>;
   onUpdated: (rsvp: Rsvp) => void;
+  onPlanChange?: (plan: SeatingPlanContent) => void;
   canEdit: boolean;
   showGuestPii?: boolean;
 };
@@ -81,6 +120,7 @@ export function AdminSeatingEditor({
   site,
   guestOfLabels,
   onUpdated,
+  onPlanChange,
   canEdit,
   showGuestPii = true,
 }: Props) {
@@ -104,6 +144,11 @@ export function AdminSeatingEditor({
         .filter((r) => r.status === "yes" && !r.blockedAt)
         .sort((a, b) => a.name.localeCompare(b.name, "fr")),
     [rsvps],
+  );
+
+  const occupancy = useMemo(
+    () => seatingOccupancy(plan, yesGuests),
+    [plan, yesGuests],
   );
 
   const filtered = useMemo(() => {
@@ -225,7 +270,9 @@ export function AdminSeatingEditor({
         showError(data.error || "Enregistrement du plan impossible.");
         return false;
       }
-      setPlan(data.plan as SeatingPlanContent);
+      const saved = data.plan as SeatingPlanContent;
+      setPlan(saved);
+      onPlanChange?.(saved);
       return true;
     } catch {
       showError("Enregistrement du plan impossible.");
@@ -345,6 +392,84 @@ export function AdminSeatingEditor({
         </p>
       </div>
 
+      {occupancy.tables.length > 0 ? (
+        <div className="border border-line bg-white p-4 md:p-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+              Cartographie des places
+            </p>
+            <p className="meta-date text-sm text-mist">
+              {seatCountLabel(occupancy.free, "libre", "libres")}
+              {" · "}
+              {seatCountLabel(occupancy.allocated, "alloué", "alloués")}
+              {" · "}
+              {seatCountLabel(occupancy.occupied, "occupé", "occupés")}
+            </p>
+          </div>
+          <SeatPresenceBar
+            free={occupancy.free}
+            allocated={occupancy.allocated}
+            occupied={occupancy.occupied}
+            total={occupancy.total}
+          />
+          <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-soft">
+            <li className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 bg-forest" />
+              Libre — place non assignée
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 bg-champagne" />
+              Alloué — assignée à un invité
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="inline-block h-3 w-3 bg-red-700" />
+              Occupé — QR scanné
+            </li>
+          </ul>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {occupancy.tables.map((table) => (
+              <article key={table.id} className="border border-line p-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-sm text-mist">Table {table.label}</p>
+                  <p className="meta-date text-xs text-soft">
+                    {seatCountLabel(table.free, "libre", "libres")}
+                    {" · "}
+                    {seatCountLabel(table.allocated, "alloué", "alloués")}
+                    {" · "}
+                    {seatCountLabel(table.occupied, "occupé", "occupés")}
+                  </p>
+                </div>
+                <SeatPresenceBar
+                  free={table.free}
+                  allocated={table.allocated}
+                  occupied={table.occupied}
+                  total={table.total}
+                />
+                {table.seats.length === 0 ? (
+                  <p className="mt-3 text-xs text-soft">Aucun siège défini.</p>
+                ) : (
+                  <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={`Sièges de la table ${table.label}`}>
+                    {table.seats.map((seat) => (
+                      <li
+                        key={seat.label}
+                        title={
+                          seat.guestName
+                            ? `Siège ${seat.label} · ${seatStateLabel[seat.state]} · ${displayGuestName(seat.guestName)}`
+                            : `Siège ${seat.label} · ${seatStateLabel[seat.state]}`
+                        }
+                        className={`grid h-7 min-w-7 place-items-center px-1 text-[0.65rem] ${seatStateClass[seat.state]}`}
+                      >
+                        {seat.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="space-y-4 border border-line bg-white p-4 md:p-5">
         <p className="text-xs tracking-[0.16em] text-champagne uppercase">
           Tables & sièges préenregistrés
@@ -401,19 +526,17 @@ export function AdminSeatingEditor({
           <ul className="space-y-3">
             {plan.tables.map((table) => {
               const draft = seatDrafts[table.id] ?? table.seats.join(", ");
-              const taken = yesGuests.filter(
-                (r) =>
-                  normalizeSeatingLabel(r.tableLabel).toLowerCase() ===
-                  table.label.toLowerCase(),
-              ).length;
+              const stats = occupancy.tables.find((item) => item.id === table.id);
               return (
                 <li key={table.id} className="border border-line p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm text-mist">
                       Table {table.label}{" "}
                       <span className="text-xs text-soft">
-                        · {table.seats.length} siège{table.seats.length > 1 ? "s" : ""} · {taken}{" "}
-                        placé{taken > 1 ? "s" : ""}
+                        · {table.seats.length} siège{table.seats.length > 1 ? "s" : ""} ·{" "}
+                        {seatCountLabel(stats?.allocated ?? 0, "alloué", "alloués")}
+                        {" · "}
+                        {seatCountLabel(stats?.occupied ?? 0, "occupé", "occupés")}
                       </span>
                     </p>
                     {canEdit ? (

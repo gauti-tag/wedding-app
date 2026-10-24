@@ -8,7 +8,8 @@ import {
 } from "@/lib/rsvp-insights";
 import type { GuestRelation } from "@/lib/guest-of";
 import { maskName } from "@/lib/mask-pii";
-import type { Rsvp, SiteContent } from "@/lib/types";
+import { seatingOccupancy } from "@/lib/seating";
+import type { Rsvp, SeatingPlanContent, SiteContent } from "@/lib/types";
 
 const relationLabels: Record<GuestRelation, string> = {
   parent: "Parent",
@@ -28,6 +29,8 @@ type Props = {
   onExportExcel: () => void;
   canExport: boolean;
   showGuestPii?: boolean;
+  seatingPlan: SeatingPlanContent;
+  showPlanLink?: boolean;
 };
 
 const statusLabels: Record<"yes" | "no" | "maybe", string> = {
@@ -44,8 +47,16 @@ export function AdminDashboard({
   onExportExcel,
   canExport,
   showGuestPii = true,
+  seatingPlan,
+  showPlanLink = false,
 }: Props) {
   const insights = useMemo(() => computeRsvpInsights(rsvps, site), [rsvps, site]);
+  const occupancy = useMemo(
+    () => seatingOccupancy(seatingPlan, rsvps),
+    [seatingPlan, rsvps],
+  );
+  const occupiedPct =
+    occupancy.total > 0 ? Math.round((occupancy.occupied / occupancy.total) * 100) : 0;
 
   return (
     <section id="admin-dashboard" className="mt-10 min-w-0 max-w-full scroll-mt-28 space-y-6">
@@ -102,6 +113,79 @@ export function AdminDashboard({
             ) : null}
           </div>
         ))}
+      </div>
+
+      <div className="border border-line bg-white p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs tracking-[0.16em] text-champagne uppercase">
+              Taux d’occupation
+            </p>
+            <p className="meta-date mt-2 text-4xl text-mist">
+              {occupancy.tables.length === 0 ? "—" : `${occupiedPct} %`}
+            </p>
+            <p className="mt-1 text-xs text-soft">
+              {occupancy.tables.length === 0
+                ? "Aucune table dans le plan."
+                : occupancy.total === 0
+                  ? "Aucun siège défini."
+                  : `${seatCountLabel(occupancy.occupied, "place occupée", "places occupées")} sur ${occupancy.total}`}
+            </p>
+          </div>
+          {showPlanLink ? (
+            <a
+              href="#admin-seating"
+              className="text-xs tracking-[0.14em] text-champagne uppercase no-underline hover:text-mist"
+            >
+              Cartographie
+            </a>
+          ) : null}
+        </div>
+        {occupancy.total > 0 ? (
+          <>
+            <OccupancyBar
+              className="mt-4"
+              allocated={occupancy.allocated}
+              occupied={occupancy.occupied}
+              total={occupancy.total}
+            />
+            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-soft">
+              <li className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 bg-forest" />
+                {seatCountLabel(occupancy.free, "libre", "libres")}
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 bg-champagne" />
+                {seatCountLabel(occupancy.allocated, "alloué", "alloués")}
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 bg-red-700" />
+                {seatCountLabel(occupancy.occupied, "occupé", "occupés")}
+              </li>
+            </ul>
+            <ul className="mt-5 max-h-72 space-y-3 overflow-y-auto">
+              {occupancy.tables.map((table) => {
+                const pct =
+                  table.total > 0 ? Math.round((table.occupied / table.total) * 100) : 0;
+                return (
+                  <li key={table.id}>
+                    <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                      <span className="text-mist">Table {table.label}</span>
+                      <span className="meta-date text-xs text-soft">
+                        {table.occupied}/{table.total} · {pct} %
+                      </span>
+                    </div>
+                    <OccupancyBar
+                      allocated={table.allocated}
+                      occupied={table.occupied}
+                      total={table.total}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        ) : null}
       </div>
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-2">
@@ -246,6 +330,31 @@ export function AdminDashboard({
         ) : null}
       </div>
     </section>
+  );
+}
+
+function seatCountLabel(count: number, one: string, many: string) {
+  return `${count} ${count === 1 ? one : many}`;
+}
+
+function OccupancyBar({
+  allocated,
+  occupied,
+  total,
+  className = "",
+}: {
+  allocated: number;
+  occupied: number;
+  total: number;
+  className?: string;
+}) {
+  const allocatedPct = total > 0 ? (allocated / total) * 100 : 0;
+  const occupiedPct = total > 0 ? (occupied / total) * 100 : 0;
+  return (
+    <div className={`flex h-2 overflow-hidden bg-forest ${className}`}>
+      <div className="h-full bg-red-700 transition-[width] duration-500" style={{ width: `${occupiedPct}%` }} />
+      <div className="h-full bg-champagne transition-[width] duration-500" style={{ width: `${allocatedPct}%` }} />
+    </div>
   );
 }
 

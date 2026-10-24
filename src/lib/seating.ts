@@ -222,6 +222,64 @@ export function normalizeSeatingPlan(raw: unknown): SeatingPlanContent {
   };
 }
 
+/** Libre : sans invité. Alloué : place assignée. Occupé : QR de l’invité déjà scanné. */
+export type SeatPresence = "free" | "allocated" | "occupied";
+
+export type TableOccupancySeat = {
+  label: string;
+  state: SeatPresence;
+  guestName: string;
+};
+
+export type TableOccupancy = {
+  id: string;
+  label: string;
+  seats: TableOccupancySeat[];
+  free: number;
+  allocated: number;
+  occupied: number;
+  total: number;
+};
+
+type OccupancyGuest = Parameters<typeof findSeatOccupant>[0][number] & {
+  checkedInAt?: string | null;
+};
+
+function countStates(seats: Pick<TableOccupancySeat, "state">[]) {
+  return {
+    free: seats.filter((seat) => seat.state === "free").length,
+    allocated: seats.filter((seat) => seat.state === "allocated").length,
+    occupied: seats.filter((seat) => seat.state === "occupied").length,
+    total: seats.length,
+  };
+}
+
+/** Trois états par siège du plan. Le scan du QR parent marque aussi les places enfants. */
+export function seatingOccupancy(
+  plan: SeatingPlanContent,
+  rsvps: OccupancyGuest[],
+): { tables: TableOccupancy[] } & ReturnType<typeof countStates> {
+  const tables = plan.tables.map((table) => {
+    const seats = table.seats.map((label) => {
+      const occupant = findSeatOccupant(rsvps, table.label, label);
+      if (!occupant) return { label, state: "free" as const, guestName: "" };
+      const guest = rsvps.find((item) => item.id === occupant.rsvpId);
+      return {
+        label,
+        state: guest?.checkedInAt ? ("occupied" as const) : ("allocated" as const),
+        guestName: occupant.name,
+      };
+    });
+    return {
+      id: table.id,
+      label: table.label,
+      seats,
+      ...countStates(seats),
+    };
+  });
+  return { tables, ...countStates(tables.flatMap((table) => table.seats)) };
+}
+
 export function findPlanTable(
   plan: SeatingPlanContent,
   tableLabel: string,

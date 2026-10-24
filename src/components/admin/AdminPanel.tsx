@@ -64,6 +64,46 @@ function formatAdminDate(iso: string, withTime = false) {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 }
 
+function RsvpReminderActions({
+  rsvp,
+  reminders,
+  plans,
+  busyId,
+  onRemind,
+}: {
+  rsvp: Rsvp;
+  reminders: Record<string, RsvpReminderLog>;
+  plans: SiteContent["whatsappReminders"];
+  busyId: string | null;
+  onRemind: (id: string, reminderId: string, label: string) => void;
+}) {
+  if (rsvp.status !== "yes" || rsvp.blockedAt || plans.length === 0) return null;
+  return (
+    <>
+      {plans.map((reminder) => {
+        const sentAt = reminders[rsvp.id]?.[reminder.id];
+        const busy = busyId === `${rsvp.id}:${reminder.id}`;
+        return (
+          <button
+            key={reminder.id}
+            type="button"
+            title={
+              sentAt
+                ? `Déjà préparé le ${formatAdminDate(sentAt, true)}. Ouvre à nouveau WhatsApp pour cet invité.`
+                : `Ouvre WhatsApp avec le rappel « ${reminder.label} » pour cet invité.`
+            }
+            disabled={busy}
+            onClick={() => onRemind(rsvp.id, reminder.id, reminder.label)}
+            className="btn-ghost !px-3 !py-1.5 text-left text-xs disabled:opacity-50"
+          >
+            {busy ? "Ouverture…" : sentAt ? `Renvoyer ${reminder.label}` : `Rappel ${reminder.label}`}
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
 function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
@@ -219,6 +259,7 @@ export function AdminPanel({
 
   const [photos, setPhotos] = useState(initialPhotos);
   const [rsvps, setRsvps] = useState(initialRsvps);
+  const [seatingPlan, setSeatingPlan] = useState(initialSeatingPlan);
   const [reminders, setReminders] = useState(initialReminders);
   const [site, setSite] = useState(initialSite);
   const [privacy, setPrivacy] = useState(initialPrivacy);
@@ -588,6 +629,8 @@ export function AdminPanel({
           onExportExcel={() => void exportExcel()}
           canExport={can("view_rsvp")}
           showGuestPii={showGuestPii}
+          seatingPlan={seatingPlan}
+          showPlanLink={can("view_rsvp")}
         />
       ) : null}
 
@@ -746,8 +789,8 @@ export function AdminPanel({
           <div className="mb-6 border border-line bg-white/80 px-4 py-4 md:px-5">
             <p className="text-sm font-medium text-mist">Rappels WhatsApp</p>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-soft">
-              Messages prêts pour les invités confirmés (« oui »). Les rappels se planifient
-              dynamiquement dans Couple & hero.
+              Chaque confirmation « oui » a ces rappels dans ses actions. Un clic ouvre WhatsApp
+              pour cet invité seulement. Les rappels se planifient dans Couple & hero.
             </p>
             {site.whatsappReminders.length === 0 ? (
               <p className="mt-3 text-xs text-soft">
@@ -856,7 +899,7 @@ export function AdminPanel({
                       </dd>
                     </div>
                   </dl>
-                  <div className="flex flex-wrap gap-x-3 gap-y-2 border-t border-line pt-2">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-line pt-2">
                     {rsvp.status !== "no" ? (
                       <>
                         <a
@@ -877,26 +920,17 @@ export function AdminPanel({
                             {resendBusyId === rsvp.id ? "Ouverture…" : "WhatsApp"}
                           </button>
                         ) : null}
-                        {can("manage_rsvp") &&
-                        rsvp.status === "yes" &&
-                        !rsvp.blockedAt &&
-                        site.whatsappReminders.length > 0
-                          ? site.whatsappReminders.map((reminder) => (
-                              <button
-                                key={reminder.id}
-                                type="button"
-                                disabled={resendBusyId === `${rsvp.id}:${reminder.id}`}
-                                onClick={() =>
-                                  void onWhatsAppReminder(rsvp.id, reminder.id, reminder.label)
-                                }
-                                className="text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
-                              >
-                                {resendBusyId === `${rsvp.id}:${reminder.id}`
-                                  ? "Ouverture…"
-                                  : `Rappel ${reminder.label}`}
-                              </button>
-                            ))
-                          : null}
+                        {can("manage_rsvp") ? (
+                          <RsvpReminderActions
+                            rsvp={rsvp}
+                            reminders={reminders}
+                            plans={site.whatsappReminders}
+                            busyId={resendBusyId}
+                            onRemind={(id, reminderId, label) =>
+                              void onWhatsAppReminder(id, reminderId, label)
+                            }
+                          />
+                        ) : null}
                       </>
                     ) : null}
                     {canBlockRsvp ? (
@@ -1024,7 +1058,7 @@ export function AdminPanel({
                       {rsvp.checkedInAt ? formatAdminDate(rsvp.checkedInAt, true) : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-col gap-2">
+                      <div className="flex min-w-[9rem] flex-wrap items-center gap-2">
                         {rsvp.status !== "no" ? (
                           <>
                             <a
@@ -1045,30 +1079,17 @@ export function AdminPanel({
                                 {resendBusyId === rsvp.id ? "Ouverture…" : "WhatsApp"}
                               </button>
                             ) : null}
-                            {can("manage_rsvp") &&
-                            rsvp.status === "yes" &&
-                            !rsvp.blockedAt &&
-                            site.whatsappReminders.length > 0
-                              ? site.whatsappReminders.map((reminder) => (
-                                  <button
-                                    key={reminder.id}
-                                    type="button"
-                                    disabled={resendBusyId === `${rsvp.id}:${reminder.id}`}
-                                    onClick={() =>
-                                      void onWhatsAppReminder(
-                                        rsvp.id,
-                                        reminder.id,
-                                        reminder.label,
-                                      )
-                                    }
-                                    className="text-left text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
-                                  >
-                                    {resendBusyId === `${rsvp.id}:${reminder.id}`
-                                      ? "Ouverture…"
-                                      : `Rappel ${reminder.label}`}
-                                  </button>
-                                ))
-                              : null}
+                            {can("manage_rsvp") ? (
+                              <RsvpReminderActions
+                                rsvp={rsvp}
+                                reminders={reminders}
+                                plans={site.whatsappReminders}
+                                busyId={resendBusyId}
+                                onRemind={(id, reminderId, label) =>
+                                  void onWhatsAppReminder(id, reminderId, label)
+                                }
+                              />
+                            ) : null}
                           </>
                         ) : null}
                         {canBlockRsvp ? (
@@ -1143,7 +1164,8 @@ export function AdminPanel({
       {can("view_rsvp") ? (
         <AdminSeatingEditor
           rsvps={rsvps}
-          initialPlan={initialSeatingPlan}
+          initialPlan={seatingPlan}
+          onPlanChange={setSeatingPlan}
           site={site}
           guestOfLabels={guestOfLabels}
           canEdit={can("manage_rsvp")}
@@ -1154,7 +1176,16 @@ export function AdminPanel({
         />
       ) : null}
 
-      {can("check_in") ? <AdminCheckIn site={site} /> : null}
+      {can("check_in") ? (
+        <AdminCheckIn
+          site={site}
+          rsvps={rsvps}
+          showGuestPii={showGuestPii}
+          onCheckedIn={(updated) =>
+            setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
+          }
+        />
+      ) : null}
       {can("manage_users") ? (
         <AdminUsersEditor
           initialUsers={initialUsers}
