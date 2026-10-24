@@ -46,6 +46,7 @@ import type {
   MenuContent,
   Photo,
   Rsvp,
+  RsvpCheckInActor,
   RsvpReminderLog,
   ScheduleContent,
   SeatingPlanContent,
@@ -217,22 +218,38 @@ export async function savePhotos(photos: Photo[]) {
   }
 }
 
+function applyCheckInActor(rsvp: Rsvp, actors: Record<string, RsvpCheckInActor>): Rsvp {
+  const actor = actors[rsvp.id];
+  if (!actor) return rsvp;
+  return {
+    ...rsvp,
+    checkedInByName: rsvp.checkedInByName || actor.name || null,
+    checkedInByEmail: rsvp.checkedInByEmail || actor.email || null,
+  };
+}
+
 export async function getRsvps(): Promise<Rsvp[]> {
   const blocks = await getRsvpBlocks();
+  const checkIns = await getRsvpCheckInActors();
 
   if (!isSupabaseConfigured()) {
     const raw = await readJsonFile<Rsvp[]>(path.join(dataDir, "rsvps.json"), []);
     const rsvps = raw
       .map((r) =>
-        ensureRsvpTicketFields({
-          ...r,
-          blockedAt: r.blockedAt || blocks[r.id] || null,
-        }),
+        applyCheckInActor(
+          ensureRsvpTicketFields({
+            ...r,
+            blockedAt: r.blockedAt || blocks[r.id] || null,
+          }),
+          checkIns,
+        ),
       );
     const needsPersist = raw.some(
       (r) =>
         !r.ticketToken ||
         r.checkedInAt === undefined ||
+        r.checkedInByName === undefined ||
+        r.checkedInByEmail === undefined ||
         r.emailSentAt === undefined ||
         r.ticketViewedAt === undefined ||
         r.ticketViewCount === undefined ||
@@ -259,10 +276,13 @@ export async function getRsvps(): Promise<Rsvp[]> {
   return ((data || []) as DbRsvp[])
     .map(mapRsvp)
     .map((r) =>
-      ensureRsvpTicketFields({
-        ...r,
-        blockedAt: r.blockedAt || blocks[r.id] || null,
-      }),
+      applyCheckInActor(
+        ensureRsvpTicketFields({
+          ...r,
+          blockedAt: r.blockedAt || blocks[r.id] || null,
+        }),
+        checkIns,
+      ),
     );
 }
 
@@ -270,6 +290,21 @@ export async function getRsvps(): Promise<Rsvp[]> {
 export async function getRsvpBlocks(): Promise<Record<string, string>> {
   const raw = await getContent<Record<string, string>>("rsvp_blocks", {});
   return raw && typeof raw === "object" ? raw : {};
+}
+
+/** Compte du premier check-in, hors colonne SQL pour rester compatible. */
+export async function getRsvpCheckInActors(): Promise<Record<string, RsvpCheckInActor>> {
+  const raw = await getContent<Record<string, RsvpCheckInActor>>("rsvp_checkins", {});
+  return raw && typeof raw === "object" ? raw : {};
+}
+
+export async function setRsvpCheckInActor(id: string, actor: RsvpCheckInActor) {
+  const all = { ...(await getRsvpCheckInActors()) };
+  if (!all[id]) {
+    all[id] = { name: actor.name.trim(), email: actor.email.trim() };
+    await saveContent("rsvp_checkins", all);
+  }
+  return all[id];
 }
 
 export async function setRsvpBlocked(id: string, blocked: boolean) {

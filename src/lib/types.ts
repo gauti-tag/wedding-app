@@ -41,6 +41,10 @@ export type Rsvp = {
   ticketToken: string;
   /** Date ISO du check-in physique, null si pas encore arrivé. */
   checkedInAt: string | null;
+  /** Nom du compte qui a enregistré le premier check-in. */
+  checkedInByName: string | null;
+  /** E-mail du compte qui a enregistré le premier check-in. */
+  checkedInByEmail: string | null;
   /** Date ISO d’envoi / ouverture WhatsApp (carte transmise). */
   emailSentAt: string | null;
   /** Date ISO de la dernière consultation de la carte `/ticket/...`. */
@@ -57,6 +61,12 @@ export type Rsvp = {
 
 /** Suivi des rappels WhatsApp envoyés (reminderId → date ISO). */
 export type RsvpReminderLog = Record<string, string>;
+
+/** Compte qui a enregistré le premier check-in d’un invité. */
+export type RsvpCheckInActor = {
+  name: string;
+  email: string;
+};
 
 export type LocalizedText = {
   fr: string;

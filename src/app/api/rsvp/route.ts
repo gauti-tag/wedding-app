@@ -180,6 +180,8 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
       ticketToken: createTicketToken(),
       checkedInAt: null,
+      checkedInByName: null,
+      checkedInByEmail: null,
       emailSentAt: null,
       ticketViewedAt: null,
       ticketViewCount: 0,

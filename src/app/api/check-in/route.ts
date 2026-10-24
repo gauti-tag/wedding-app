@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
-import { getRsvps, saveRsvps } from "@/lib/storage";
+import { getRsvps, saveRsvps, setRsvpCheckInActor } from "@/lib/storage";
 import { ensureRsvpTicketFields } from "@/lib/tickets";
 
 const schema = z.object({
@@ -78,7 +78,16 @@ export async function POST(request: Request) {
     }
 
     const checkedInAt = new Date().toISOString();
-    const updated = { ...guest, checkedInAt };
+    const actor = await setRsvpCheckInActor(guest.id, {
+      name: user.name,
+      email: user.email,
+    });
+    const updated = {
+      ...guest,
+      checkedInAt,
+      checkedInByName: actor.name || null,
+      checkedInByEmail: actor.email || null,
+    };
     rsvps[index] = updated;
     await saveRsvps(rsvps);
     await auditAs(user, "check_in", "rsvp", updated.name);

@@ -104,6 +104,8 @@ export function mapRsvp(row: DbRsvp): Rsvp {
     message: row.message || "",
     ticketToken: row.ticket_token,
     checkedInAt: row.checked_in_at,
+    checkedInByName: null,
+    checkedInByEmail: null,
     emailSentAt: row.email_sent_at,
     ticketViewedAt: row.ticket_viewed_at ?? null,
     ticketViewCount: row.ticket_view_count ?? 0,

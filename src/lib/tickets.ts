@@ -38,6 +38,8 @@ export function ensureRsvpTicketFields(rsvp: Rsvp): Rsvp {
     name: formatFullName(rsvp.name || ""),
     ticketToken: rsvp.ticketToken || createTicketToken(),
     checkedInAt: rsvp.checkedInAt ?? null,
+    checkedInByName: rsvp.checkedInByName ?? null,
+    checkedInByEmail: rsvp.checkedInByEmail ?? null,
     emailSentAt: rsvp.emailSentAt ?? null,
     ticketViewedAt: rsvp.ticketViewedAt ?? null,
     ticketViewCount: typeof rsvp.ticketViewCount === "number" ? rsvp.ticketViewCount : 0,

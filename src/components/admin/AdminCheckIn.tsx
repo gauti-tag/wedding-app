@@ -35,33 +35,46 @@ type CheckInResult = {
   rsvp?: Rsvp;
 };
 
+function formatCheckInStamp(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatCheckInAccount(guest: Rsvp) {
+  const name = (guest.checkedInByName || "").trim();
+  const email = (guest.checkedInByEmail || "").trim();
+  if (name && email) return `${name} · ${email}`;
+  return name || email || "Compte non enregistré";
+}
+
 function formatScanPlace(guest: Rsvp, repeat: boolean) {
   const table = (guest.tableLabel || "").trim();
   const seat = (guest.seatLabel || "").trim();
-  const lines = repeat
-    ? [
-        table ? `Table : ${table}` : "Table : non assignée",
-        seat ? `Siège : ${seat}` : "Siège : non assigné",
-      ]
-    : [seat ? `Numéro de siège : ${seat}` : "Numéro de siège : non assigné"];
+  const lines = [
+    table ? `Table : ${table}` : "Table : non assignée",
+    seat ? `Siège : ${seat}` : "Siège : non assigné",
+  ];
 
   normalizeChildSeats(guest.childSeats, guest.childCount).forEach((child, index) => {
-    if (repeat) {
-      const place = formatSeatingLabel(child.tableLabel, child.seatLabel);
-      lines.push(
-        place
-          ? `Enfant ${index + 1} : ${place}`
-          : `Enfant ${index + 1} : table et siège non assignés`,
-      );
-      return;
-    }
-    const childSeat = (child.seatLabel || "").trim();
+    const place = formatSeatingLabel(child.tableLabel, child.seatLabel);
     lines.push(
-      childSeat
-        ? `Enfant ${index + 1} · siège ${childSeat}`
-        : `Enfant ${index + 1} · siège non assigné`,
+      place
+        ? `Enfant ${index + 1} : ${place}`
+        : `Enfant ${index + 1} : table et siège non assignés`,
     );
   });
+
+  if (repeat && guest.checkedInAt) {
+    lines.push(`Premier check-in : ${formatCheckInStamp(guest.checkedInAt)}`);
+    lines.push(`Compte : ${formatCheckInAccount(guest)}`);
+  }
 
   return lines.join("\n");
 }
@@ -277,8 +290,8 @@ export function AdminCheckIn({
           <h2 className="section-title text-3xl text-mist">Check-in jour J</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
             Scannez le QR code de la carte d’invitation pour marquer la présence. Le premier scan
-            affiche le numéro de siège ; un second scan rappelle la table et le siège. Si le QR
-            est perdu, retrouvez l’invité ci-dessous et renvoyez sa carte sur WhatsApp.
+            affiche la table et le siège. Un second scan rappelle aussi la date, l’heure et le
+            compte du premier check-in. Si le QR est perdu, retrouvez l’invité ci-dessous.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
