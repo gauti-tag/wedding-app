@@ -7,6 +7,7 @@ import {
   seatsRemainingForRelation,
 } from "@/lib/guest-capacity";
 import { GUEST_RELATIONS, type GuestRelation } from "@/lib/guest-of";
+import { EVENT_ROLES, hasEventRole, normalizeEventRoles, type EventRole } from "@/lib/event-roles";
 import { hasSeating } from "@/lib/seating";
 import type { GuestOf, Rsvp, SiteContent } from "@/lib/types";
 
@@ -33,6 +34,12 @@ export type RelationChildrenRow = {
   children: number;
 };
 
+export type RoleStat = {
+  key: EventRole;
+  count: number;
+  checkedIn: number;
+};
+
 export type RsvpInsights = {
   total: number;
   yes: number;
@@ -50,6 +57,9 @@ export type RsvpInsights = {
   relationQuotasEnabled: boolean;
   relationSeats: RelationSeatRow[];
   childrenByRelation: RelationChildrenRow[];
+  roleGuests: number;
+  roleCheckedIn: number;
+  roleStats: RoleStat[];
   followUps: FollowUpItem[];
   unseatedYes: number;
 };
@@ -150,10 +160,20 @@ export function computeRsvpInsights(
     if (rsvp.status === "yes") {
       if (!rsvp.emailSentAt) reasons.push("ticket_not_sent");
       else if (!rsvp.ticketViewedAt) reasons.push("ticket_not_viewed");
-      if (!hasSeating(rsvp)) reasons.push("no_seating");
+      if (!hasSeating(rsvp) && !hasEventRole(rsvp)) reasons.push("no_seating");
     }
     if (reasons.length) followUps.push({ rsvp, reasons });
   }
+
+  const designated = rsvps.filter((rsvp) => rsvp.status !== "no" && !rsvp.blockedAt && hasEventRole(rsvp));
+  const roleStats: RoleStat[] = EVENT_ROLES.map((key) => {
+    const matching = designated.filter((rsvp) => normalizeEventRoles(rsvp.eventRoles).includes(key));
+    return {
+      key,
+      count: matching.length,
+      checkedIn: matching.filter((rsvp) => Boolean(rsvp.checkedInAt)).length,
+    };
+  });
 
   followUps.sort((a, b) => {
     const pa = followUpPriority.indexOf(a.reasons[0]!);
@@ -179,7 +199,12 @@ export function computeRsvpInsights(
     relationQuotasEnabled: quotas.enabled,
     relationSeats,
     childrenByRelation,
+    roleGuests: designated.length,
+    roleCheckedIn: designated.filter((rsvp) => Boolean(rsvp.checkedInAt)).length,
+    roleStats,
     followUps,
-    unseatedYes: rsvps.filter((r) => r.status === "yes" && !r.blockedAt && !hasSeating(r)).length,
+    unseatedYes: rsvps.filter(
+      (r) => r.status === "yes" && !r.blockedAt && !hasSeating(r) && !hasEventRole(r),
+    ).length,
   };
 }

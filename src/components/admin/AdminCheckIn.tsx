@@ -7,6 +7,7 @@ import {
   formatCheckInGuestLines,
   resolveCheckInGuestDetails,
 } from "@/lib/guest-of";
+import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
 import { formatSeatingLabel, normalizeChildSeats } from "@/lib/seating";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import type { Rsvp, SiteContent } from "@/lib/types";
@@ -57,10 +58,12 @@ function formatCheckInAccount(guest: Rsvp) {
 function formatScanPlace(guest: Rsvp, repeat: boolean) {
   const table = (guest.tableLabel || "").trim();
   const seat = (guest.seatLabel || "").trim();
-  const lines = [
-    table ? `Table : ${table}` : "Table : non assignée",
-    seat ? `Siège : ${seat}` : "Siège : non assigné",
-  ];
+  const lines = hasEventRole(guest)
+    ? [`Rôle : ${formatEventRoles(guest.eventRoles)}`, "Pas de table ni de siège"]
+    : [
+        table ? `Table : ${table}` : "Table : non assignée",
+        seat ? `Siège : ${seat}` : "Siège : non assigné",
+      ];
 
   normalizeChildSeats(guest.childSeats, guest.childCount).forEach((child, index) => {
     const place = formatSeatingLabel(child.tableLabel, child.seatLabel);
@@ -212,6 +215,10 @@ export function AdminCheckIn({
       setLastGuest(guest);
       setRepeatScan(repeat);
 
+      const roleLabel = guest && hasEventRole(guest) ? formatEventRoles(guest.eventRoles) : "";
+      const who = roleLabel
+        ? `${guest?.name || "Invité"} — ${roleLabel}`
+        : guest?.name || "Invité";
       const place = guest ? formatScanPlace(guest, repeat) : "";
       const guestLines = guest
         ? formatCheckInGuestLines(resolveCheckInGuestDetails(guest, site, guestOfLabels))
@@ -226,7 +233,7 @@ export function AdminCheckIn({
         vibrate([60, 40, 60]);
         showInfo(
           [
-            `${guest?.name || "Invité"} est déjà enregistré(e).`,
+            `${who} est déjà enregistré(e).`,
             guestLines ? `\n\n${guestLines}` : "",
             place ? `\n\n${place}` : "",
           ].join(""),
@@ -237,7 +244,7 @@ export function AdminCheckIn({
         vibrate(200);
         showSuccess(
           [
-            `${guest?.name || "Invité"} — présence enregistrée.`,
+            `${who} — présence enregistrée.`,
             guestLines ? `\n\n${guestLines}` : "",
             place ? `\n\n${place}` : "",
           ].join(""),
@@ -290,8 +297,9 @@ export function AdminCheckIn({
           <h2 className="section-title text-3xl text-mist">Check-in jour J</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
             Scannez le QR code de la carte d’invitation pour marquer la présence. Le premier scan
-            affiche la table et le siège. Un second scan rappelle aussi la date, l’heure et le
-            compte du premier check-in. Si le QR est perdu, retrouvez l’invité ci-dessous.
+            affiche la table et le siège, ou le rôle si l’invité est hors plan. Un second scan
+            rappelle aussi la date, l’heure et le compte du premier check-in. Si le QR est perdu,
+            retrouvez l’invité ci-dessous.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -398,6 +406,11 @@ export function AdminCheckIn({
           {lastGuest ? (
             <div className="border border-line bg-forest p-4 text-sm">
               <p className="text-mist">{lastGuest.name}</p>
+              {hasEventRole(lastGuest) ? (
+                <p className="mt-1 text-xs tracking-[0.12em] text-champagne uppercase">
+                  {formatEventRoles(lastGuest.eventRoles)}
+                </p>
+              ) : null}
               <p className="mt-1 text-soft">{lastGuest.phone}</p>
               {lastGuestDetails ? (
                 <dl className="mt-3 space-y-1.5 text-xs text-soft">

@@ -9,6 +9,7 @@ import type {
   GuestOf,
 } from "@/lib/types";
 import { normalizeChildCount } from "@/lib/guest-capacity";
+import { normalizeEventRoles } from "@/lib/event-roles";
 import { normalizeChildSeats } from "@/lib/seating";
 import { formatFullName } from "@/lib/validation";
 import { normalizeRole } from "@/lib/roles";
@@ -41,6 +42,7 @@ export type DbRsvp = {
   table_label: string;
   seat_label: string;
   child_seats: ChildSeat[];
+  event_roles: string[];
   created_at: string;
 };
 
@@ -113,6 +115,7 @@ export function mapRsvp(row: DbRsvp): Rsvp {
     tableLabel: row.table_label ?? "",
     seatLabel: row.seat_label ?? "",
     childSeats: normalizeChildSeats(row.child_seats, row.child_count ?? 0),
+    eventRoles: normalizeEventRoles(row.event_roles),
     createdAt: row.created_at,
   };
 }
@@ -136,6 +139,7 @@ export function toDbRsvp(rsvp: Rsvp): DbRsvp {
     table_label: rsvp.tableLabel || "",
     seat_label: rsvp.seatLabel || "",
     child_seats: normalizeChildSeats(rsvp.childSeats, rsvp.childCount ?? 0),
+    event_roles: normalizeEventRoles(rsvp.eventRoles),
     created_at: rsvp.createdAt,
   };
 }

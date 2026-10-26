@@ -31,6 +31,14 @@ import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
 import { formatOptionalDatetimeLabel } from "@/lib/rsvp-deadline";
 import { downloadRsvpExcel } from "@/lib/rsvp-excel";
+import {
+  EVENT_ROLES,
+  eventRoleLabel,
+  formatEventRoles,
+  hasEventRole,
+  normalizeEventRoles,
+  type EventRole,
+} from "@/lib/event-roles";
 import { formatSeatingLabel } from "@/lib/seating";
 import { hasPermission, roleLabel, type Permission } from "@/lib/roles";
 import type {
@@ -51,6 +59,48 @@ import type {
 } from "@/lib/types";
 
 const ADMIN_NAV_OFFSET = 96;
+
+const eventRoleShortLabel: Record<EventRole, string> = {
+  committee: "Comité",
+  best_man: "Garçon",
+  maid_of_honor: "Femme",
+};
+
+function EventRoleToggles({
+  rsvp,
+  busy,
+  onToggle,
+}: {
+  rsvp: Rsvp;
+  busy: boolean;
+  onToggle: (rsvp: Rsvp, role: EventRole) => void;
+}) {
+  const selected = normalizeEventRoles(rsvp.eventRoles);
+  return (
+    <div className="flex flex-wrap gap-1">
+      {EVENT_ROLES.map((role) => {
+        const active = selected.includes(role);
+        const full = eventRoleLabel(role);
+        return (
+          <button
+            key={role}
+            type="button"
+            title={full}
+            aria-label={full}
+            aria-pressed={active}
+            disabled={busy}
+            onClick={() => onToggle(rsvp, role)}
+            className={`!px-2 !py-1 text-[10px] whitespace-nowrap disabled:opacity-50 ${
+              active ? "btn-primary" : "btn-ghost"
+            }`}
+          >
+            {eventRoleShortLabel[role]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function formatCheckInAccount(rsvp: Rsvp) {
   const name = (rsvp.checkedInByName || "").trim();
@@ -278,6 +328,7 @@ export function AdminPanel({
   const [resendBusyId, setResendBusyId] = useState<string | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [blockBusyId, setBlockBusyId] = useState<string | null>(null);
+  const [roleBusyId, setRoleBusyId] = useState<string | null>(null);
   const [rsvpPage, setRsvpPage] = useState(1);
   const [rsvpQuery, setRsvpQuery] = useState("");
   const canBlockRsvp = isOwner;
@@ -463,6 +514,37 @@ export function AdminPanel({
     await onWhatsAppReminder(next.id, reminderId, reminderLabel);
   }
 
+  async function onToggleEventRole(rsvp: Rsvp, role: EventRole) {
+    const current = normalizeEventRoles(rsvp.eventRoles);
+    const next = current.includes(role)
+      ? current.filter((item) => item !== role)
+      : [...current, role];
+    setRoleBusyId(rsvp.id);
+    try {
+      const res = await fetch("/api/rsvp/role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: rsvp.id, eventRoles: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Enregistrement du rôle impossible.");
+        return;
+      }
+      setRsvps((prev) => prev.map((item) => (item.id === rsvp.id ? data.rsvp : item)));
+      const hadSeat = Boolean((rsvp.tableLabel || "").trim() || (rsvp.seatLabel || "").trim());
+      showSuccess(
+        next.length && hadSeat
+          ? "Rôle enregistré. La table et le siège de l’adulte ont été libérés."
+          : "Rôle enregistré.",
+      );
+    } catch {
+      showError("Enregistrement du rôle impossible.");
+    } finally {
+      setRoleBusyId(null);
+    }
+  }
+
   async function onToggleBlockRsvp(id: string, name: string, currentlyBlocked: boolean) {
     const nextBlocked = !currentlyBlocked;
     const ok = confirm(
@@ -530,6 +612,7 @@ export function AdminPanel({
       "message",
       "table",
       "seat",
+      "roles",
       "ticketToken",
       "submittedAt",
       "whatsappSentAt",
@@ -548,6 +631,7 @@ export function AdminPanel({
         r.message,
         r.tableLabel || "",
         r.seatLabel || "",
+        formatEventRoles(r.eventRoles),
         r.ticketToken,
         r.createdAt,
         r.emailSentAt || "",
@@ -876,6 +960,11 @@ export function AdminPanel({
                   <div className="flex min-w-0 items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="break-words font-medium text-mist">{displayName}</p>
+                      {hasEventRole(rsvp) ? (
+                        <p className="mt-0.5 text-xs text-champagne">
+                          {formatEventRoles(rsvp.eventRoles)}
+                        </p>
+                      ) : null}
                       <p className="mt-0.5 break-all text-sm text-soft">{displayPhone}</p>
                     </div>
                     <span className="shrink-0 text-xs tracking-[0.12em] text-champagne uppercase">
@@ -916,6 +1005,13 @@ export function AdminPanel({
                     </div>
                   </dl>
                   <div className="flex flex-wrap items-center gap-2 border-t border-line pt-2">
+                    {can("manage_rsvp") && rsvp.status !== "no" ? (
+                      <EventRoleToggles
+                        rsvp={rsvp}
+                        busy={roleBusyId === rsvp.id}
+                        onToggle={(guest, role) => void onToggleEventRole(guest, role)}
+                      />
+                    ) : null}
                     {rsvp.status !== "no" ? (
                       <>
                         <a
@@ -1026,6 +1122,11 @@ export function AdminPanel({
                   <tr key={rsvp.id} className="border-t border-line">
                     <td className="px-4 py-3">
                       <div className="text-mist">{displayName}</div>
+                      {hasEventRole(rsvp) ? (
+                        <p className="mt-0.5 text-xs text-champagne">
+                          {formatEventRoles(rsvp.eventRoles)}
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 text-soft">{displayPhone}</td>
                     <td className="px-4 py-3 text-champagne">{rsvp.status}</td>
@@ -1084,6 +1185,13 @@ export function AdminPanel({
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex min-w-[9rem] flex-wrap items-center gap-2">
+                        {can("manage_rsvp") && rsvp.status !== "no" ? (
+                          <EventRoleToggles
+                            rsvp={rsvp}
+                            busy={roleBusyId === rsvp.id}
+                            onToggle={(guest, role) => void onToggleEventRole(guest, role)}
+                          />
+                        ) : null}
                         {rsvp.status !== "no" ? (
                           <>
                             <a

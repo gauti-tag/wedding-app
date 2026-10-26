@@ -19,6 +19,7 @@ import {
 } from "@/lib/seating";
 import type { SeatPresence } from "@/lib/seating";
 import type { ChildSeat, Rsvp, SeatingPlanContent, SeatingPlanTable, SiteContent } from "@/lib/types";
+import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
 
@@ -151,16 +152,29 @@ export function AdminSeatingEditor({
     [plan, yesGuests],
   );
 
+  const roleGuests = useMemo(
+    () => yesGuests.filter((guest) => hasEventRole(guest)),
+    [yesGuests],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return yesGuests.filter((r) => {
+      if (hasEventRole(r) && (r.childCount ?? 0) === 0) return false;
       const assigned = Boolean(
         normalizeSeatingLabel(r.tableLabel) || normalizeSeatingLabel(r.seatLabel),
       );
-      if (onlyUnassigned && assigned) return false;
+      const childUnseated = normalizeChildSeats(r.childSeats, r.childCount).some(
+        (seat) => !isCompleteSeat(seat),
+      );
+      if (onlyUnassigned) {
+        const adultMissing = !hasEventRole(r) && !assigned;
+        if (!adultMissing && !childUnseated) return false;
+      }
       if (!q) return true;
       const lien = guestOfLabels[r.guestOf] || r.guestOf || "";
-      const hay = `${r.name} ${r.phone} ${lien} ${r.message} ${r.tableLabel} ${r.seatLabel}`.toLowerCase();
+      const roles = formatEventRoles(r.eventRoles);
+      const hay = `${r.name} ${r.phone} ${lien} ${r.message} ${roles} ${r.tableLabel} ${r.seatLabel}`.toLowerCase();
       return hay.includes(q);
     });
   }, [yesGuests, query, onlyUnassigned, guestOfLabels]);
@@ -174,7 +188,9 @@ export function AdminSeatingEditor({
   }
 
   function draftFor(rsvp: Rsvp): SeatDraft {
-    return drafts[rsvp.id] || savedDraft(rsvp);
+    const draft = drafts[rsvp.id] || savedDraft(rsvp);
+    if (!hasEventRole(rsvp)) return draft;
+    return { ...draft, tableLabel: "", seatLabel: "" };
   }
 
   function setDraft(id: string, patch: Partial<SeatDraft>) {
@@ -606,6 +622,23 @@ export function AdminSeatingEditor({
             </label>
           </div>
 
+          {roleGuests.length > 0 ? (
+            <div className="border border-line p-3">
+              <p className="text-xs tracking-[0.16em] text-champagne uppercase">Rôles du jour</p>
+              <p className="mt-1 text-xs text-soft">
+                Ces invités n’ont pas de chaise. Leurs enfants restent plaçables dans la liste.
+              </p>
+              <ul className="mt-3 space-y-1 text-sm text-mist">
+                {roleGuests.map((guest) => (
+                  <li key={guest.id}>
+                    {displayGuestName(guest.name)}
+                    <span className="text-soft"> · {formatEventRoles(guest.eventRoles)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {!canEdit ? (
             <p className="text-sm text-soft">
               Consultation seule — le rôle coordinateur/admin peut modifier les placements.
@@ -640,7 +673,11 @@ export function AdminSeatingEditor({
                         message={rsvp.message}
                       />
                     </div>
-                    {canEdit ? (
+                    {hasEventRole(rsvp) ? (
+                      <p className="text-xs text-champagne">
+                        {formatEventRoles(rsvp.eventRoles)} — pas de table ni de siège
+                      </p>
+                    ) : canEdit ? (
                       <div className="admin-grid-2 grid gap-2">
                         <div>
                           <label className="label" htmlFor={`table-m-${rsvp.id}`}>
@@ -704,7 +741,7 @@ export function AdminSeatingEditor({
                           <p className="text-xs tracking-[0.14em] text-champagne uppercase">
                             Enfants accompagnants
                           </p>
-                          {canEdit ? (
+                          {canEdit && !hasEventRole(rsvp) ? (
                             <button
                               type="button"
                               className="text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist"
@@ -847,7 +884,7 @@ export function AdminSeatingEditor({
                             childCount={rsvp.childCount ?? 0}
                             message={rsvp.message}
                           />
-                          {rsvp.childCount > 0 && canEdit ? (
+                          {rsvp.childCount > 0 && canEdit && !hasEventRole(rsvp) ? (
                             <button
                               type="button"
                               className="mt-1 text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist"
@@ -858,7 +895,11 @@ export function AdminSeatingEditor({
                           ) : null}
                         </td>
                         <td className="px-3 py-2">
-                          {canEdit ? (
+                          {hasEventRole(rsvp) ? (
+                            <p className="text-xs text-champagne">
+                              {formatEventRoles(rsvp.eventRoles)}
+                            </p>
+                          ) : canEdit ? (
                             <select
                               className="field !py-1.5"
                               value={draft.tableLabel}
@@ -881,7 +922,9 @@ export function AdminSeatingEditor({
                           )}
                         </td>
                         <td className="px-3 py-2">
-                          {canEdit ? (
+                          {hasEventRole(rsvp) ? (
+                            <span className="text-soft">—</span>
+                          ) : canEdit ? (
                             <select
                               className="field !py-1.5"
                               value={draft.seatLabel}
@@ -1070,7 +1113,7 @@ export function AdminSeatingEditor({
                         const lien = guestOfLabels[guest.guestOf] || guest.guestOf;
                         const withLien = (name: string) => (lien ? `${name} · ${lien}` : name);
                         const items: { key: string; label: string }[] = [];
-                        if (!normalizeSeatingLabel(guest.tableLabel)) {
+                        if (!hasEventRole(guest) && !normalizeSeatingLabel(guest.tableLabel)) {
                           items.push({
                             key: guest.id,
                             label: withLien(displayGuestName(guest.name)),

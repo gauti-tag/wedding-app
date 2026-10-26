@@ -189,6 +189,7 @@ export async function POST(request: Request) {
       tableLabel: "",
       seatLabel: "",
       childSeats: [],
+      eventRoles: [],
     };
 
     rsvps.unshift(entry);

@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { site } from "@/lib/site";
 import type { Rsvp } from "@/lib/types";
 import { normalizeChildCount } from "@/lib/guest-capacity";
+import { normalizeEventRoles } from "@/lib/event-roles";
 import { normalizeChildSeats } from "@/lib/seating";
 import { formatFullName } from "@/lib/validation";
 
@@ -51,5 +52,6 @@ export function ensureRsvpTicketFields(rsvp: Rsvp): Rsvp {
       rsvp.childSeats,
       normalizeChildCount(rsvp.childCount ?? 0),
     ),
+    eventRoles: normalizeEventRoles(rsvp.eventRoles),
   };
 }

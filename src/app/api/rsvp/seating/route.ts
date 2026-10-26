@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
+import { hasEventRole } from "@/lib/event-roles";
 import {
   findPlanTable,
   isCompleteSeat,
@@ -48,6 +49,20 @@ export async function PATCH(request: Request) {
     }
 
     const current = rsvps[index]!;
+    if (
+      hasEventRole(current) &&
+      (normalizeSeatingLabel(parsed.data.tableLabel) ||
+        normalizeSeatingLabel(parsed.data.seatLabel))
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Cet invité a un rôle le jour J : pas de table ni de siège pour l’adulte. Les enfants peuvent garder une place.",
+        },
+        { status: 400 },
+      );
+    }
+
     const requested: { who: string; tableLabel: string; seatLabel: string }[] = [
       {
         who: current.name,

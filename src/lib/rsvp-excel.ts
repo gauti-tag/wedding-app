@@ -1,3 +1,4 @@
+import { formatEventRoles } from "@/lib/event-roles";
 import { formatSeatingLabel, normalizeChildSeats } from "@/lib/seating";
 import type { Rsvp } from "@/lib/types";
 
@@ -46,6 +47,7 @@ export async function downloadRsvpExcel(
     "Message",
     "Table",
     "Siège",
+    "Rôles",
     "Soumis le",
     "WhatsApp envoyé",
     "Carte consultée",
@@ -64,6 +66,7 @@ export async function downloadRsvpExcel(
     rsvp.message || "",
     rsvp.tableLabel || "",
     rsvp.seatLabel || "",
+    formatEventRoles(rsvp.eventRoles),
     formatExcelDate(rsvp.createdAt),
     formatExcelDate(rsvp.emailSentAt),
     formatExcelDate(rsvp.ticketViewedAt),
@@ -84,6 +87,7 @@ export async function downloadRsvpExcel(
       { width: 32 },
       { width: 14 },
       { width: 12 },
+      { width: 32 },
       { width: 20 },
       { width: 20 },
       { width: 20 },

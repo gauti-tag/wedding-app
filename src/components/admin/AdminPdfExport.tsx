@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
+import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
 import { findSeatOccupant, formatSeatingLabel, isCompleteSeat, normalizeChildSeats } from "@/lib/seating";
 import type { Rsvp, SeatingPlanContent, SiteContent } from "@/lib/types";
 
@@ -88,7 +89,9 @@ export function AdminPdfExport({ rsvps, site, seatingPlan, guestOfLabels }: Prop
       }
 
       for (const guest of yes) {
-        if (!(guest.tableLabel || "").trim()) {
+        if (hasEventRole(guest)) {
+          rows.push([formatEventRoles(guest.eventRoles), guest.name, "Hors plan"]);
+        } else if (!(guest.tableLabel || "").trim()) {
           rows.push(["Sans table", guest.name, "—"]);
         }
         normalizeChildSeats(guest.childSeats, guest.childCount).forEach((seat, index) => {

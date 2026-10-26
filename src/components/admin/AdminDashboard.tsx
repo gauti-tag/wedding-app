@@ -7,6 +7,7 @@ import {
   type FollowUpReason,
 } from "@/lib/rsvp-insights";
 import type { GuestRelation } from "@/lib/guest-of";
+import { eventRoleLabel } from "@/lib/event-roles";
 import { maskName } from "@/lib/mask-pii";
 import { seatingOccupancy } from "@/lib/seating";
 import type { Rsvp, SeatingPlanContent, SiteContent } from "@/lib/types";
@@ -186,6 +187,32 @@ export function AdminDashboard({
             </ul>
           </>
         ) : null}
+      </div>
+
+      <div className="border border-line bg-white p-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">Rôles du jour</p>
+          <p className="meta-date text-sm text-mist">
+            {seatCountLabel(insights.roleGuests, "désigné", "désignés")}
+            {" · "}
+            {seatCountLabel(insights.roleCheckedIn, "arrivé", "arrivés")}
+          </p>
+        </div>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+          {insights.roleStats.map((row) => (
+            <li key={row.key} className="border border-line p-3">
+              <p className="text-sm text-mist">{eventRoleLabel(row.key)}</p>
+              <p className="meta-date mt-2 text-3xl text-mist">{row.count}</p>
+              <p className="mt-1 text-xs text-soft">
+                {seatCountLabel(row.checkedIn, "arrivé", "arrivés")}
+              </p>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-xs text-soft">
+          Hors plan de table. Une personne avec plusieurs rôles compte dans chaque case, une seule
+          fois dans le total.
+        </p>
       </div>
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-2">

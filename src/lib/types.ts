@@ -1,3 +1,7 @@
+import type { EventRole } from "@/lib/event-roles";
+
+export type { EventRole };
+
 export type PhotoAlbum = "hero" | "story" | "gallery";
 
 export type Photo = {
@@ -57,6 +61,8 @@ export type Rsvp = {
   tableLabel: string;
   /** Siège / place à table (ex. « A », « 12 »). Vide = non assigné. */
   seatLabel: string;
+  /** Comité et/ou garçon ou femme d’honneur. Vide = invité assis. */
+  eventRoles: EventRole[];
 };
 
 /** Suivi des rappels WhatsApp envoyés (reminderId → date ISO). */
