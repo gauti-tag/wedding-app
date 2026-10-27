@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import {
   createEmptySeatingTable,
@@ -137,7 +137,10 @@ function SeatingPreview({
   roles,
   focus,
   onFocus,
+  query,
+  onQuery,
   onlyUnassigned,
+  onToggleUnassigned,
   openGuestId,
   onOpenGuest,
   editorFor,
@@ -147,15 +150,76 @@ function SeatingPreview({
   roles: { id: string; name: string; detail: string }[];
   focus: string;
   onFocus: (id: string) => void;
+  query: string;
+  onQuery: (value: string) => void;
   onlyUnassigned: boolean;
+  onToggleUnassigned: (value: boolean) => void;
   openGuestId: string | null;
   onOpenGuest: (id: string | null) => void;
   editorFor: (guestId: string) => ReactNode;
 }) {
+  const headerRef = useRef<HTMLDivElement>(null);
+  const paneRef = useRef<HTMLDivElement>(null);
+  const [paneHeight, setPaneHeight] = useState<number | null>(null);
   const visible = tables.filter((table) => table.visible);
   const focused = visible.find((table) => table.id === focus) ?? null;
-  const unassignedMode = onlyUnassigned || focus === "unassigned";
-  const showGrid = !unassignedMode && !focused;
+  const rolesMode = focus === "roles";
+  const unassignedMode = !rolesMode && (onlyUnassigned || focus === "unassigned");
+  const queryActive = Boolean(query.trim());
+  const hits = queryActive
+    ? [
+        ...visible.flatMap((table) =>
+          table.seats
+            .filter((seat) => seat.guestId && seat.match && seat.who)
+            .map((seat) => ({
+              key: `${table.id}-${seat.label}`,
+              guestId: seat.guestId,
+              title: seat.who,
+              detail: [seat.lien, seat.phone].filter(Boolean).join(" · "),
+              place: `Table ${table.label} · siège ${seat.label}`,
+              state: seat.state as SeatPresence | null,
+            })),
+        ),
+        ...unassigned.map((item) => ({
+          key: item.key,
+          guestId: item.guestId,
+          title: item.label,
+          detail: item.detail,
+          place: "Sans table",
+          state: null as SeatPresence | null,
+        })),
+        ...roles.map((role) => ({
+          key: `role-${role.id}`,
+          guestId: null as string | null,
+          title: role.name,
+          detail: role.detail,
+          place: "Hors plan",
+          state: null as SeatPresence | null,
+        })),
+      ]
+    : [];
+  const showHits = queryActive && !unassignedMode && !rolesMode && !focused;
+  const showGrid = !unassignedMode && !rolesMode && !focused && !queryActive;
+
+  useEffect(() => {
+    const node = headerRef.current;
+    if (!node) return;
+    const update = () => {
+      setPaneHeight(Math.max(240, window.innerHeight - 56 - node.offsetHeight - 16));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  useEffect(() => {
+    paneRef.current?.scrollTo({ top: 0 });
+  }, [query, onlyUnassigned, focus]);
 
   function seatList(table: PreviewTable, compact: boolean) {
     const anchor =
@@ -164,10 +228,11 @@ function SeatingPreview({
       ) ?? table.seats.find((seat) => seat.guestId === openGuestId);
     return (
       <ul className={compact ? "mt-2" : "mt-3"}>
-        {table.seats.map((seat) => (
+        {table.seats.map((seat) =>
+          query.trim() && !seat.match ? null : (
           <li
             key={`${table.id}-${seat.label}`}
-            className={`border-b border-line/60 py-1.5 last:border-b-0 ${seat.match ? "" : "opacity-35"}`}
+            className="border-b border-line/60 py-1.5 last:border-b-0"
           >
             <button
               type="button"
@@ -217,44 +282,109 @@ function SeatingPreview({
     );
   }
 
+  const activeTable = focused;
+  const resultLabel = unassignedMode
+    ? `${unassigned.length} sans table`
+    : queryActive
+      ? `${hits.length} résultat${hits.length > 1 ? "s" : ""}`
+      : null;
+
   return (
     <div className="border border-line bg-white">
-      <div className="border-b border-line px-3 py-3 md:px-4">
-        <p className="text-xs tracking-[0.16em] text-champagne uppercase">Aperçu par table</p>
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          {!onlyUnassigned ? (
-            <button type="button" className={previewChipClass(showGrid)} onClick={() => onFocus("all")}>
-              Toutes
-            </button>
+      <div
+        ref={headerRef}
+        id="admin-seating-filter"
+        className="sticky top-14 z-20 border-b border-line bg-ivory/95 px-3 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90 md:px-4"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs tracking-[0.16em] text-champagne uppercase">Aperçu par table</p>
+          {resultLabel ? (
+            <p className="text-xs tracking-[0.12em] text-soft uppercase">{resultLabel}</p>
           ) : null}
-          {!onlyUnassigned
-            ? visible.map((table) => (
-                <button
-                  key={table.id}
-                  type="button"
-                  className={previewChipClass(focused?.id === table.id)}
-                  onClick={() => onFocus(table.id)}
-                >
-                  {table.label}
-                  <span className="ml-1 opacity-70">
-                    {table.total - table.free}/{table.total}
-                  </span>
-                </button>
-              ))
-            : null}
-          {unassigned.length > 0 || onlyUnassigned ? (
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            id="seating-search"
+            type="search"
+            className="field min-w-0 flex-1 [&::-webkit-search-cancel-button]:hidden"
+            value={query}
+            onFocus={() => {
+              const el = headerRef.current;
+              if (!el || el.getBoundingClientRect().top <= 72) return;
+              const top = el.getBoundingClientRect().top + window.scrollY - 56;
+              window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+            }}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Nom, lien, téléphone, table…"
+            autoComplete="off"
+            enterKeyHint="search"
+            aria-label="Rechercher une place"
+          />
+          {queryActive ? (
             <button
               type="button"
-              className={previewChipClass(unassignedMode)}
-              onClick={() => onFocus("unassigned")}
+              className="shrink-0 px-1 text-xs tracking-[0.12em] text-soft uppercase"
+              onClick={() => onQuery("")}
             >
-              Sans table
-              {unassigned.length > 0 ? <span className="ml-1 opacity-70">{unassigned.length}</span> : null}
+              Effacer
+            </button>
+          ) : null}
+        </div>
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          <button type="button" className={previewChipClass(showGrid || showHits)} onClick={() => onFocus("all")}>
+            Toutes
+          </button>
+          {visible.map((table) => (
+            <button
+              key={table.id}
+              type="button"
+              className={previewChipClass(activeTable?.id === table.id)}
+              onClick={() => onFocus(table.id)}
+            >
+              {table.label}
+              <span className="ml-1 opacity-70">
+                {table.total - table.free}/{table.total}
+              </span>
+            </button>
+          ))}
+          <button
+            type="button"
+            className={previewChipClass(unassignedMode)}
+            onClick={() => {
+              if (unassignedMode) {
+                onFocus("all");
+                onToggleUnassigned(false);
+              } else {
+                onFocus("unassigned");
+                onToggleUnassigned(true);
+              }
+            }}
+          >
+            Sans table
+            {unassigned.length > 0 ? <span className="ml-1 opacity-70">{unassigned.length}</span> : null}
+          </button>
+          {roles.length > 0 ? (
+            <button
+              type="button"
+              className={previewChipClass(rolesMode)}
+              onClick={() => onFocus(rolesMode ? "all" : "roles")}
+            >
+              Hors plan
+              <span className="ml-1 opacity-70">{roles.length}</span>
             </button>
           ) : null}
         </div>
       </div>
-      <div className="max-h-[min(70dvh,40rem)] overflow-y-auto p-3 md:p-4">
+      <div
+        ref={paneRef}
+        className="overflow-y-auto p-3 md:p-4"
+        style={{
+          maxHeight:
+            queryActive || onlyUnassigned
+              ? (paneHeight ?? "calc(100dvh - 13rem)")
+              : "min(70dvh, 40rem)",
+        }}
+      >
         {unassignedMode ? (
           unassigned.length === 0 ? (
             <p className="text-sm text-soft">Tout le monde a une table.</p>
@@ -280,52 +410,111 @@ function SeatingPreview({
               })}
             </ul>
           )
-        ) : focused ? (
+        ) : rolesMode ? (
+          <ul>
+            {roles.map((role) => (
+              <li key={role.id} className="border-b border-line/60 py-2 text-sm text-soft last:border-b-0">
+                <span className="text-mist">{role.name}</span>
+                {role.detail ? ` · ${role.detail}` : ""}
+              </li>
+            ))}
+          </ul>
+        ) : activeTable ? (
           <div>
-            {tableHeading(focused)}
-            {seatList(focused, false)}
+            {tableHeading(activeTable)}
+            {seatList(activeTable, false)}
           </div>
-        ) : visible.length === 0 && unassigned.length === 0 && roles.length === 0 ? (
+        ) : queryActive ? (
+          hits.length === 0 ? (
+            <p className="text-sm text-soft">Aucun résultat pour « {query.trim()} ».</p>
+          ) : (
+            <ul>
+              {hits.map((hit) => {
+                const showEditor =
+                  hit.guestId !== null &&
+                  openGuestId === hit.guestId &&
+                  hits.find((entry) => entry.guestId === openGuestId)?.key === hit.key;
+                return (
+                  <li key={hit.key} className="border-b border-line/60 py-2 last:border-b-0">
+                    <button
+                      type="button"
+                      className="flex w-full items-start gap-2 text-left"
+                      disabled={!hit.guestId}
+                      onClick={() => onOpenGuest(openGuestId === hit.guestId ? null : hit.guestId)}
+                    >
+                      {hit.state ? (
+                        <span
+                          className={`mt-1.5 inline-block size-2.5 shrink-0 ${seatStateClass[hit.state]}`}
+                          title={seatStateLabel[hit.state]}
+                        />
+                      ) : (
+                        <span className="mt-1.5 inline-block size-2.5 shrink-0 bg-line" />
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block break-words text-sm text-mist">{hit.title}</span>
+                        <span className="block break-words text-xs text-soft">
+                          {[hit.place, hit.detail].filter(Boolean).join(" · ")}
+                        </span>
+                      </span>
+                    </button>
+                    {showEditor && hit.guestId ? editorFor(hit.guestId) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )
+        ) : visible.length === 0 && unassigned.length === 0 ? (
           <p className="text-sm text-soft">Aucune table ni confirmation pour cet aperçu.</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {roles.length > 0 ? (
-              <div className="border border-line p-3 md:col-span-2 xl:col-span-3">
-                <p className="text-sm text-mist">Hors plan</p>
-                <ul className="mt-2 space-y-1">
-                  {roles.map((role) => (
-                    <li key={role.id} className="text-sm text-soft">
-                      <span className="text-mist">{role.name}</span>
-                      {role.detail ? ` · ${role.detail}` : ""}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
             {visible.map((table) => (
               <div key={table.id} className="max-h-80 overflow-y-auto border border-line p-3">
                 {tableHeading(table)}
                 {seatList(table, true)}
               </div>
             ))}
-            {unassigned.length > 0 ? (
-              <div className="border border-line p-3">
-                <p className="text-sm text-mist">
-                  Sans table <span className="text-xs text-soft">({unassigned.length})</span>
-                </p>
-                <ul className="mt-2 space-y-1">
-                  {unassigned.map((item) => (
-                    <li key={item.key} className="break-words text-sm text-soft">
-                      <span className="text-mist">{item.label}</span>
-                      {item.detail ? ` · ${item.detail}` : ""}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+            {visible.length === 0 && unassigned.length > 0 ? (
+              <p className="text-sm text-soft">
+                {unassigned.length} sans table. Ouvrez le raccourci Sans table.
+              </p>
             ) : null}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function FoldBlock({
+  title,
+  meta,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  meta?: ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="border border-line bg-white">
+      <button
+        type="button"
+        className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-left md:px-5"
+        aria-expanded={open}
+        onClick={onToggle}
+      >
+        <span className="min-w-0 text-xs tracking-[0.16em] text-champagne uppercase">
+          {title}
+          {meta ? <span className="ml-2 tracking-normal text-soft normal-case">{meta}</span> : null}
+        </span>
+        <span className="shrink-0 text-xs tracking-[0.12em] text-soft uppercase">
+          {open ? "Masquer" : "Afficher"}
+        </span>
+      </button>
+      {open ? <div className="space-y-4 border-t border-line p-4 md:p-5">{children}</div> : null}
     </div>
   );
 }
@@ -360,6 +549,9 @@ export function AdminSeatingEditor({
   const [onlyUnassigned, setOnlyUnassigned] = useState(false);
   const [openSeatId, setOpenSeatId] = useState<string | null>(null);
   const [previewFocus, setPreviewFocus] = useState<string>("all");
+  const [showCartography, setShowCartography] = useState(false);
+  const [showPresetTables, setShowPresetTables] = useState(false);
+  const [showAssignments, setShowAssignments] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, SeatDraft>>({});
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
@@ -482,18 +674,19 @@ export function AdminSeatingEditor({
     });
   }, [roleGuests, query, onlyUnassigned]);
 
-  function revealSeatingFilter() {
-    const el = document.getElementById("admin-seating-filter");
-    if (!el || el.getBoundingClientRect().top <= 80) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - 56;
-    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-  }
-
   function onSeatingQuery(value: string) {
     const starting = !query.trim() && Boolean(value.trim());
+    const clearing = Boolean(query.trim()) && !value.trim();
     setQuery(value);
     setOpenSeatId(null);
-    if (starting) revealSeatingFilter();
+    if (starting || clearing) setPreviewFocus(onlyUnassigned ? "unassigned" : "all");
+    if (starting) {
+      const el = document.getElementById("admin-seating-filter");
+      if (el && el.getBoundingClientRect().top > 72) {
+        const top = el.getBoundingClientRect().top + window.scrollY - 56;
+        window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+      }
+    }
   }
 
   function savedDraft(rsvp: Rsvp): SeatDraft {
@@ -833,56 +1026,8 @@ export function AdminSeatingEditor({
       <div>
         <h2 className="section-title text-2xl text-mist sm:text-3xl">Plan de table</h2>
         <p className="mt-2 max-w-2xl text-sm font-normal leading-relaxed text-soft">
-          Préenregistrez les tables et leurs sièges, puis attribuez-les aux confirmations « oui ».
-          Les enfants accompagnants ont leur propre place : « Enfants à côté » les assoit aux
-          sièges libres suivants, et chaque enfant peut ensuite être déplacé.
+          Le filtre met l’aperçu à jour : nom, lien, téléphone ou numéro de table.
         </p>
-      </div>
-
-      <div
-        id="admin-seating-filter"
-        className="sticky top-14 z-20 border-y border-line bg-ivory/95 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="min-w-0 flex-1">
-            <label className="label" htmlFor="seating-search">
-              Rechercher
-            </label>
-            <input
-              id="seating-search"
-              type="search"
-              className="field"
-              value={query}
-              onFocus={revealSeatingFilter}
-              onChange={(e) => onSeatingQuery(e.target.value)}
-              placeholder="Nom, lien, téléphone, table…"
-              autoComplete="off"
-              enterKeyHint="search"
-            />
-          </div>
-          <label className="flex min-h-10 items-center gap-2 text-sm text-soft sm:pb-2">
-            <input
-              type="checkbox"
-              className="size-4"
-              checked={onlyUnassigned}
-              onChange={(e) => {
-                setOnlyUnassigned(e.target.checked);
-                setOpenSeatId(null);
-                setPreviewFocus(e.target.checked ? "unassigned" : "all");
-                if (e.target.checked) revealSeatingFilter();
-              }}
-            />
-            Sans table seulement
-          </label>
-        </div>
-        {filtering ? (
-          <p className="mt-2 text-xs tracking-[0.12em] text-soft uppercase">
-            {filtered.length} à placer
-            {matchedRoles.length > 0 ? ` · ${matchedRoles.length > 1 ? `${matchedRoles.length} rôles` : "1 rôle"}` : ""}
-            {" — "}
-            l’aperçu suit ce filtre
-          </p>
-        ) : null}
       </div>
 
       <SeatingPreview
@@ -899,8 +1044,15 @@ export function AdminSeatingEditor({
         onFocus={(id) => {
           setPreviewFocus(id);
           setOpenSeatId(null);
+          if (id !== "unassigned") setOnlyUnassigned(false);
         }}
+        query={query}
+        onQuery={onSeatingQuery}
         onlyUnassigned={onlyUnassigned}
+        onToggleUnassigned={(value) => {
+          setOnlyUnassigned(value);
+          setOpenSeatId(null);
+        }}
         openGuestId={openSeatId}
         onOpenGuest={setOpenSeatId}
         editorFor={(guestId) => {
@@ -912,19 +1064,20 @@ export function AdminSeatingEditor({
       {!filtering ? (
       <>
       {occupancy.tables.length > 0 ? (
-        <div className="border border-line bg-white p-4 md:p-5">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <p className="text-xs tracking-[0.16em] text-champagne uppercase">
-              Cartographie des places
-            </p>
-            <p className="meta-date text-sm text-mist">
+        <FoldBlock
+          title="Cartographie des places"
+          meta={
+            <>
               {seatCountLabel(occupancy.free, "libre", "libres")}
               {" · "}
               {seatCountLabel(occupancy.allocated, "alloué", "alloués")}
               {" · "}
               {seatCountLabel(occupancy.occupied, "occupé", "occupés")}
-            </p>
-          </div>
+            </>
+          }
+          open={showCartography}
+          onToggle={() => setShowCartography((open) => !open)}
+        >
           <SeatPresenceBar
             free={occupancy.free}
             allocated={occupancy.allocated}
@@ -986,14 +1139,15 @@ export function AdminSeatingEditor({
               </article>
             ))}
           </div>
-        </div>
+        </FoldBlock>
       ) : null}
 
-      <div className="space-y-4 border border-line bg-white p-4 md:p-5">
-        <p className="text-xs tracking-[0.16em] text-champagne uppercase">
-          Tables & sièges préenregistrés
-        </p>
-
+      <FoldBlock
+        title="Tables & sièges préenregistrés"
+        meta={plan.tables.length}
+        open={showPresetTables}
+        onToggle={() => setShowPresetTables((open) => !open)}
+      >
         {canEdit ? (
           <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)_auto]">
             <div>
@@ -1095,9 +1249,14 @@ export function AdminSeatingEditor({
             })}
           </ul>
         )}
-      </div>
+      </FoldBlock>
 
-      <div className="min-w-0 space-y-4 border border-line bg-white p-4 md:p-5">
+      <FoldBlock
+        title="Liste d’attribution"
+        meta={filtered.length}
+        open={showAssignments}
+        onToggle={() => setShowAssignments((open) => !open)}
+      >
           {roleGuests.filter((guest) => {
             const q = query.trim().toLowerCase();
             if (!q) return true;
@@ -1535,7 +1694,7 @@ export function AdminSeatingEditor({
               </tbody>
             </table>
           </div>
-        </div>
+      </FoldBlock>
       </>
       ) : null}
     </section>
