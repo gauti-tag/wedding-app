@@ -31,6 +31,7 @@ import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
 import { formatOptionalDatetimeLabel } from "@/lib/rsvp-deadline";
+import { guestExportCsv, type GuestExportContext } from "@/lib/guest-export";
 import { downloadRsvpExcel } from "@/lib/rsvp-excel";
 import {
   EVENT_ROLES,
@@ -640,48 +641,19 @@ export function AdminPanel({
     }
   }
 
+  function guestExportContext(): GuestExportContext {
+    return {
+      guestOfLabels,
+      partnerOne: site.partnerOne,
+      partnerTwo: site.partnerTwo,
+      reminderPlans: site.whatsappReminders,
+      reminders,
+      showGuestPii,
+    };
+  }
+
   function exportCsv() {
-    const header = [
-      "name",
-      "phone",
-      "status",
-      "guestOf",
-      "childCount",
-      "message",
-      "table",
-      "seat",
-      "roles",
-      "ticketToken",
-      "submittedAt",
-      "whatsappSentAt",
-      "ticketViewedAt",
-      "ticketViewCount",
-      "checkedInAt",
-      "blockedAt",
-    ];
-    const rows = rsvps.map((r) =>
-      [
-        showGuestPii ? r.name : maskName(r.name),
-        showGuestPii ? r.phone : maskPhone(r.phone || ""),
-        r.status,
-        guestOfLabels[r.guestOf] || r.guestOf,
-        String(r.childCount ?? 0),
-        r.message,
-        r.tableLabel || "",
-        r.seatLabel || "",
-        formatEventRoles(r.eventRoles),
-        r.ticketToken,
-        r.createdAt,
-        r.emailSentAt || "",
-        r.ticketViewedAt || "",
-        String(r.ticketViewCount ?? 0),
-        r.checkedInAt || "",
-        r.blockedAt || "",
-      ]
-        .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
-        .join(","),
-    );
-    const blob = new Blob([[header.join(","), ...rows].join("\n")], {
+    const blob = new Blob([guestExportCsv(rsvps, guestExportContext())], {
       type: "text/csv;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
@@ -694,7 +666,7 @@ export function AdminPanel({
 
   async function exportExcel() {
     try {
-      await downloadRsvpExcel(rsvps, guestOfLabels, showGuestPii, maskName, maskPhone);
+      await downloadRsvpExcel(rsvps, guestExportContext());
     } catch {
       showError("Export Excel impossible.");
     }
@@ -892,6 +864,8 @@ export function AdminPanel({
           site={site}
           seatingPlan={initialSeatingPlan}
           guestOfLabels={guestOfLabels}
+          reminders={reminders}
+          showGuestPii={showGuestPii}
         />
       ) : null}
 

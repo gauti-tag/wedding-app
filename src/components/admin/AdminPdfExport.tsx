@@ -4,18 +4,32 @@ import { useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
-import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
-import { findSeatOccupant, formatSeatingLabel, isCompleteSeat, normalizeChildSeats } from "@/lib/seating";
-import type { Rsvp, SeatingPlanContent, SiteContent } from "@/lib/types";
+import {
+  GUEST_EXPORT_HEADERS,
+  SEATING_EXPORT_HEADERS,
+  guestExportRow,
+  seatingExportRows,
+  type GuestExportContext,
+} from "@/lib/guest-export";
+import type { Rsvp, RsvpReminderLog, SeatingPlanContent, SiteContent } from "@/lib/types";
 
 type Props = {
   rsvps: Rsvp[];
   site: SiteContent;
   seatingPlan: SeatingPlanContent;
   guestOfLabels: Record<string, string>;
+  reminders: Record<string, RsvpReminderLog>;
+  showGuestPii: boolean;
 };
 
-export function AdminPdfExport({ rsvps, site, seatingPlan, guestOfLabels }: Props) {
+export function AdminPdfExport({
+  rsvps,
+  site,
+  seatingPlan,
+  guestOfLabels,
+  reminders,
+  showGuestPii,
+}: Props) {
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -25,10 +39,22 @@ export function AdminPdfExport({ rsvps, site, seatingPlan, guestOfLabels }: Prop
     return [site.partnerOne, site.partnerTwo].filter(Boolean).join(" & ");
   }, [site]);
 
+  const exportContext = useMemo<GuestExportContext>(
+    () => ({
+      guestOfLabels,
+      partnerOne: site.partnerOne,
+      partnerTwo: site.partnerTwo,
+      reminderPlans: site.whatsappReminders,
+      reminders,
+      showGuestPii,
+    }),
+    [guestOfLabels, reminders, showGuestPii, site.partnerOne, site.partnerTwo, site.whatsappReminders],
+  );
+
   function exportRsvpPdf() {
     setBusy("rsvp");
     try {
-      const doc = new jsPDF({ orientation: "landscape" });
+      const doc = new jsPDF({ orientation: "landscape", format: "a3" });
       doc.setFontSize(14);
       doc.text(`RSVP — ${title}`, 14, 16);
       doc.setFontSize(9);
@@ -36,18 +62,12 @@ export function AdminPdfExport({ rsvps, site, seatingPlan, guestOfLabels }: Prop
 
       autoTable(doc, {
         startY: 28,
-        head: [["Nom", "Tél.", "Statut", "Invité de", "Enfants", "Table", "Check-in"]],
-        body: rsvps.map((r) => [
-          r.name,
-          r.phone || "—",
-          r.status,
-          guestOfLabels[r.guestOf] || r.guestOf || "—",
-          String(r.childCount ?? 0),
-          formatSeatingLabel(r.tableLabel, r.seatLabel) || "—",
-          r.checkedInAt ? new Date(r.checkedInAt).toLocaleString("fr-FR") : "—",
-        ]),
-        styles: { fontSize: 8, cellPadding: 2 },
+        head: [Array.from(GUEST_EXPORT_HEADERS)],
+        body: rsvps.map((rsvp) => guestExportRow(rsvp, exportContext).map((value) => String(value ?? ""))),
+        styles: { fontSize: 7, cellPadding: 1.4, overflow: "linebreak" },
         headStyles: { fillColor: [59, 36, 22] },
+        horizontalPageBreak: true,
+        horizontalPageBreakRepeat: 0,
       });
 
       doc.save(`rsvp-${Date.now()}.pdf`);
@@ -62,49 +82,17 @@ export function AdminPdfExport({ rsvps, site, seatingPlan, guestOfLabels }: Prop
   function exportSeatingPdf() {
     setBusy("seating");
     try {
-      const doc = new jsPDF();
+      const doc = new jsPDF({ orientation: "landscape" });
       doc.setFontSize(14);
       doc.text(`Plan de table — ${title}`, 14, 16);
       doc.setFontSize(9);
       doc.text(new Date().toLocaleString("fr-FR"), 14, 22);
 
-      const yes = rsvps.filter((r) => r.status === "yes");
-      const rows: string[][] = [];
-
-      for (const table of seatingPlan.tables) {
-        const seated = table.seats.flatMap((seat) => {
-          const occupant = findSeatOccupant(yes, table.label, seat);
-          const label = occupant
-            ? occupant.childIndex === null
-              ? occupant.name
-              : `Enfant ${occupant.childIndex + 1} · ${occupant.name}`
-            : "";
-          return occupant ? [[`Table ${table.label}`, label, seat]] : [];
-        });
-        if (seated.length === 0) {
-          rows.push([`Table ${table.label}`, "—", table.seats.join(", ") || "—"]);
-        } else {
-          rows.push(...seated);
-        }
-      }
-
-      for (const guest of yes) {
-        if (hasEventRole(guest)) {
-          rows.push([formatEventRoles(guest.eventRoles), guest.name, "Hors plan"]);
-        } else if (!(guest.tableLabel || "").trim()) {
-          rows.push(["Sans table", guest.name, "—"]);
-        }
-        normalizeChildSeats(guest.childSeats, guest.childCount).forEach((seat, index) => {
-          if (isCompleteSeat(seat)) return;
-          rows.push(["Sans table", `Enfant ${index + 1} · ${guest.name}`, "—"]);
-        });
-      }
-
       autoTable(doc, {
         startY: 28,
-        head: [["Table", "Invité", "Siège"]],
-        body: rows,
-        styles: { fontSize: 9, cellPadding: 2 },
+        head: [Array.from(SEATING_EXPORT_HEADERS)],
+        body: seatingExportRows(rsvps, seatingPlan, exportContext),
+        styles: { fontSize: 8, cellPadding: 2, overflow: "linebreak" },
         headStyles: { fillColor: [59, 36, 22] },
       });
 
@@ -123,7 +111,8 @@ export function AdminPdfExport({ rsvps, site, seatingPlan, guestOfLabels }: Prop
       <div>
         <h2 className="section-title text-2xl text-mist sm:text-3xl">Exports PDF</h2>
         <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-          Téléchargez la liste RSVP ou le plan de table pour impression / partage.
+          Liste RSVP et plan de table pour le suivi papier : lien, côté, places, rôles, occupation
+          et check-in.
         </p>
       </div>
       <div className="flex flex-wrap gap-3">

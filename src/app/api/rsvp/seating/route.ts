@@ -66,7 +66,7 @@ export async function PATCH(request: Request) {
     }
 
     const storedCount = normalizeChildCount(current.childCount);
-    const nextCount = parsed.data.childCount === undefined ? storedCount : parsed.data.childCount;
+    const nextCount = normalizeChildCount(parsed.data.childCount ?? storedCount);
     if (nextCount > storedCount) {
       return NextResponse.json(
         { error: "Le nombre d’enfants ne peut pas augmenter depuis le plan de table." },
