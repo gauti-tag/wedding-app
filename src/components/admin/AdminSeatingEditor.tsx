@@ -180,7 +180,6 @@ function SeatingPreview({
 }) {
   const headerRef = useRef<HTMLDivElement>(null);
   const paneRef = useRef<HTMLDivElement>(null);
-  const [paneHeight, setPaneHeight] = useState<number | null>(null);
   const queryActive = Boolean(query.trim());
   const visible = tables.filter((table) => {
     if (!table.visible) return false;
@@ -237,7 +236,7 @@ function SeatingPreview({
           ? []
           : roles.map((role) => ({
               key: `role-${role.id}`,
-              guestId: null as string | null,
+              guestId: role.id,
               title: role.name,
               detail: role.detail,
               place: "Hors plan",
@@ -254,24 +253,33 @@ function SeatingPreview({
   const showGrid = !unassignedMode && !withTableMode && !rolesMode && !focused && !queryActive;
 
   useEffect(() => {
-    const node = headerRef.current;
-    if (!node) return;
-    const update = () => {
-      setPaneHeight(Math.max(240, window.innerHeight - 56 - node.offsetHeight - 16));
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    window.addEventListener("resize", update);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", update);
-    };
-  }, []);
-
-  useEffect(() => {
     paneRef.current?.scrollTo({ top: 0 });
   }, [query, tableFilter, criteriaActive, focus]);
+
+  useEffect(() => {
+    if (!openGuestId) return;
+    const scrollEditor = () => {
+      const root = paneRef.current;
+      const node = root?.querySelector<HTMLElement>("[data-seating-editor]");
+      if (!root || !node) return;
+      const delta = node.getBoundingClientRect().top - root.getBoundingClientRect().top;
+      if (Math.abs(delta) < 8) return;
+      root.scrollTo({ top: Math.max(0, root.scrollTop + delta - 8), behavior: "auto" });
+    };
+    const frame = requestAnimationFrame(scrollEditor);
+    const later = window.setTimeout(scrollEditor, 320);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(later);
+    };
+  }, [openGuestId, query, tableFilter, criteriaActive, focus]);
+
+  function toggleGuest(id: string | null) {
+    onOpenGuest(openGuestId === id ? null : id);
+    if (document.activeElement instanceof HTMLElement && document.activeElement.id === "seating-search") {
+      document.activeElement.blur();
+    }
+  }
 
   function seatList(table: PreviewTable, compact: boolean) {
     const anchor =
@@ -288,9 +296,10 @@ function SeatingPreview({
           >
             <button
               type="button"
-              className="flex w-full items-start gap-2 text-left disabled:cursor-default"
+              className="flex min-h-11 w-full touch-manipulation items-start gap-2 py-1 text-left disabled:cursor-default"
               disabled={!seat.guestId}
-              onClick={() => onOpenGuest(openGuestId === seat.guestId ? null : seat.guestId)}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => toggleGuest(seat.guestId)}
             >
               <span
                 className={`mt-1.5 inline-block size-2.5 shrink-0 ${seatStateClass[seat.state]}`}
@@ -306,7 +315,9 @@ function SeatingPreview({
                 ) : null}
               </span>
             </button>
-            {anchor?.label === seat.label && seat.guestId ? editorFor(seat.guestId) : null}
+            {anchor?.label === seat.label && seat.guestId ? (
+              <div data-seating-editor>{editorFor(seat.guestId)}</div>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -341,12 +352,24 @@ function SeatingPreview({
       ? `${matchCount} résultat${matchCount > 1 ? "s" : ""}`
         : null;
 
+  const filtering = queryActive || criteriaActive;
+
   return (
-    <div className="border border-line bg-white">
+    <div
+      className={
+        filtering
+          ? "sticky top-14 z-10 flex max-h-[calc(100svh-3.5rem)] flex-col overflow-hidden border border-line bg-white"
+          : "border border-line bg-white"
+      }
+    >
       <div
         ref={headerRef}
         id="admin-seating-filter"
-        className="sticky top-14 z-20 border-b border-line bg-ivory/95 px-3 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90 md:px-4"
+        className={
+          filtering
+            ? "max-h-[46%] shrink-0 overflow-y-auto border-b border-line bg-ivory px-3 py-3 md:px-4"
+            : "sticky top-14 z-20 border-b border-line bg-ivory px-3 py-3 md:px-4"
+        }
       >
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs tracking-[0.16em] text-champagne uppercase">Aperçu par table</p>
@@ -426,13 +449,12 @@ function SeatingPreview({
       </div>
       <div
         ref={paneRef}
-        className="overflow-y-auto p-3 md:p-4"
-        style={{
-          maxHeight:
-            queryActive || criteriaActive
-              ? (paneHeight ?? "calc(100dvh - 13rem)")
-              : "min(70dvh, 40rem)",
-        }}
+        className={
+          filtering
+            ? "min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain p-3 md:p-4"
+            : "overflow-y-auto p-3 md:p-4"
+        }
+        style={filtering ? undefined : { maxHeight: "min(70dvh, 40rem)" }}
       >
         {unassignedMode ? (
           unassigned.length === 0 ? (
@@ -447,13 +469,14 @@ function SeatingPreview({
                   <li key={item.key} className="border-b border-line/60 py-2 last:border-b-0">
                     <button
                       type="button"
-                      className="w-full text-left"
-                      onClick={() => onOpenGuest(openGuestId === item.guestId ? null : item.guestId)}
+                      className="min-h-11 w-full touch-manipulation py-1 text-left"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => toggleGuest(item.guestId)}
                     >
                       <span className="block text-sm text-mist">{item.label}</span>
                       {item.detail ? <span className="block text-xs text-soft">{item.detail}</span> : null}
                     </button>
-                    {showEditor ? editorFor(item.guestId) : null}
+                    {showEditor ? <div data-seating-editor>{editorFor(item.guestId)}</div> : null}
                   </li>
                 );
               })}
@@ -486,8 +509,9 @@ function SeatingPreview({
                   <li key={row.key} className="border-b border-line/60 py-2 last:border-b-0">
                     <button
                       type="button"
-                      className="flex w-full items-start gap-2 text-left"
-                      onClick={() => onOpenGuest(openGuestId === row.guestId ? null : row.guestId)}
+                      className="flex min-h-11 w-full touch-manipulation items-start gap-2 py-1 text-left"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => toggleGuest(row.guestId)}
                     >
                       <span
                         className={`mt-1.5 inline-block size-2.5 shrink-0 ${seatStateClass[row.state]}`}
@@ -500,7 +524,7 @@ function SeatingPreview({
                         </span>
                       </span>
                     </button>
-                    {showEditor ? editorFor(row.guestId) : null}
+                    {showEditor ? <div data-seating-editor>{editorFor(row.guestId)}</div> : null}
                   </li>
                 );
               })}
@@ -522,9 +546,10 @@ function SeatingPreview({
                   <li key={hit.key} className="border-b border-line/60 py-2 last:border-b-0">
                     <button
                       type="button"
-                      className="flex w-full items-start gap-2 text-left"
+                      className="flex min-h-11 w-full touch-manipulation items-start gap-2 py-1 text-left disabled:cursor-default"
                       disabled={!hit.guestId}
-                      onClick={() => onOpenGuest(openGuestId === hit.guestId ? null : hit.guestId)}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => toggleGuest(hit.guestId)}
                     >
                       {hit.state ? (
                         <span
@@ -541,7 +566,9 @@ function SeatingPreview({
                         </span>
                       </span>
                     </button>
-                    {showEditor && hit.guestId ? editorFor(hit.guestId) : null}
+                    {showEditor && hit.guestId ? (
+                      <div data-seating-editor>{editorFor(hit.guestId)}</div>
+                    ) : null}
                   </li>
                 );
               })}
