@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent, type MouseEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import { AdminAuditLog } from "@/components/admin/AdminAuditLog";
 import { AdminCheckIn } from "@/components/admin/AdminCheckIn";
@@ -14,6 +14,7 @@ import { AdminInviteQr } from "@/components/admin/AdminInviteQr";
 import { AdminMcRundownEditor } from "@/components/admin/AdminMcRundownEditor";
 import { AdminMenuEditor } from "@/components/admin/AdminMenuEditor";
 import { AdminPdfExport } from "@/components/admin/AdminPdfExport";
+import { AdminRsvpComposer } from "@/components/admin/AdminRsvpComposer";
 import { AdminPhotosList } from "@/components/admin/AdminPhotosList";
 import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
 import { AdminSeatingEditor } from "@/components/admin/AdminSeatingEditor";
@@ -331,6 +332,8 @@ export function AdminPanel({
   const [roleBusyId, setRoleBusyId] = useState<string | null>(null);
   const [rsvpPage, setRsvpPage] = useState(1);
   const [rsvpQuery, setRsvpQuery] = useState("");
+  const [openRsvpId, setOpenRsvpId] = useState<string | null>(null);
+  const rsvpSearchRef = useRef<HTMLDivElement>(null);
   const canBlockRsvp = isOwner;
   /** Propriétaire toujours en clair ; équipe masquée seulement si le propriétaire l’active. */
   const showGuestPii = isOwner || !privacy.maskGuestPiiForTeam;
@@ -441,6 +444,23 @@ export function AdminPanel({
   async function onLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
     window.location.reload();
+  }
+
+  function revealRsvpSearch() {
+    const node = rsvpSearchRef.current;
+    if (!node) return;
+    const top = node.getBoundingClientRect().top + window.scrollY - 56;
+    if (node.getBoundingClientRect().top > 72) {
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }
+  }
+
+  function onRsvpQueryChange(value: string) {
+    const starting = !rsvpQuery.trim() && Boolean(value.trim());
+    setRsvpQuery(value);
+    setRsvpPage(1);
+    setOpenRsvpId(null);
+    if (starting) revealRsvpSearch();
   }
 
   function onAdminNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
@@ -877,6 +897,135 @@ export function AdminPanel({
         </div>
 
         {can("manage_rsvp") ? (
+          <AdminRsvpComposer
+            site={site}
+            rsvps={rsvps}
+            onCreated={(rsvp) => {
+              setRsvps((prev) => [rsvp, ...prev.filter((item) => item.id !== rsvp.id)]);
+              setRsvpPage(1);
+              setOpenRsvpId(rsvp.id);
+            }}
+          />
+        ) : null}
+
+        <div
+          ref={rsvpSearchRef}
+          className="sticky top-14 z-20 mb-4 border-y border-line bg-ivory/95 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90"
+        >
+          <label className="label" htmlFor="rsvp-search">
+            Rechercher
+          </label>
+          <input
+            id="rsvp-search"
+            type="search"
+            className="field"
+            value={rsvpQuery}
+            onFocus={revealRsvpSearch}
+            onChange={(e) => onRsvpQueryChange(e.target.value)}
+            placeholder="Nom, téléphone, statut, invité(e) de…"
+            autoComplete="off"
+            enterKeyHint="search"
+          />
+          {rsvpQuery.trim() ? (
+            <p className="mt-2 text-xs tracking-[0.12em] text-soft uppercase">
+              {filteredRsvps.length} résultat{filteredRsvps.length > 1 ? "s" : ""} — la liste défile ici
+            </p>
+          ) : null}
+        </div>
+
+        {rsvpQuery.trim() ? (
+          <div className="mb-6 max-h-[min(70dvh,36rem)] overflow-y-auto border border-line bg-white">
+            {filteredRsvps.length === 0 ? (
+              <p className="px-3 py-5 text-sm text-soft">
+                Aucun résultat pour « {rsvpQuery.trim()} ».
+              </p>
+            ) : (
+              <ul>
+                {filteredRsvps.map((rsvp) => {
+                  const displayName = showGuestPii ? rsvp.name : maskName(rsvp.name);
+                  const displayPhone = showGuestPii
+                    ? rsvp.phone || "—"
+                    : maskPhone(rsvp.phone || "");
+                  const open = openRsvpId === rsvp.id;
+                  const place = hasEventRole(rsvp)
+                    ? formatEventRoles(rsvp.eventRoles)
+                    : formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "Sans table";
+                  return (
+                    <li key={rsvp.id} className="border-b border-line last:border-b-0">
+                      <button
+                        type="button"
+                        className="flex w-full items-start justify-between gap-3 px-3 py-2.5 text-left"
+                        aria-expanded={open}
+                        onClick={() => setOpenRsvpId(open ? null : rsvp.id)}
+                      >
+                        <span className="min-w-0">
+                          <span className="block break-words font-medium text-mist">{displayName}</span>
+                          <span className="mt-0.5 block text-xs text-soft">
+                            {displayPhone}
+                            {" · "}
+                            {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
+                            {" · "}
+                            {place}
+                            {rsvp.checkedInAt ? " · Arrivé" : ""}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-xs tracking-[0.12em] text-champagne uppercase">
+                          {rsvp.status}
+                        </span>
+                      </button>
+                      {open ? (
+                        <div className="flex flex-wrap items-center gap-2 px-3 pb-3">
+                          {can("manage_rsvp") && rsvp.status !== "no" ? (
+                            <EventRoleToggles
+                              rsvp={rsvp}
+                              busy={roleBusyId === rsvp.id}
+                              onToggle={(guest, role) => void onToggleEventRole(guest, role)}
+                            />
+                          ) : null}
+                          {rsvp.status !== "no" ? (
+                            <>
+                              <a
+                                href={`/ticket/${rsvp.ticketToken}?preview=1`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs tracking-[0.12em] text-champagne uppercase no-underline hover:text-mist"
+                              >
+                                Carte
+                              </a>
+                              {can("manage_rsvp") ? (
+                                <button
+                                  type="button"
+                                  disabled={resendBusyId === rsvp.id}
+                                  onClick={() => void onWhatsAppTicket(rsvp.id)}
+                                  className="text-xs tracking-[0.12em] text-soft uppercase hover:text-champagne disabled:opacity-50"
+                                >
+                                  {resendBusyId === rsvp.id ? "Ouverture…" : "WhatsApp"}
+                                </button>
+                              ) : null}
+                              {can("manage_rsvp") ? (
+                                <RsvpReminderActions
+                                  rsvp={rsvp}
+                                  reminders={reminders}
+                                  plans={site.whatsappReminders}
+                                  busyId={resendBusyId}
+                                  onRemind={(id, reminderId, label) =>
+                                    void onWhatsAppReminder(id, reminderId, label)
+                                  }
+                                />
+                              ) : null}
+                            </>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        ) : null}
+
+        {can("manage_rsvp") && !rsvpQuery.trim() ? (
           <div className="mb-6 border border-line bg-white/80 px-4 py-4 md:px-5">
             <p className="text-sm font-medium text-mist">Rappels WhatsApp</p>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-soft">
@@ -915,30 +1064,9 @@ export function AdminPanel({
           </div>
         ) : null}
 
-        <div className="mb-4">
-          <label className="label" htmlFor="rsvp-search">
-            Rechercher
-          </label>
-          <input
-            id="rsvp-search"
-            type="search"
-            className="field max-w-xl"
-            value={rsvpQuery}
-            onChange={(e) => {
-              setRsvpQuery(e.target.value);
-              setRsvpPage(1);
-            }}
-            placeholder="Nom, téléphone, statut, invité(e) de…"
-            autoComplete="off"
-          />
-          {rsvpQuery.trim() ? (
-            <p className="mt-2 text-xs tracking-[0.12em] text-soft uppercase">
-              {filteredRsvps.length} résultat{filteredRsvps.length > 1 ? "s" : ""}
-            </p>
-          ) : null}
-        </div>
-
         {/* Mobile : cartes (évite min-width tableau qui élargit la page) */}
+        {!rsvpQuery.trim() ? (
+        <>
         <div className="space-y-3 md:hidden">
           {rsvps.length === 0 ? (
             <p className="border border-line px-3 py-5 text-sm text-soft">
@@ -1290,6 +1418,8 @@ export function AdminPanel({
               </button>
             </div>
           </div>
+        ) : null}
+        </>
         ) : null}
       </section>
       ) : null}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import {
   createEmptySeatingTable,
@@ -104,6 +104,232 @@ function GuestAssignmentFacts({
   );
 }
 
+type PreviewSeat = {
+  label: string;
+  state: SeatPresence;
+  who: string;
+  lien: string;
+  phone: string;
+  guestId: string | null;
+  match: boolean;
+};
+
+type PreviewTable = {
+  id: string;
+  label: string;
+  free: number;
+  allocated: number;
+  occupied: number;
+  total: number;
+  seats: PreviewSeat[];
+  visible: boolean;
+};
+
+function previewChipClass(active: boolean) {
+  return `shrink-0 border px-3 py-1.5 text-xs tracking-[0.12em] uppercase ${
+    active ? "border-champagne bg-champagne text-forest" : "border-line bg-white text-soft"
+  }`;
+}
+
+function SeatingPreview({
+  tables,
+  unassigned,
+  roles,
+  focus,
+  onFocus,
+  onlyUnassigned,
+  openGuestId,
+  onOpenGuest,
+  editorFor,
+}: {
+  tables: PreviewTable[];
+  unassigned: { key: string; guestId: string; label: string; detail: string }[];
+  roles: { id: string; name: string; detail: string }[];
+  focus: string;
+  onFocus: (id: string) => void;
+  onlyUnassigned: boolean;
+  openGuestId: string | null;
+  onOpenGuest: (id: string | null) => void;
+  editorFor: (guestId: string) => ReactNode;
+}) {
+  const visible = tables.filter((table) => table.visible);
+  const focused = visible.find((table) => table.id === focus) ?? null;
+  const unassignedMode = onlyUnassigned || focus === "unassigned";
+  const showGrid = !unassignedMode && !focused;
+
+  function seatList(table: PreviewTable, compact: boolean) {
+    const anchor =
+      table.seats.find(
+        (seat) => seat.guestId === openGuestId && !seat.who.startsWith("Enfant"),
+      ) ?? table.seats.find((seat) => seat.guestId === openGuestId);
+    return (
+      <ul className={compact ? "mt-2" : "mt-3"}>
+        {table.seats.map((seat) => (
+          <li
+            key={`${table.id}-${seat.label}`}
+            className={`border-b border-line/60 py-1.5 last:border-b-0 ${seat.match ? "" : "opacity-35"}`}
+          >
+            <button
+              type="button"
+              className="flex w-full items-start gap-2 text-left disabled:cursor-default"
+              disabled={!seat.guestId}
+              onClick={() => onOpenGuest(openGuestId === seat.guestId ? null : seat.guestId)}
+            >
+              <span
+                className={`mt-1.5 inline-block size-2.5 shrink-0 ${seatStateClass[seat.state]}`}
+                title={seatStateLabel[seat.state]}
+              />
+              <span className="w-7 shrink-0 text-sm text-champagne">{seat.label}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block break-words text-sm text-mist">{seat.who || "Libre"}</span>
+                {seat.lien || seat.phone ? (
+                  <span className="block break-words text-xs text-soft">
+                    {[seat.lien, seat.phone].filter(Boolean).join(" · ")}
+                  </span>
+                ) : null}
+              </span>
+            </button>
+            {anchor?.label === seat.label && seat.guestId ? editorFor(seat.guestId) : null}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  function tableHeading(table: PreviewTable) {
+    const filled = table.total - table.free;
+    return (
+      <div>
+        <p className="text-sm text-mist">
+          Table {table.label}{" "}
+          <span className="text-xs text-soft">
+            ({filled}/{table.total})
+          </span>
+        </p>
+        <p className="text-xs text-soft">
+          {seatCountLabel(table.free, "libre", "libres")}
+          {" · "}
+          {seatCountLabel(table.allocated, "alloué", "alloués")}
+          {" · "}
+          {seatCountLabel(table.occupied, "occupé", "occupés")}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-line bg-white">
+      <div className="border-b border-line px-3 py-3 md:px-4">
+        <p className="text-xs tracking-[0.16em] text-champagne uppercase">Aperçu par table</p>
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          {!onlyUnassigned ? (
+            <button type="button" className={previewChipClass(showGrid)} onClick={() => onFocus("all")}>
+              Toutes
+            </button>
+          ) : null}
+          {!onlyUnassigned
+            ? visible.map((table) => (
+                <button
+                  key={table.id}
+                  type="button"
+                  className={previewChipClass(focused?.id === table.id)}
+                  onClick={() => onFocus(table.id)}
+                >
+                  {table.label}
+                  <span className="ml-1 opacity-70">
+                    {table.total - table.free}/{table.total}
+                  </span>
+                </button>
+              ))
+            : null}
+          {unassigned.length > 0 || onlyUnassigned ? (
+            <button
+              type="button"
+              className={previewChipClass(unassignedMode)}
+              onClick={() => onFocus("unassigned")}
+            >
+              Sans table
+              {unassigned.length > 0 ? <span className="ml-1 opacity-70">{unassigned.length}</span> : null}
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <div className="max-h-[min(70dvh,40rem)] overflow-y-auto p-3 md:p-4">
+        {unassignedMode ? (
+          unassigned.length === 0 ? (
+            <p className="text-sm text-soft">Tout le monde a une table.</p>
+          ) : (
+            <ul>
+              {unassigned.map((item) => {
+                const showEditor =
+                  openGuestId === item.guestId &&
+                  unassigned.find((entry) => entry.guestId === openGuestId)?.key === item.key;
+                return (
+                  <li key={item.key} className="border-b border-line/60 py-2 last:border-b-0">
+                    <button
+                      type="button"
+                      className="w-full text-left"
+                      onClick={() => onOpenGuest(openGuestId === item.guestId ? null : item.guestId)}
+                    >
+                      <span className="block text-sm text-mist">{item.label}</span>
+                      {item.detail ? <span className="block text-xs text-soft">{item.detail}</span> : null}
+                    </button>
+                    {showEditor ? editorFor(item.guestId) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )
+        ) : focused ? (
+          <div>
+            {tableHeading(focused)}
+            {seatList(focused, false)}
+          </div>
+        ) : visible.length === 0 && unassigned.length === 0 && roles.length === 0 ? (
+          <p className="text-sm text-soft">Aucune table ni confirmation pour cet aperçu.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {roles.length > 0 ? (
+              <div className="border border-line p-3 md:col-span-2 xl:col-span-3">
+                <p className="text-sm text-mist">Hors plan</p>
+                <ul className="mt-2 space-y-1">
+                  {roles.map((role) => (
+                    <li key={role.id} className="text-sm text-soft">
+                      <span className="text-mist">{role.name}</span>
+                      {role.detail ? ` · ${role.detail}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {visible.map((table) => (
+              <div key={table.id} className="max-h-80 overflow-y-auto border border-line p-3">
+                {tableHeading(table)}
+                {seatList(table, true)}
+              </div>
+            ))}
+            {unassigned.length > 0 ? (
+              <div className="border border-line p-3">
+                <p className="text-sm text-mist">
+                  Sans table <span className="text-xs text-soft">({unassigned.length})</span>
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {unassigned.map((item) => (
+                    <li key={item.key} className="break-words text-sm text-soft">
+                      <span className="text-mist">{item.label}</span>
+                      {item.detail ? ` · ${item.detail}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   rsvps: Rsvp[];
   initialPlan: SeatingPlanContent;
@@ -132,6 +358,8 @@ export function AdminSeatingEditor({
   const [seatDrafts, setSeatDrafts] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
   const [onlyUnassigned, setOnlyUnassigned] = useState(false);
+  const [openSeatId, setOpenSeatId] = useState<string | null>(null);
+  const [previewFocus, setPreviewFocus] = useState<string>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, SeatDraft>>({});
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
@@ -178,6 +406,95 @@ export function AdminSeatingEditor({
       return hay.includes(q);
     });
   }, [yesGuests, query, onlyUnassigned, guestOfLabels]);
+
+  const filtering = Boolean(query.trim()) || onlyUnassigned;
+
+  const previewTables = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return occupancy.tables
+      .map((table) => {
+        const tableHit = Boolean(q) && table.label.toLowerCase().includes(q);
+        const seats = table.seats.map((seat) => {
+          const occupant = findSeatOccupant(yesGuests, table.label, seat.label);
+          const guest = occupant
+            ? yesGuests.find((item) => item.id === occupant.rsvpId)
+            : undefined;
+          const lien = guest ? guestOfLabels[guest.guestOf] || guest.guestOf || "" : "";
+          const who = occupant
+            ? occupant.childIndex === null
+              ? displayGuestName(occupant.name)
+              : `Enfant ${occupant.childIndex + 1} · ${displayGuestName(occupant.name)}`
+            : "";
+          const phone = guest ? displayPhone(guest.phone) : "";
+          const hay = `${who} ${lien} ${phone} ${guest?.message || ""} ${seat.label}`.toLowerCase();
+          const guestHit = Boolean(q) && Boolean(occupant) && hay.includes(q);
+          return {
+            label: seat.label,
+            state: seat.state,
+            who,
+            lien,
+            phone,
+            guestId: guest?.id ?? null,
+            match: !q || tableHit || guestHit,
+          };
+        });
+        const visible =
+          !q || tableHit || seats.some((seat) => seat.guestId && seat.match && !tableHit);
+        return { ...table, seats, visible: visible || tableHit };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label, "fr", { numeric: true }));
+  }, [occupancy.tables, yesGuests, query, guestOfLabels, showGuestPii]);
+
+  const unassignedPreview = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const items: { key: string; guestId: string; label: string; detail: string }[] = [];
+    for (const guest of yesGuests) {
+      const lien = guestOfLabels[guest.guestOf] || guest.guestOf || "";
+      const phone = displayPhone(guest.phone);
+      const name = displayGuestName(guest.name);
+      const hay = `${name} ${lien} ${phone} ${guest.message || ""}`.toLowerCase();
+      if (q && !hay.includes(q)) continue;
+      const detail = [lien, phone].filter(Boolean).join(" · ");
+      if (!hasEventRole(guest) && !normalizeSeatingLabel(guest.tableLabel)) {
+        items.push({ key: guest.id, guestId: guest.id, label: name, detail });
+      }
+      normalizeChildSeats(guest.childSeats, guest.childCount).forEach((seat, index) => {
+        if (isCompleteSeat(seat)) return;
+        items.push({
+          key: `${guest.id}-child-${index}`,
+          guestId: guest.id,
+          label: `Enfant ${index + 1} · ${name}`,
+          detail,
+        });
+      });
+    }
+    return items;
+  }, [yesGuests, query, guestOfLabels, showGuestPii]);
+
+  const matchedRoles = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return roleGuests.filter((guest) => {
+      if (onlyUnassigned && !q) return false;
+      if (!q) return true;
+      return `${guest.name} ${guest.phone} ${formatEventRoles(guest.eventRoles)}`
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [roleGuests, query, onlyUnassigned]);
+
+  function revealSeatingFilter() {
+    const el = document.getElementById("admin-seating-filter");
+    if (!el || el.getBoundingClientRect().top <= 80) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 56;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+
+  function onSeatingQuery(value: string) {
+    const starting = !query.trim() && Boolean(value.trim());
+    setQuery(value);
+    setOpenSeatId(null);
+    if (starting) revealSeatingFilter();
+  }
 
   function savedDraft(rsvp: Rsvp): SeatDraft {
     return {
@@ -396,6 +713,120 @@ export function AdminSeatingEditor({
     }
   }
 
+  function renderSeatEditor(rsvp: Rsvp) {
+    if (!canEdit) return null;
+    const draft = draftFor(rsvp);
+    const dirty = isDirty(rsvp, draft);
+    const selectedTable = plan.tables.find(
+      (table) =>
+        table.label.toLowerCase() === normalizeSeatingLabel(draft.tableLabel).toLowerCase(),
+    );
+    const occupied = occupiedFor(rsvp, draft, "adult");
+    return (
+      <div className="mt-2 space-y-2">
+        {hasEventRole(rsvp) ? (
+          <p className="text-xs text-champagne">Pas de table ni de siège pour l’adulte.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              className="field !py-2"
+              aria-label="Table"
+              value={draft.tableLabel}
+              onChange={(e) => setDraft(rsvp.id, { tableLabel: e.target.value, seatLabel: "" })}
+            >
+              <option value="">Table</option>
+              {plan.tables.map((table) => (
+                <option key={table.id} value={table.label}>
+                  {table.label}
+                </option>
+              ))}
+            </select>
+            <select
+              className="field !py-2"
+              aria-label="Siège"
+              value={draft.seatLabel}
+              disabled={!selectedTable}
+              onChange={(e) => setDraft(rsvp.id, { seatLabel: e.target.value })}
+            >
+              <option value="">Siège</option>
+              {(selectedTable?.seats || []).map((seat) => {
+                const taken = occupied.has(seatingKey(selectedTable?.label || "", seat));
+                return (
+                  <option key={seat} value={seat} disabled={taken}>
+                    {seat}
+                    {taken ? " (pris)" : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+        {draft.childSeats.map((child, index) => {
+          const childTable = plan.tables.find(
+            (table) =>
+              table.label.toLowerCase() ===
+              normalizeSeatingLabel(child.tableLabel).toLowerCase(),
+          );
+          const childOccupied = occupiedFor(rsvp, draft, index);
+          return (
+            <div key={`${rsvp.id}-child-${index}`} className="grid grid-cols-2 gap-2">
+              <select
+                className="field !py-2"
+                aria-label={`Table enfant ${index + 1}`}
+                value={child.tableLabel}
+                onChange={(e) =>
+                  setChildDraft(rsvp.id, index, { tableLabel: e.target.value, seatLabel: "" })
+                }
+              >
+                <option value="">{`Enfant ${index + 1} · table`}</option>
+                {plan.tables.map((table) => (
+                  <option key={table.id} value={table.label}>
+                    {table.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="field !py-2"
+                aria-label={`Siège enfant ${index + 1}`}
+                value={child.seatLabel}
+                disabled={!childTable}
+                onChange={(e) => setChildDraft(rsvp.id, index, { seatLabel: e.target.value })}
+              >
+                <option value="">Siège</option>
+                {(childTable?.seats || []).map((seat) => {
+                  const taken = childOccupied.has(seatingKey(childTable?.label || "", seat));
+                  return (
+                    <option key={seat} value={seat} disabled={taken}>
+                      {seat}
+                      {taken ? " (pris)" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          );
+        })}
+        {!hasEventRole(rsvp) && rsvp.childCount > 0 ? (
+          <button
+            type="button"
+            className="text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist"
+            onClick={() => placeChildrenBeside(rsvp)}
+          >
+            Enfants à côté
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="btn-primary !px-3 !py-2 text-xs disabled:opacity-50"
+          disabled={!dirty || busyId === rsvp.id}
+          onClick={() => void saveSeating(rsvp)}
+        >
+          {busyId === rsvp.id ? "Enregistrement…" : "Sauver"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <section id="admin-seating" className="mt-14 min-w-0 max-w-full scroll-mt-28 space-y-5 md:space-y-6">
       {AlertDialog}
@@ -408,6 +839,78 @@ export function AdminSeatingEditor({
         </p>
       </div>
 
+      <div
+        id="admin-seating-filter"
+        className="sticky top-14 z-20 border-y border-line bg-ivory/95 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-ivory/90"
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="min-w-0 flex-1">
+            <label className="label" htmlFor="seating-search">
+              Rechercher
+            </label>
+            <input
+              id="seating-search"
+              type="search"
+              className="field"
+              value={query}
+              onFocus={revealSeatingFilter}
+              onChange={(e) => onSeatingQuery(e.target.value)}
+              placeholder="Nom, lien, téléphone, table…"
+              autoComplete="off"
+              enterKeyHint="search"
+            />
+          </div>
+          <label className="flex min-h-10 items-center gap-2 text-sm text-soft sm:pb-2">
+            <input
+              type="checkbox"
+              className="size-4"
+              checked={onlyUnassigned}
+              onChange={(e) => {
+                setOnlyUnassigned(e.target.checked);
+                setOpenSeatId(null);
+                setPreviewFocus(e.target.checked ? "unassigned" : "all");
+                if (e.target.checked) revealSeatingFilter();
+              }}
+            />
+            Sans table seulement
+          </label>
+        </div>
+        {filtering ? (
+          <p className="mt-2 text-xs tracking-[0.12em] text-soft uppercase">
+            {filtered.length} à placer
+            {matchedRoles.length > 0 ? ` · ${matchedRoles.length > 1 ? `${matchedRoles.length} rôles` : "1 rôle"}` : ""}
+            {" — "}
+            l’aperçu suit ce filtre
+          </p>
+        ) : null}
+      </div>
+
+      <SeatingPreview
+        tables={previewTables}
+        unassigned={unassignedPreview}
+        roles={matchedRoles.map((guest) => ({
+          id: guest.id,
+          name: displayGuestName(guest.name),
+          detail: [formatEventRoles(guest.eventRoles), displayPhone(guest.phone)]
+            .filter(Boolean)
+            .join(" · "),
+        }))}
+        focus={previewFocus}
+        onFocus={(id) => {
+          setPreviewFocus(id);
+          setOpenSeatId(null);
+        }}
+        onlyUnassigned={onlyUnassigned}
+        openGuestId={openSeatId}
+        onOpenGuest={setOpenSeatId}
+        editorFor={(guestId) => {
+          const guest = yesGuests.find((item) => item.id === guestId);
+          return guest ? renderSeatEditor(guest) : null;
+        }}
+      />
+
+      {!filtering ? (
+      <>
       {occupancy.tables.length > 0 ? (
         <div className="border border-line bg-white p-4 md:p-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -594,42 +1097,23 @@ export function AdminSeatingEditor({
         )}
       </div>
 
-      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-6">
-        <div className="space-y-4 border border-line bg-white p-4 md:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-            <div className="min-w-0 flex-1">
-              <label className="label" htmlFor="seating-search">
-                Rechercher
-              </label>
-              <input
-                id="seating-search"
-                type="search"
-                className="field"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Nom, lien, téléphone, table…"
-                autoComplete="off"
-              />
-            </div>
-            <label className="flex min-h-10 items-center gap-2 text-sm text-soft sm:pb-2">
-              <input
-                type="checkbox"
-                className="size-4"
-                checked={onlyUnassigned}
-                onChange={(e) => setOnlyUnassigned(e.target.checked)}
-              />
-              Sans table seulement
-            </label>
-          </div>
-
-          {roleGuests.length > 0 ? (
+      <div className="min-w-0 space-y-4 border border-line bg-white p-4 md:p-5">
+          {roleGuests.filter((guest) => {
+            const q = query.trim().toLowerCase();
+            if (!q) return true;
+            return `${guest.name} ${formatEventRoles(guest.eventRoles)}`.toLowerCase().includes(q);
+          }).length > 0 ? (
             <div className="border border-line p-3">
               <p className="text-xs tracking-[0.16em] text-champagne uppercase">Rôles du jour</p>
               <p className="mt-1 text-xs text-soft">
                 Ces invités n’ont pas de chaise. Leurs enfants restent plaçables dans la liste.
               </p>
               <ul className="mt-3 space-y-1 text-sm text-mist">
-                {roleGuests.map((guest) => (
+                {roleGuests.filter((guest) => {
+                  const q = query.trim().toLowerCase();
+                  if (!q) return true;
+                  return `${guest.name} ${formatEventRoles(guest.eventRoles)}`.toLowerCase().includes(q);
+                }).map((guest) => (
                   <li key={guest.id}>
                     {displayGuestName(guest.name)}
                     <span className="text-soft"> · {formatEventRoles(guest.eventRoles)}</span>
@@ -1052,98 +1536,8 @@ export function AdminSeatingEditor({
             </table>
           </div>
         </div>
-
-        <div className="border border-line bg-white p-4 md:p-5">
-          <p className="text-xs tracking-[0.16em] text-champagne uppercase">Aperçu par table</p>
-          <div className="mt-4 grid max-h-none grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:max-h-[32rem] lg:grid-cols-1 lg:gap-4">
-            {plan.tables.length === 0 && yesGuests.length === 0 ? (
-              <p className="text-sm text-soft">Pas encore de confirmation « oui ».</p>
-            ) : (
-              <>
-                {plan.tables.map((table) => {
-                  const filled = table.seats.filter((seat) =>
-                    findSeatOccupant(yesGuests, table.label, seat),
-                  ).length;
-                  return (
-                    <div key={table.id} className="border border-line p-3">
-                      <p className="text-sm text-mist">
-                        Table {table.label}{" "}
-                        <span className="text-xs text-soft">
-                          ({filled}/{table.seats.length})
-                        </span>
-                      </p>
-                      <ul className="mt-2 space-y-1 text-sm text-soft">
-                        {table.seats.map((seat) => {
-                          const occupant = findSeatOccupant(yesGuests, table.label, seat);
-                          const guest = occupant
-                            ? yesGuests.find((item) => item.id === occupant.rsvpId)
-                            : undefined;
-                          const lien = guest
-                            ? guestOfLabels[guest.guestOf] || guest.guestOf
-                            : "";
-                          const label = occupant
-                            ? occupant.childIndex === null
-                              ? displayGuestName(occupant.name)
-                              : `Enfant ${occupant.childIndex + 1} · ${displayGuestName(occupant.name)}`
-                            : "libre";
-                          return (
-                            <li key={seat} className="break-words">
-                              <span className="text-champagne">{seat}</span>
-                              {" · "}
-                              {label}
-                              {lien ? <span className="text-mist"> · {lien}</span> : null}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  );
-                })}
-                {yesGuests.some(
-                  (guest) =>
-                    !normalizeSeatingLabel(guest.tableLabel) ||
-                    normalizeChildSeats(guest.childSeats, guest.childCount).some(
-                      (seat) => !isCompleteSeat(seat),
-                    ),
-                ) ? (
-                  <div className="border border-line p-3">
-                    <p className="text-sm text-mist">Sans table</p>
-                    <ul className="mt-2 space-y-1 text-sm text-soft">
-                      {yesGuests.flatMap((guest) => {
-                        const lien = guestOfLabels[guest.guestOf] || guest.guestOf;
-                        const withLien = (name: string) => (lien ? `${name} · ${lien}` : name);
-                        const items: { key: string; label: string }[] = [];
-                        if (!hasEventRole(guest) && !normalizeSeatingLabel(guest.tableLabel)) {
-                          items.push({
-                            key: guest.id,
-                            label: withLien(displayGuestName(guest.name)),
-                          });
-                        }
-                        normalizeChildSeats(guest.childSeats, guest.childCount).forEach(
-                          (seat, index) => {
-                            if (isCompleteSeat(seat)) return;
-                            items.push({
-                              key: `${guest.id}-child-${index}`,
-                              label: withLien(
-                                `Enfant ${index + 1} · ${displayGuestName(guest.name)}`,
-                              ),
-                            });
-                          },
-                        );
-                        return items.map((item) => (
-                          <li key={item.key} className="break-words">
-                            {item.label}
-                          </li>
-                        ));
-                      })}
-                    </ul>
-                  </div>
-                ) : null}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      </>
+      ) : null}
     </section>
   );
 }
