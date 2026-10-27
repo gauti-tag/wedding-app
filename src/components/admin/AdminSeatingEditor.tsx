@@ -5,6 +5,7 @@ import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
 import {
   createEmptySeatingTable,
   createSeatingTableId,
+  emptyChildSeat,
   findSeatOccupant,
   formatSeatingLabel,
   guestUsesTable,
@@ -20,6 +21,13 @@ import {
 import type { SeatPresence } from "@/lib/seating";
 import type { ChildSeat, Rsvp, SeatingPlanContent, SeatingPlanTable, SiteContent } from "@/lib/types";
 import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
+import {
+  emptyGuestCriteria,
+  guestCriteriaActive,
+  matchesGuestCriteria,
+  type GuestCriteria,
+} from "@/lib/guest-criteria";
+import { GuestCriteriaBar } from "@/components/admin/GuestCriteriaBar";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
 
@@ -139,8 +147,14 @@ function SeatingPreview({
   onFocus,
   query,
   onQuery,
-  onlyUnassigned,
-  onToggleUnassigned,
+  tableFilter,
+  criteria,
+  onCriteriaChange,
+  partnerOne,
+  partnerTwo,
+  criteriaActive,
+  matchCount,
+  withGuestIds,
   openGuestId,
   onOpenGuest,
   editorFor,
@@ -152,8 +166,14 @@ function SeatingPreview({
   onFocus: (id: string) => void;
   query: string;
   onQuery: (value: string) => void;
-  onlyUnassigned: boolean;
-  onToggleUnassigned: (value: boolean) => void;
+  tableFilter: "all" | "with" | "without";
+  criteria: GuestCriteria;
+  onCriteriaChange: (next: GuestCriteria) => void;
+  partnerOne: string;
+  partnerTwo: string;
+  criteriaActive: boolean;
+  matchCount: number;
+  withGuestIds: string[];
   openGuestId: string | null;
   onOpenGuest: (id: string | null) => void;
   editorFor: (guestId: string) => ReactNode;
@@ -161,16 +181,39 @@ function SeatingPreview({
   const headerRef = useRef<HTMLDivElement>(null);
   const paneRef = useRef<HTMLDivElement>(null);
   const [paneHeight, setPaneHeight] = useState<number | null>(null);
-  const visible = tables.filter((table) => table.visible);
+  const queryActive = Boolean(query.trim());
+  const visible = tables.filter((table) => {
+    if (!table.visible) return false;
+    if (tableFilter === "with" && !queryActive && !table.seats.some((seat) => seat.guestId)) return false;
+    return true;
+  });
   const focused = visible.find((table) => table.id === focus) ?? null;
   const rolesMode = focus === "roles";
-  const unassignedMode = !rolesMode && (onlyUnassigned || focus === "unassigned");
-  const queryActive = Boolean(query.trim());
-  const hits = queryActive
+  const unassignedMode = !rolesMode && tableFilter === "without";
+  const withIds = new Set(withGuestIds);
+  const seatedRows = visible.flatMap((table) =>
+    table.seats
+      .filter((seat) => seat.guestId && seat.who && withIds.has(seat.guestId))
+      .map((seat) => ({
+        key: `${table.id}-${seat.label}`,
+        guestId: seat.guestId as string,
+        title: seat.who,
+        detail: [seat.lien, seat.phone].filter(Boolean).join(" · "),
+        place: `Table ${table.label} · siège ${seat.label}`,
+        state: seat.state,
+      })),
+  );
+  const hits = queryActive || criteriaActive
     ? [
         ...visible.flatMap((table) =>
           table.seats
-            .filter((seat) => seat.guestId && seat.match && seat.who)
+            .filter(
+              (seat) =>
+                seat.guestId &&
+                seat.match &&
+                seat.who &&
+                (tableFilter !== "with" || withIds.has(seat.guestId)),
+            )
             .map((seat) => ({
               key: `${table.id}-${seat.label}`,
               guestId: seat.guestId,
@@ -180,26 +223,35 @@ function SeatingPreview({
               state: seat.state as SeatPresence | null,
             })),
         ),
-        ...unassigned.map((item) => ({
-          key: item.key,
-          guestId: item.guestId,
-          title: item.label,
-          detail: item.detail,
-          place: "Sans table",
-          state: null as SeatPresence | null,
-        })),
-        ...roles.map((role) => ({
-          key: `role-${role.id}`,
-          guestId: null as string | null,
-          title: role.name,
-          detail: role.detail,
-          place: "Hors plan",
-          state: null as SeatPresence | null,
-        })),
+        ...((tableFilter === "with"
+          ? []
+          : unassigned.map((item) => ({
+              key: item.key,
+              guestId: item.guestId,
+              title: item.label,
+              detail: item.detail,
+              place: "Sans table",
+              state: null as SeatPresence | null,
+            })))),
+        ...((tableFilter === "with"
+          ? []
+          : roles.map((role) => ({
+              key: `role-${role.id}`,
+              guestId: null as string | null,
+              title: role.name,
+              detail: role.detail,
+              place: "Hors plan",
+              state: null as SeatPresence | null,
+            })))),
       ]
     : [];
-  const showHits = queryActive && !unassignedMode && !rolesMode && !focused;
-  const showGrid = !unassignedMode && !rolesMode && !focused && !queryActive;
+  const withTableMode = tableFilter === "with" && !rolesMode && !focused && !queryActive;
+  const showHits =
+    (queryActive || (criteriaActive && tableFilter === "all")) &&
+    !unassignedMode &&
+    !rolesMode &&
+    !focused;
+  const showGrid = !unassignedMode && !withTableMode && !rolesMode && !focused && !queryActive;
 
   useEffect(() => {
     const node = headerRef.current;
@@ -219,7 +271,7 @@ function SeatingPreview({
 
   useEffect(() => {
     paneRef.current?.scrollTo({ top: 0 });
-  }, [query, onlyUnassigned, focus]);
+  }, [query, tableFilter, criteriaActive, focus]);
 
   function seatList(table: PreviewTable, compact: boolean) {
     const anchor =
@@ -229,7 +281,7 @@ function SeatingPreview({
     return (
       <ul className={compact ? "mt-2" : "mt-3"}>
         {table.seats.map((seat) =>
-          query.trim() && !seat.match ? null : (
+          (query.trim() && !seat.match) || (tableFilter === "with" && !seat.guestId) ? null : (
           <li
             key={`${table.id}-${seat.label}`}
             className="border-b border-line/60 py-1.5 last:border-b-0"
@@ -285,9 +337,9 @@ function SeatingPreview({
   const activeTable = focused;
   const resultLabel = unassignedMode
     ? `${unassigned.length} sans table`
-    : queryActive
-      ? `${hits.length} résultat${hits.length > 1 ? "s" : ""}`
-      : null;
+    : criteriaActive || queryActive
+      ? `${matchCount} résultat${matchCount > 1 ? "s" : ""}`
+        : null;
 
   return (
     <div className="border border-line bg-white">
@@ -330,8 +382,21 @@ function SeatingPreview({
             </button>
           ) : null}
         </div>
+        <GuestCriteriaBar
+          value={criteria}
+          onChange={onCriteriaChange}
+          partnerOne={partnerOne}
+          partnerTwo={partnerTwo}
+        />
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          <button type="button" className={previewChipClass(showGrid || showHits)} onClick={() => onFocus("all")}>
+          <button
+            type="button"
+            className={previewChipClass(showGrid || (showHits && tableFilter === "all" && !criteriaActive))}
+            onClick={() => {
+              onCriteriaChange(emptyGuestCriteria());
+              onFocus("all");
+            }}
+          >
             Toutes
           </button>
           {visible.map((table) => (
@@ -347,22 +412,6 @@ function SeatingPreview({
               </span>
             </button>
           ))}
-          <button
-            type="button"
-            className={previewChipClass(unassignedMode)}
-            onClick={() => {
-              if (unassignedMode) {
-                onFocus("all");
-                onToggleUnassigned(false);
-              } else {
-                onFocus("unassigned");
-                onToggleUnassigned(true);
-              }
-            }}
-          >
-            Sans table
-            {unassigned.length > 0 ? <span className="ml-1 opacity-70">{unassigned.length}</span> : null}
-          </button>
           {roles.length > 0 ? (
             <button
               type="button"
@@ -380,7 +429,7 @@ function SeatingPreview({
         className="overflow-y-auto p-3 md:p-4"
         style={{
           maxHeight:
-            queryActive || onlyUnassigned
+            queryActive || criteriaActive
               ? (paneHeight ?? "calc(100dvh - 13rem)")
               : "min(70dvh, 40rem)",
         }}
@@ -424,9 +473,44 @@ function SeatingPreview({
             {tableHeading(activeTable)}
             {seatList(activeTable, false)}
           </div>
-        ) : queryActive ? (
+        ) : withTableMode ? (
+          seatedRows.length === 0 ? (
+            <p className="text-sm text-soft">Aucune invitation n’a encore toutes ses places.</p>
+          ) : (
+            <ul>
+              {seatedRows.map((row) => {
+                const showEditor =
+                  openGuestId === row.guestId &&
+                  seatedRows.find((entry) => entry.guestId === openGuestId)?.key === row.key;
+                return (
+                  <li key={row.key} className="border-b border-line/60 py-2 last:border-b-0">
+                    <button
+                      type="button"
+                      className="flex w-full items-start gap-2 text-left"
+                      onClick={() => onOpenGuest(openGuestId === row.guestId ? null : row.guestId)}
+                    >
+                      <span
+                        className={`mt-1.5 inline-block size-2.5 shrink-0 ${seatStateClass[row.state]}`}
+                        title={seatStateLabel[row.state]}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block break-words text-sm text-mist">{row.title}</span>
+                        <span className="block break-words text-xs text-soft">
+                          {[row.place, row.detail].filter(Boolean).join(" · ")}
+                        </span>
+                      </span>
+                    </button>
+                    {showEditor ? editorFor(row.guestId) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )
+        ) : showHits ? (
           hits.length === 0 ? (
-            <p className="text-sm text-soft">Aucun résultat pour « {query.trim()} ».</p>
+            <p className="text-sm text-soft">
+              {query.trim() ? `Aucun résultat pour « ${query.trim()} ».` : "Aucun invité pour ces critères."}
+            </p>
           ) : (
             <ul>
               {hits.map((hit) => {
@@ -546,7 +630,8 @@ export function AdminSeatingEditor({
   const [newTableSeats, setNewTableSeats] = useState("1-8");
   const [seatDrafts, setSeatDrafts] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
-  const [onlyUnassigned, setOnlyUnassigned] = useState(false);
+  const [criteria, setCriteria] = useState<GuestCriteria>(emptyGuestCriteria);
+  const criteriaActive = guestCriteriaActive(criteria);
   const [openSeatId, setOpenSeatId] = useState<string | null>(null);
   const [previewFocus, setPreviewFocus] = useState<string>("all");
   const [showCartography, setShowCartography] = useState(false);
@@ -581,31 +666,21 @@ export function AdminSeatingEditor({
     const q = query.trim().toLowerCase();
     return yesGuests.filter((r) => {
       if (hasEventRole(r) && (r.childCount ?? 0) === 0) return false;
-      const assigned = Boolean(
-        normalizeSeatingLabel(r.tableLabel) || normalizeSeatingLabel(r.seatLabel),
-      );
-      const childUnseated = normalizeChildSeats(r.childSeats, r.childCount).some(
-        (seat) => !isCompleteSeat(seat),
-      );
-      if (onlyUnassigned) {
-        const adultMissing = !hasEventRole(r) && !assigned;
-        if (!adultMissing && !childUnseated) return false;
-      }
+      if (!matchesGuestCriteria(r, criteria)) return false;
       if (!q) return true;
       const lien = guestOfLabels[r.guestOf] || r.guestOf || "";
       const roles = formatEventRoles(r.eventRoles);
       const hay = `${r.name} ${r.phone} ${lien} ${r.message} ${roles} ${r.tableLabel} ${r.seatLabel}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [yesGuests, query, onlyUnassigned, guestOfLabels]);
+  }, [yesGuests, query, criteria, guestOfLabels]);
 
-  const filtering = Boolean(query.trim()) || onlyUnassigned;
+  const filtering = Boolean(query.trim()) || criteriaActive;
 
   const previewTables = useMemo(() => {
     const q = query.trim().toLowerCase();
     return occupancy.tables
       .map((table) => {
-        const tableHit = Boolean(q) && table.label.toLowerCase().includes(q);
         const seats = table.seats.map((seat) => {
           const occupant = findSeatOccupant(yesGuests, table.label, seat.label);
           const guest = occupant
@@ -618,8 +693,9 @@ export function AdminSeatingEditor({
               : `Enfant ${occupant.childIndex + 1} · ${displayGuestName(occupant.name)}`
             : "";
           const phone = guest ? displayPhone(guest.phone) : "";
-          const hay = `${who} ${lien} ${phone} ${guest?.message || ""} ${seat.label}`.toLowerCase();
-          const guestHit = Boolean(q) && Boolean(occupant) && hay.includes(q);
+          const hay = `${who} ${lien} ${phone} ${guest?.message || ""} ${table.label} ${seat.label}`.toLowerCase();
+          const passesCriteria = !criteriaActive || (guest ? matchesGuestCriteria(guest, criteria) : false);
+          const textHit = !q || table.label.toLowerCase().includes(q) || (Boolean(occupant) && hay.includes(q));
           return {
             label: seat.label,
             state: seat.state,
@@ -627,15 +703,16 @@ export function AdminSeatingEditor({
             lien,
             phone,
             guestId: guest?.id ?? null,
-            match: !q || tableHit || guestHit,
+            match: textHit && passesCriteria && (!criteriaActive || Boolean(occupant)),
           };
         });
         const visible =
-          !q || tableHit || seats.some((seat) => seat.guestId && seat.match && !tableHit);
-        return { ...table, seats, visible: visible || tableHit };
+          (!q && !criteriaActive) ||
+          seats.some((seat) => seat.guestId && seat.match);
+        return { ...table, seats, visible };
       })
       .sort((a, b) => a.label.localeCompare(b.label, "fr", { numeric: true }));
-  }, [occupancy.tables, yesGuests, query, guestOfLabels, showGuestPii]);
+  }, [occupancy.tables, yesGuests, query, criteria, criteriaActive, guestOfLabels, showGuestPii]);
 
   const unassignedPreview = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -646,6 +723,7 @@ export function AdminSeatingEditor({
       const name = displayGuestName(guest.name);
       const hay = `${name} ${lien} ${phone} ${guest.message || ""}`.toLowerCase();
       if (q && !hay.includes(q)) continue;
+      if (criteriaActive && !matchesGuestCriteria(guest, criteria)) continue;
       const detail = [lien, phone].filter(Boolean).join(" · ");
       if (!hasEventRole(guest) && !normalizeSeatingLabel(guest.tableLabel)) {
         items.push({ key: guest.id, guestId: guest.id, label: name, detail });
@@ -661,25 +739,25 @@ export function AdminSeatingEditor({
       });
     }
     return items;
-  }, [yesGuests, query, guestOfLabels, showGuestPii]);
+  }, [yesGuests, query, criteria, criteriaActive, guestOfLabels, showGuestPii]);
 
   const matchedRoles = useMemo(() => {
     const q = query.trim().toLowerCase();
     return roleGuests.filter((guest) => {
-      if (onlyUnassigned && !q) return false;
+      if (criteriaActive && !matchesGuestCriteria(guest, criteria)) return false;
       if (!q) return true;
       return `${guest.name} ${guest.phone} ${formatEventRoles(guest.eventRoles)}`
         .toLowerCase()
         .includes(q);
     });
-  }, [roleGuests, query, onlyUnassigned]);
+  }, [roleGuests, query, criteria, criteriaActive]);
 
   function onSeatingQuery(value: string) {
     const starting = !query.trim() && Boolean(value.trim());
     const clearing = Boolean(query.trim()) && !value.trim();
     setQuery(value);
     setOpenSeatId(null);
-    if (starting || clearing) setPreviewFocus(onlyUnassigned ? "unassigned" : "all");
+    if (starting || clearing) setPreviewFocus(criteria.table === "without" ? "unassigned" : "all");
     if (starting) {
       const el = document.getElementById("admin-seating-filter");
       if (el && el.getBoundingClientRect().top > 72) {
@@ -906,6 +984,66 @@ export function AdminSeatingEditor({
     }
   }
 
+  function settledSeat(draftSeat: ChildSeat, savedSeat: ChildSeat): ChildSeat {
+    if (isCompleteSeat(draftSeat)) {
+      return {
+        tableLabel: normalizeSeatingLabel(draftSeat.tableLabel),
+        seatLabel: normalizeSeatingLabel(draftSeat.seatLabel),
+      };
+    }
+    if (isCompleteSeat(savedSeat)) {
+      return { tableLabel: savedSeat.tableLabel, seatLabel: savedSeat.seatLabel };
+    }
+    return emptyChildSeat();
+  }
+
+  async function removeChild(rsvp: Rsvp, index: number) {
+    const savedChildren = normalizeChildSeats(rsvp.childSeats, rsvp.childCount);
+    if (index < 0 || index >= savedChildren.length) return;
+    if (!confirm(`Supprimer l’enfant ${index + 1} de ${displayGuestName(rsvp.name)} ?`)) return;
+    const draft = draftFor(rsvp);
+    const keptSaved = savedChildren.filter((_, seatIndex) => seatIndex !== index);
+    const childSeats = draft.childSeats
+      .filter((_, seatIndex) => seatIndex !== index)
+      .map((seat, seatIndex) => settledSeat(seat, keptSaved[seatIndex] || emptyChildSeat()));
+    const adult = hasEventRole(rsvp)
+      ? emptyChildSeat()
+      : settledSeat(
+          { tableLabel: draft.tableLabel, seatLabel: draft.seatLabel },
+          { tableLabel: rsvp.tableLabel || "", seatLabel: rsvp.seatLabel || "" },
+        );
+    setBusyId(rsvp.id);
+    try {
+      const res = await fetch("/api/rsvp/seating", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: rsvp.id,
+          tableLabel: adult.tableLabel,
+          seatLabel: adult.seatLabel,
+          childCount: keptSaved.length,
+          childSeats,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Suppression impossible.");
+        return;
+      }
+      onUpdated(data.rsvp as Rsvp);
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[rsvp.id];
+        return next;
+      });
+      showSuccess(`Enfant ${index + 1} retiré.`);
+    } catch {
+      showError("Suppression impossible.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   function renderSeatEditor(rsvp: Rsvp) {
     if (!canEdit) return null;
     const draft = draftFor(rsvp);
@@ -962,7 +1100,8 @@ export function AdminSeatingEditor({
           );
           const childOccupied = occupiedFor(rsvp, draft, index);
           return (
-            <div key={`${rsvp.id}-child-${index}`} className="grid grid-cols-2 gap-2">
+            <div key={`${rsvp.id}-child-${index}`} className="space-y-1">
+              <div className="grid grid-cols-2 gap-2">
               <select
                 className="field !py-2"
                 aria-label={`Table enfant ${index + 1}`}
@@ -996,6 +1135,15 @@ export function AdminSeatingEditor({
                   );
                 })}
               </select>
+              </div>
+              <button
+                type="button"
+                className="text-[10px] tracking-[0.12em] text-red-700 uppercase hover:text-red-900 disabled:opacity-50"
+                disabled={busyId === rsvp.id}
+                onClick={() => void removeChild(rsvp, index)}
+              >
+                Supprimer
+              </button>
             </div>
           );
         })}
@@ -1026,7 +1174,7 @@ export function AdminSeatingEditor({
       <div>
         <h2 className="section-title text-2xl text-mist sm:text-3xl">Plan de table</h2>
         <p className="mt-2 max-w-2xl text-sm font-normal leading-relaxed text-soft">
-          Le filtre met l’aperçu à jour : nom, lien, téléphone ou numéro de table.
+          Le filtre cumule le lien, le côté, la table et l’occupation.
         </p>
       </div>
 
@@ -1044,15 +1192,25 @@ export function AdminSeatingEditor({
         onFocus={(id) => {
           setPreviewFocus(id);
           setOpenSeatId(null);
-          if (id !== "unassigned") setOnlyUnassigned(false);
+          if (id !== "unassigned" && criteria.table === "without") {
+            setCriteria((current) => ({ ...current, table: "all" }));
+          }
         }}
         query={query}
         onQuery={onSeatingQuery}
-        onlyUnassigned={onlyUnassigned}
-        onToggleUnassigned={(value) => {
-          setOnlyUnassigned(value);
+        tableFilter={criteria.table}
+        criteria={criteria}
+        onCriteriaChange={(next) => {
+          setCriteria(next);
           setOpenSeatId(null);
+          if (next.table === "without") setPreviewFocus("unassigned");
+          else if (criteria.table === "without") setPreviewFocus("all");
         }}
+        partnerOne={site.partnerOne}
+        partnerTwo={site.partnerTwo}
+        criteriaActive={criteriaActive}
+        matchCount={yesGuests.filter((guest) => matchesGuestCriteria(guest, criteria)).length}
+        withGuestIds={yesGuests.filter((guest) => matchesGuestCriteria(guest, criteria)).map((guest) => guest.id)}
         openGuestId={openSeatId}
         onOpenGuest={setOpenSeatId}
         editorFor={(guestId) => {
@@ -1403,7 +1561,19 @@ export function AdminSeatingEditor({
                           const childOccupied = occupiedFor(rsvp, draft, index);
                           return (
                             <div key={`${rsvp.id}-child-${index}`} className="space-y-2">
-                              <p className="text-sm text-mist">Enfant {index + 1}</p>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm text-mist">Enfant {index + 1}</p>
+                                {canEdit ? (
+                                  <button
+                                    type="button"
+                                    className="min-h-10 text-xs tracking-[0.12em] text-red-700 uppercase hover:text-red-900 disabled:opacity-50"
+                                    disabled={busyId === rsvp.id}
+                                    onClick={() => void removeChild(rsvp, index)}
+                                  >
+                                    Supprimer
+                                  </button>
+                                ) : null}
+                              </div>
                               {canEdit ? (
                                 <div className="admin-grid-2 grid gap-2">
                                   <select
@@ -1683,7 +1853,18 @@ export function AdminSeatingEditor({
                               )}
                             </td>
                             <td className="px-3 py-2 text-xs text-soft">—</td>
-                            {canEdit ? <td className="px-3 py-2" /> : null}
+                            {canEdit ? (
+                              <td className="px-3 py-2">
+                                <button
+                                  type="button"
+                                  className="text-xs tracking-[0.12em] text-red-700 uppercase hover:text-red-900 disabled:opacity-50"
+                                  disabled={busyId === rsvp.id}
+                                  onClick={() => void removeChild(rsvp, index)}
+                                >
+                                  Supprimer
+                                </button>
+                              </td>
+                            ) : null}
                           </tr>
                         );
                       })}

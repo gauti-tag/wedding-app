@@ -6,10 +6,16 @@ import {
   followUpReasonLabel,
   type FollowUpReason,
 } from "@/lib/rsvp-insights";
-import type { GuestRelation } from "@/lib/guest-of";
+import {
+  GUEST_HOST_SUFFIXES,
+  guestHostOptions,
+  parseGuestOfId,
+  type GuestHostSuffix,
+  type GuestRelation,
+} from "@/lib/guest-of";
 import { eventRoleLabel } from "@/lib/event-roles";
 import { maskName } from "@/lib/mask-pii";
-import { seatingOccupancy } from "@/lib/seating";
+import { countAssignedSeatsByGuestOf, seatingOccupancy } from "@/lib/seating";
 import type { Rsvp, SeatingPlanContent, SiteContent } from "@/lib/types";
 
 const relationLabels: Record<GuestRelation, string> = {
@@ -17,6 +23,14 @@ const relationLabels: Record<GuestRelation, string> = {
   friend: "Ami(e)",
   colleague: "Collègue",
   religious: "Communauté religieuse",
+};
+
+const sideColors: Record<GuestHostSuffix | "autre" | "free", string> = {
+  host_one: "#3b2416",
+  host_two: "#a67c52",
+  both: "#6b3e2a",
+  autre: "#7a5c4a",
+  free: "#d9cfc4",
 };
 
 type Props = {
@@ -56,6 +70,35 @@ export function AdminDashboard({
     () => seatingOccupancy(seatingPlan, rsvps),
     [seatingPlan, rsvps],
   );
+  const assignedByGuestOf = useMemo(
+    () => countAssignedSeatsByGuestOf(seatingPlan, rsvps),
+    [seatingPlan, rsvps],
+  );
+  const sideSlices = useMemo(() => {
+    const sideCounts = new Map<GuestHostSuffix | "autre", number>();
+    for (const row of assignedByGuestOf) {
+      const parsed = parseGuestOfId(row.guestOf);
+      const side = parsed?.host ?? legacyHost(row.guestOf);
+      sideCounts.set(side, (sideCounts.get(side) ?? 0) + row.count);
+    }
+    const sideLabels = new Map(
+      guestHostOptions(site.partnerOne, site.partnerTwo, "fr").map((host) => [host.id, host.label]),
+    );
+    const named = GUEST_HOST_SUFFIXES.map((key) => ({
+      key,
+      label: sideLabels.get(key) || key,
+      count: sideCounts.get(key) ?? 0,
+      color: sideColors[key],
+    })).filter((slice) => slice.key !== "both" || slice.count > 0);
+    const autre = sideCounts.get("autre") ?? 0;
+    return [
+      ...named,
+      ...(autre > 0
+        ? [{ key: "autre", label: "Autre", count: autre, color: sideColors.autre }]
+        : []),
+      { key: "free", label: "Libres", count: occupancy.free, color: sideColors.free },
+    ];
+  }, [assignedByGuestOf, occupancy.free, site.partnerOne, site.partnerTwo]);
   const occupiedPct =
     occupancy.total > 0 ? Math.round((occupancy.occupied / occupancy.total) * 100) : 0;
 
@@ -164,6 +207,22 @@ export function AdminDashboard({
                 {seatCountLabel(occupancy.occupied, "occupé", "occupés")}
               </li>
             </ul>
+            <div className="mt-6 border-t border-line pt-5">
+              <OccupancyPie
+                title="Chez chaque marié"
+                slices={sideSlices}
+                whole={occupancy.total}
+                centerLabel={
+                  occupancy.total > 0
+                    ? `${Math.round(((occupancy.total - occupancy.free) / occupancy.total) * 100)} %`
+                    : "0 %"
+                }
+                centerHint="du plan"
+              />
+              <p className="mt-3 text-xs text-soft">
+                Part du plan occupée par les invités de chaque marié. L’adulte et les enfants comptent avec l’invitation.
+              </p>
+            </div>
             <ul className="mt-5 max-h-72 space-y-3 overflow-y-auto">
               {occupancy.tables.map((table) => {
                 const pct =
@@ -362,6 +421,96 @@ export function AdminDashboard({
 
 function seatCountLabel(count: number, one: string, many: string) {
   return `${count} ${count === 1 ? one : many}`;
+}
+
+function legacyHost(guestOf: string): GuestHostSuffix | "autre" {
+  if (guestOf === "gautier" || guestOf === "host_one") return "host_one";
+  if (guestOf === "francybel" || guestOf === "host_two") return "host_two";
+  if (guestOf === "both") return "both";
+  return "autre";
+}
+
+function OccupancyPie({
+  title,
+  slices,
+  whole,
+  centerLabel,
+  centerHint,
+}: {
+  title: string;
+  slices: { key: string; label: string; count: number; color: string }[];
+  whole: number;
+  centerLabel: string;
+  centerHint: string;
+}) {
+  const size = 168;
+  const center = size / 2;
+  const radius = 58;
+  const stroke = 22;
+  const circumference = 2 * Math.PI * radius;
+  const drawn = slices.filter((slice) => slice.count > 0);
+  let offset = 0;
+
+  return (
+    <div>
+      <p className="text-xs tracking-[0.16em] text-champagne uppercase">{title}</p>
+      {whole === 0 ? (
+        <p className="mt-4 text-sm text-soft">Aucun siège dans le plan.</p>
+      ) : (
+        <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
+          <svg
+            width={size}
+            height={size}
+            viewBox={`0 0 ${size} ${size}`}
+            role="img"
+            aria-label={`${title}, ${centerLabel} ${centerHint}`}
+            className="shrink-0"
+          >
+            <circle cx={center} cy={center} r={radius} fill="none" stroke="#efe8e0" strokeWidth={stroke} />
+            {drawn.map((slice) => {
+              const length = (slice.count / whole) * circumference;
+              const gap = drawn.length > 1 && length > 4 ? 1.5 : 0;
+              const node = (
+                <circle
+                  key={slice.key}
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="none"
+                  stroke={slice.color}
+                  strokeWidth={stroke}
+                  strokeDasharray={`${Math.max(length - gap, 0)} ${circumference}`}
+                  strokeDashoffset={-offset}
+                  transform={`rotate(-90 ${center} ${center})`}
+                />
+              );
+              offset += length;
+              return node;
+            })}
+            <text x={center} y={center - 2} textAnchor="middle" fill="#3b2416" fontSize="22">
+              {centerLabel}
+            </text>
+            <text x={center} y={center + 16} textAnchor="middle" fill="#7a5c4a" fontSize="10">
+              {centerHint}
+            </text>
+          </svg>
+          <ul className="w-full min-w-0 space-y-2">
+            {slices.map((slice) => (
+              <li key={slice.key} className="flex items-center justify-between gap-3 text-sm">
+                <span className="flex min-w-0 items-center gap-2 text-mist">
+                  <span className="inline-block size-2.5 shrink-0" style={{ backgroundColor: slice.color }} />
+                  <span className="truncate">{slice.label}</span>
+                </span>
+                <span className="meta-date shrink-0 text-xs text-soft">
+                  {slice.count} · {Math.round((slice.count / whole) * 100)} %
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function OccupancyBar({

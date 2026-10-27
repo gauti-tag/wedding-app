@@ -41,6 +41,13 @@ import {
   type EventRole,
 } from "@/lib/event-roles";
 import { formatSeatingLabel } from "@/lib/seating";
+import {
+  emptyGuestCriteria,
+  guestCriteriaActive,
+  matchesGuestCriteria,
+  type GuestCriteria,
+} from "@/lib/guest-criteria";
+import { GuestCriteriaBar } from "@/components/admin/GuestCriteriaBar";
 import { hasPermission, roleLabel, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
@@ -332,6 +339,7 @@ export function AdminPanel({
   const [roleBusyId, setRoleBusyId] = useState<string | null>(null);
   const [rsvpPage, setRsvpPage] = useState(1);
   const [rsvpQuery, setRsvpQuery] = useState("");
+  const [criteria, setCriteria] = useState<GuestCriteria>(emptyGuestCriteria);
   const [openRsvpId, setOpenRsvpId] = useState<string | null>(null);
   const rsvpSearchRef = useRef<HTMLDivElement>(null);
   const canBlockRsvp = isOwner;
@@ -343,9 +351,10 @@ export function AdminPanel({
 
   const filteredRsvps = useMemo(() => {
     const q = rsvpQuery.trim().toLowerCase();
-    if (!q) return rsvps;
     const qDigits = q.replace(/[\s.\-()]/g, "");
     return rsvps.filter((r) => {
+      if (!matchesGuestCriteria(r, criteria)) return false;
+      if (!q) return true;
       const guestLabel = (guestOfLabels[r.guestOf] || r.guestOf || "").toLowerCase();
       const haystack = [
         r.name,
@@ -365,7 +374,9 @@ export function AdminPanel({
       if (qDigits && r.phone.replace(/[\s.\-()]/g, "").includes(qDigits)) return true;
       return false;
     });
-  }, [rsvps, rsvpQuery, guestOfLabels]);
+  }, [rsvps, rsvpQuery, criteria, guestOfLabels]);
+
+  const rsvpFiltering = Boolean(rsvpQuery.trim()) || guestCriteriaActive(criteria);
 
   const rsvpPageCount = Math.max(1, Math.ceil(filteredRsvps.length / RSVP_PAGE_SIZE));
   const currentRsvpPage = Math.min(rsvpPage, rsvpPageCount);
@@ -461,6 +472,13 @@ export function AdminPanel({
     setRsvpPage(1);
     setOpenRsvpId(null);
     if (starting) revealRsvpSearch();
+  }
+
+  function onCriteriaChange(next: GuestCriteria) {
+    setCriteria(next);
+    setRsvpPage(1);
+    setOpenRsvpId(null);
+    revealRsvpSearch();
   }
 
   function onAdminNavClick(event: MouseEvent<HTMLAnchorElement>, href: string) {
@@ -926,18 +944,26 @@ export function AdminPanel({
             autoComplete="off"
             enterKeyHint="search"
           />
-          {rsvpQuery.trim() ? (
+          <GuestCriteriaBar
+            value={criteria}
+            onChange={onCriteriaChange}
+            partnerOne={site.partnerOne}
+            partnerTwo={site.partnerTwo}
+          />
+          {rsvpFiltering ? (
             <p className="mt-2 text-xs tracking-[0.12em] text-soft uppercase">
               {filteredRsvps.length} résultat{filteredRsvps.length > 1 ? "s" : ""} — la liste défile ici
             </p>
           ) : null}
         </div>
 
-        {rsvpQuery.trim() ? (
+        {rsvpFiltering ? (
           <div className="mb-6 max-h-[min(70dvh,36rem)] overflow-y-auto border border-line bg-white">
             {filteredRsvps.length === 0 ? (
               <p className="px-3 py-5 text-sm text-soft">
-                Aucun résultat pour « {rsvpQuery.trim()} ».
+                {rsvpQuery.trim()
+                  ? `Aucun résultat pour « ${rsvpQuery.trim()} ».`
+                  : "Aucun invité pour ces critères."}
               </p>
             ) : (
               <ul>
@@ -1025,7 +1051,7 @@ export function AdminPanel({
           </div>
         ) : null}
 
-        {can("manage_rsvp") && !rsvpQuery.trim() ? (
+        {can("manage_rsvp") && !rsvpFiltering ? (
           <div className="mb-6 border border-line bg-white/80 px-4 py-4 md:px-5">
             <p className="text-sm font-medium text-mist">Rappels WhatsApp</p>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-soft">
@@ -1065,7 +1091,7 @@ export function AdminPanel({
         ) : null}
 
         {/* Mobile : cartes (évite min-width tableau qui élargit la page) */}
-        {!rsvpQuery.trim() ? (
+        {!rsvpFiltering ? (
         <>
         <div className="space-y-3 md:hidden">
           {rsvps.length === 0 ? (

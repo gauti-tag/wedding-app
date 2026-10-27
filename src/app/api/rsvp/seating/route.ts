@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
 import { hasEventRole } from "@/lib/event-roles";
+import { normalizeChildCount } from "@/lib/guest-capacity";
 import {
   findPlanTable,
   isCompleteSeat,
@@ -28,6 +29,7 @@ const schema = z.object({
     .max(4)
     .optional()
     .default([]),
+  childCount: z.number().int().min(0).max(4).optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -63,13 +65,22 @@ export async function PATCH(request: Request) {
       );
     }
 
+    const storedCount = normalizeChildCount(current.childCount);
+    const nextCount = parsed.data.childCount === undefined ? storedCount : parsed.data.childCount;
+    if (nextCount > storedCount) {
+      return NextResponse.json(
+        { error: "Le nombre d’enfants ne peut pas augmenter depuis le plan de table." },
+        { status: 400 },
+      );
+    }
+
     const requested: { who: string; tableLabel: string; seatLabel: string }[] = [
       {
         who: current.name,
         tableLabel: parsed.data.tableLabel,
         seatLabel: parsed.data.seatLabel,
       },
-      ...normalizeChildSeats(parsed.data.childSeats, current.childCount).map((seat, childIndex) => ({
+      ...normalizeChildSeats(parsed.data.childSeats, nextCount).map((seat, childIndex) => ({
         who: `Enfant ${childIndex + 1}`,
         tableLabel: seat.tableLabel,
         seatLabel: seat.seatLabel,
@@ -137,6 +148,7 @@ export async function PATCH(request: Request) {
     const [adult, ...childSeats] = canonical;
     const updated = {
       ...current,
+      childCount: nextCount,
       tableLabel: adult?.tableLabel || "",
       seatLabel: adult?.seatLabel || "",
       childSeats,
@@ -148,11 +160,14 @@ export async function PATCH(request: Request) {
     const detail = placed
       .map((slot) => `table ${slot!.tableLabel} · siège ${slot!.seatLabel}`)
       .join(", ");
+    const removedChild = nextCount < storedCount;
     await auditAs(
       user,
       "update",
       "rsvp",
-      `${updated.name}: placement${detail ? ` (${detail})` : " (retiré)"}`,
+      removedChild
+        ? `${updated.name}: enfant retiré (${storedCount - nextCount})`
+        : `${updated.name}: placement${detail ? ` (${detail})` : " (retiré)"}`,
     );
 
     return NextResponse.json({ ok: true, rsvp: updated });

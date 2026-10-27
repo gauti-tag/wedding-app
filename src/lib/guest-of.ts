@@ -101,6 +101,19 @@ const RELATION_SHORT_FR: Record<GuestRelation, string> = {
   religious: "Communauté religieuse",
 };
 
+export function guestRelationShortLabel(relation: GuestRelation): string {
+  return RELATION_SHORT_FR[relation];
+}
+
+export function guestSideFromId(guestOf: string): GuestHostSuffix | null {
+  const parsed = parseGuestOfId(guestOf);
+  if (parsed) return parsed.host;
+  if (guestOf === "gautier" || guestOf === "host_one") return "host_one";
+  if (guestOf === "francybel" || guestOf === "host_two") return "host_two";
+  if (guestOf === "both") return "both";
+  return null;
+}
+
 export type CheckInGuestDetails = {
   relation: string;
   side: string;

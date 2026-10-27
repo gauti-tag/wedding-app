@@ -1,4 +1,5 @@
 import { normalizeChildCount } from "@/lib/guest-capacity";
+import { hasEventRole } from "@/lib/event-roles";
 import type { ChildSeat, Rsvp, SeatingPlanContent, SeatingPlanTable } from "@/lib/types";
 
 export function createSeatingTableId() {
@@ -38,6 +39,27 @@ export function formatSeatingLabel(
 
 export function hasSeating(rsvp: Pick<Rsvp, "tableLabel" | "seatLabel">) {
   return Boolean(normalizeSeatingLabel(rsvp.tableLabel) || normalizeSeatingLabel(rsvp.seatLabel));
+}
+
+export type TablePresenceFilter = "all" | "with" | "without";
+
+/** Avec table : adulte et enfants ont chacun une place. Sans table : une place manque. Un rôle sans enfant n’entre dans aucun des deux. */
+export function matchesTablePresence(
+  rsvp: Pick<
+    Rsvp,
+    "status" | "blockedAt" | "tableLabel" | "seatLabel" | "childCount" | "childSeats" | "eventRoles"
+  >,
+  filter: TablePresenceFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (rsvp.status !== "yes" || rsvp.blockedAt) return false;
+  if (hasEventRole(rsvp) && normalizeChildCount(rsvp.childCount) === 0) return false;
+  const adultReady = hasEventRole(rsvp) || isCompleteSeat(rsvp);
+  const childrenReady = normalizeChildSeats(rsvp.childSeats, rsvp.childCount).every((seat) =>
+    isCompleteSeat(seat),
+  );
+  const withTable = adultReady && childrenReady;
+  return filter === "with" ? withTable : !withTable;
 }
 
 export function emptyChildSeat(): ChildSeat {
@@ -278,6 +300,24 @@ export function seatingOccupancy(
     };
   });
   return { tables, ...countStates(tables.flatMap((table) => table.seats)) };
+}
+
+/** Places assignées (allouées ou occupées), regroupées par valeur de lien. Les enfants comptent avec l’invitation. */
+export function countAssignedSeatsByGuestOf(
+  plan: SeatingPlanContent,
+  rsvps: (OccupancyGuest & { guestOf?: string | null })[],
+): { guestOf: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const table of plan.tables) {
+    for (const label of table.seats) {
+      const occupant = findSeatOccupant(rsvps, table.label, label);
+      if (!occupant) continue;
+      const guest = rsvps.find((item) => item.id === occupant.rsvpId);
+      const key = guest?.guestOf?.trim() || "autre";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()].map(([guestOf, count]) => ({ guestOf, count }));
 }
 
 export function findPlanTable(
