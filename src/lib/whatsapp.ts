@@ -232,6 +232,13 @@ export function reminderWhatsAppForRsvp(
   };
 }
 
+export type ReceptionNotice = {
+  time: string;
+  place: string;
+  address: string;
+  mapUrl: string;
+};
+
 export function buildSeatingWhatsAppMessage(input: {
   guestName: string;
   coupleNames: string;
@@ -240,6 +247,9 @@ export function buildSeatingWhatsAppMessage(input: {
   childPlaces?: string[];
   dateLabel?: string;
   receptionTime?: string;
+  venuePlace?: string;
+  venueAddress?: string;
+  mapUrl?: string;
   ticketUrl?: string;
   locale?: "fr" | "en";
 }) {
@@ -250,6 +260,9 @@ export function buildSeatingWhatsAppMessage(input: {
   const seat = input.seatLabel.trim();
   const dateLabel = (input.dateLabel || "").trim();
   const receptionTime = (input.receptionTime || "").trim();
+  const venuePlace = (input.venuePlace || "").trim();
+  const venueAddress = (input.venueAddress || "").trim();
+  const mapUrl = (input.mapUrl || "").trim();
   const ticketUrl = (input.ticketUrl || "").trim();
 
   const placeFr = [table && `Table ${table}`, seat && `Siège ${seat}`]
@@ -258,55 +271,118 @@ export function buildSeatingWhatsAppMessage(input: {
   const placeEn = [table && `Table ${table}`, seat && `Seat ${seat}`]
     .filter(Boolean)
     .join(" · ");
-  const childLines = (input.childPlaces || []).map((line) => `👶 ${line}`);
+  const childLines = (input.childPlaces || []).map((line) => `🤍 ${line}`);
   const adultLine = locale === "en" ? placeEn : placeFr;
   const when = [dateLabel, receptionTime].filter(Boolean);
+  const venueLines: Array<string | false> = [
+    venuePlace ? `🌿 *${venuePlace}*` : false,
+    venueAddress || false,
+    mapUrl ? (locale === "en" ? "✨ Directions :" : "✨ Itinéraire :") : false,
+    mapUrl || false,
+  ];
+  const hasVenue = venueLines.some((line) => typeof line === "string" && line.length > 0);
 
   if (locale === "en") {
     return joinWhatsAppLines([
-      `Hello *${name}*, 🌿`,
+      `Hello *${name}*, 🤍`,
       "",
       "We are pleased to confirm your place at our reception.",
       "",
-      dateLabel ? `📅 *${dateLabel}*` : false,
-      receptionTime ? `🕖 *Reception at ${receptionTime}*` : false,
+      dateLabel ? `✨ *${dateLabel}*` : false,
+      receptionTime ? `🥂 *Reception at ${receptionTime}*` : false,
       when.length ? "" : false,
-      adultLine ? `🪑 *${adultLine}*` : false,
+      ...venueLines,
+      hasVenue ? "" : false,
+      adultLine ? `💍 *${adultLine}*` : false,
       ...childLines,
       "",
-      ticketUrl ? "🎟️ Your personal invitation card:" : false,
+      ticketUrl ? "🤍 Your personal invitation card:" : false,
       ticketUrl || false,
       ticketUrl ? "" : false,
-      "📱 Please present it at the entrance. It will help us welcome you simply and with care.",
+      "🌿 Please present it at the entrance. It will help us welcome you simply and with care.",
       "",
-      "We look forward to seeing you. 🤍",
+      "We look forward to seeing you.",
       "",
       "With all our affection,",
-      `*${couple}*`,
+      `*${couple}* 🤍`,
     ]);
   }
 
   return joinWhatsAppLines([
-    `Bonjour *${name}*, 🌿`,
+    `Bonjour *${name}*, 🤍`,
     "",
-    "Nous avons le plaisir de vous confirmer votre place pour notre réception.",
+    "Nous avons le plaisir de vous confirmer votre place à notre réception.",
     "",
-    dateLabel ? `📅 *${dateLabel}*` : false,
-    receptionTime ? `🕖 *Réception à ${receptionTime}*` : false,
+    dateLabel ? `✨ *${dateLabel}*` : false,
+    receptionTime ? `🥂 *Réception à ${receptionTime}*` : false,
     when.length ? "" : false,
-    adultLine ? `🪑 *${adultLine}*` : false,
+    ...venueLines,
+    hasVenue ? "" : false,
+    adultLine ? `💍 *${adultLine}*` : false,
     ...childLines,
     "",
-    ticketUrl ? "🎟️ Votre carte d’invitation personnelle :" : false,
+    ticketUrl ? "🤍 Votre carte d’invitation personnelle :" : false,
     ticketUrl || false,
     ticketUrl ? "" : false,
-    "📱 Merci de la présenter à l’entrée. Elle permettra de vous accueillir simplement et avec attention.",
+    "🌿 Merci de la présenter à l’entrée. Elle permettra de vous accueillir simplement et avec attention.",
     "",
-    "Nous nous réjouissons de vous retrouver. 🤍",
+    "Nous nous réjouissons de vous retrouver.",
     "",
     "Avec toute notre affection,",
-    `*${couple}*`,
+    `*${couple}* 🤍`,
   ]);
+}
+
+function findReceptionVenue<T extends { id: string; title: { fr: string; en: string } }>(venues: T[]) {
+  return (
+    venues.find((item) => item.id === "reception") ||
+    venues.find((item) => /réception|reception/i.test(`${item.title.fr} ${item.title.en}`))
+  );
+}
+
+/** Masque les textes de remplacement tant que le lieu n’est pas renseigné. */
+function guestFacingVenueText(value: string) {
+  const text = value.trim();
+  if (!text) return "";
+  if (/^(à préciser|a préciser|to be confirmed|à confirmer)$/i.test(text)) return "";
+  return text;
+}
+
+function guestFacingPlace(value: string) {
+  const text = guestFacingVenueText(value);
+  if (/^(lieu de réception|lieu de reception|reception venue)$/i.test(text)) return "";
+  return text;
+}
+
+function guestFacingMapUrl(value: string) {
+  const text = value.trim();
+  if (!text) return "";
+  if (/^https?:\/\/(www\.)?maps\.google\.com\/?$/i.test(text)) return "";
+  return text;
+}
+
+/** Lieu, adresse, heure et itinéraire du créneau Réception. */
+export function receptionNotice(
+  venues: {
+    id: string;
+    title: { fr: string; en: string };
+    time: { fr: string; en: string };
+    place: { fr: string; en: string };
+    address: { fr: string; en: string };
+    mapUrl: string;
+  }[],
+  locale: "fr" | "en" = "fr",
+): ReceptionNotice {
+  const venue = findReceptionVenue(venues);
+  if (!venue) return { time: "", place: "", address: "", mapUrl: "" };
+  const pick = (text: { fr: string; en: string }) =>
+    (locale === "en" ? text.en : text.fr).trim();
+  return {
+    time: pick(venue.time),
+    place: guestFacingPlace(pick(venue.place)),
+    address: guestFacingVenueText(pick(venue.address)),
+    mapUrl: guestFacingMapUrl(venue.mapUrl),
+  };
 }
 
 /** Heure de la réception dans le programme (créneau « reception » ou titre Réception). */
@@ -314,9 +390,7 @@ export function receptionTimeLabel(
   venues: { id: string; title: { fr: string; en: string }; time: { fr: string; en: string } }[],
   locale: "fr" | "en" = "fr",
 ) {
-  const venue =
-    venues.find((item) => item.id === "reception") ||
-    venues.find((item) => /réception|reception/i.test(`${item.title.fr} ${item.title.en}`));
+  const venue = findReceptionVenue(venues);
   if (!venue) return "";
   return (locale === "en" ? venue.time.en : venue.time.fr).trim();
 }
@@ -329,7 +403,11 @@ export function seatingWhatsAppForRsvp(
     eventTitle?: SiteContent["eventTitle"];
     hero?: SiteContent["hero"];
   },
-  options?: { locale?: "fr" | "en"; toGuest?: boolean; receptionTime?: string },
+  options?: {
+    locale?: "fr" | "en";
+    toGuest?: boolean;
+    reception?: ReceptionNotice;
+  },
 ) {
   const tableLabel = (rsvp.tableLabel || "").trim();
   const seatLabel = (rsvp.seatLabel || "").trim();
@@ -362,7 +440,10 @@ export function seatingWhatsAppForRsvp(
     seatLabel,
     childPlaces,
     dateLabel,
-    receptionTime: options?.receptionTime,
+    receptionTime: options?.reception?.time,
+    venuePlace: options?.reception?.place,
+    venueAddress: options?.reception?.address,
+    mapUrl: options?.reception?.mapUrl,
     ticketUrl,
     locale,
   });

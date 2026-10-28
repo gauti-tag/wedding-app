@@ -36,7 +36,7 @@ import {
 } from "@/lib/guest-criteria";
 import { GuestCriteriaBar } from "@/components/admin/GuestCriteriaBar";
 import { maskName, maskPhone } from "@/lib/mask-pii";
-import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
+import { seatingWhatsAppForRsvp, type ReceptionNotice } from "@/lib/whatsapp";
 
 const seatStateClass: Record<SeatPresence, string> = {
   free: "bg-forest text-soft",
@@ -661,7 +661,7 @@ type Props = {
   onPlanChange?: (plan: SeatingPlanContent) => void;
   canEdit: boolean;
   showGuestPii?: boolean;
-  receptionTime?: string;
+  reception?: ReceptionNotice;
   placeSends?: Record<string, RsvpPlaceSendLog>;
   onPlaceSend?: (id: string) => void;
 };
@@ -675,7 +675,7 @@ export function AdminSeatingEditor({
   onPlanChange,
   canEdit,
   showGuestPii = true,
-  receptionTime = "",
+  reception,
   placeSends = {},
   onPlaceSend,
 }: Props) {
@@ -1559,7 +1559,7 @@ export function AdminSeatingEditor({
                 const occupied = occupiedFor(rsvp, draft, "adult");
                 const wa = seatingWhatsAppForRsvp(rsvp, site, {
                   toGuest: true,
-                  receptionTime,
+                  reception,
                 });
                 const placeSent = placeSendLabel(placeSends[rsvp.id]);
                 return (
@@ -1791,7 +1791,7 @@ export function AdminSeatingEditor({
                     const occupied = occupiedFor(rsvp, draft, "adult");
                     const wa = seatingWhatsAppForRsvp(rsvp, site, {
                       toGuest: true,
-                      receptionTime,
+                      reception,
                     });
                     const placeSent = placeSendLabel(placeSends[rsvp.id]);
                     return (

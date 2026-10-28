@@ -11,7 +11,7 @@ import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
 import { formatSeatingLabel, normalizeChildSeats } from "@/lib/seating";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import type { Rsvp, SiteContent } from "@/lib/types";
-import { seatingWhatsAppForRsvp } from "@/lib/whatsapp";
+import { seatingWhatsAppForRsvp, type ReceptionNotice } from "@/lib/whatsapp";
 
 function guestOfLabelsFromSite(
   site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig">,
@@ -90,14 +90,14 @@ function vibrate(pattern: number | number[]) {
 
 export function AdminCheckIn({
   site,
-  receptionTime = "",
+  reception,
   rsvps,
   showGuestPii = true,
   onPlaceSend,
   onCheckedIn,
 }: {
   site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig" | "hero">;
-  receptionTime?: string;
+  reception?: ReceptionNotice;
   rsvps: Rsvp[];
   showGuestPii?: boolean;
   onPlaceSend?: (id: string) => void;
@@ -146,9 +146,9 @@ export function AdminCheckIn({
   const seatingWa = useMemo(
     () =>
       lastGuest
-        ? seatingWhatsAppForRsvp(lastGuest, site, { toGuest: true, receptionTime })
+        ? seatingWhatsAppForRsvp(lastGuest, site, { toGuest: true, reception })
         : null,
-    [lastGuest, receptionTime, site],
+    [lastGuest, reception, site],
   );
 
   useEffect(() => {
@@ -231,7 +231,7 @@ export function AdminCheckIn({
         ? formatCheckInGuestLines(resolveCheckInGuestDetails(guest, site, guestOfLabels))
         : "";
       const wa = guest
-        ? seatingWhatsAppForRsvp(guest, site, { toGuest: true, receptionTime })
+        ? seatingWhatsAppForRsvp(guest, site, { toGuest: true, reception })
         : null;
       const waAction = wa?.url
         ? {

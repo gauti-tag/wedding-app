@@ -37,7 +37,7 @@ import {
   invitationCardBlob,
   invitationCardFilename,
 } from "@/lib/invitation-card";
-import { receptionTimeLabel } from "@/lib/whatsapp";
+import { receptionNotice } from "@/lib/whatsapp";
 import { downloadRsvpExcel } from "@/lib/rsvp-excel";
 import {
   EVENT_ROLES,
@@ -359,8 +359,8 @@ export function AdminPanel({
   const showGuestPii = isOwner || !privacy.maskGuestPiiForTeam;
 
   const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
-  const receptionTime = useMemo(
-    () => receptionTimeLabel(initialSchedule.venues, "fr"),
+  const reception = useMemo(
+    () => receptionNotice(initialSchedule.venues, "fr"),
     [initialSchedule.venues],
   );
   const RSVP_PAGE_SIZE = 10;
@@ -1536,7 +1536,7 @@ export function AdminPanel({
           guestOfLabels={guestOfLabels}
           canEdit={can("manage_rsvp")}
           showGuestPii={showGuestPii}
-          receptionTime={receptionTime}
+          reception={reception}
           placeSends={placeSends}
           onPlaceSend={(id) => void recordPlaceSend(id)}
           onUpdated={(updated) =>
@@ -1548,7 +1548,7 @@ export function AdminPanel({
       {can("check_in") ? (
         <AdminCheckIn
           site={site}
-          receptionTime={receptionTime}
+          reception={reception}
           rsvps={rsvps}
           showGuestPii={showGuestPii}
           onPlaceSend={(id) => void recordPlaceSend(id)}
