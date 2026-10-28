@@ -32,6 +32,12 @@ import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
 import { formatOptionalDatetimeLabel } from "@/lib/rsvp-deadline";
 import { guestExportCsv, type GuestExportContext } from "@/lib/guest-export";
+import {
+  guestTicketQrDataUrl,
+  invitationCardBlob,
+  invitationCardFilename,
+} from "@/lib/invitation-card";
+import { receptionTimeLabel } from "@/lib/whatsapp";
 import { downloadRsvpExcel } from "@/lib/rsvp-excel";
 import {
   EVENT_ROLES,
@@ -60,6 +66,7 @@ import type {
   Photo,
   PhotoAlbum,
   Rsvp,
+  RsvpPlaceSendLog,
   RsvpReminderLog,
   ScheduleContent,
   SeatingPlanContent,
@@ -228,6 +235,7 @@ type Props = {
   initialPhotos: Photo[];
   initialRsvps: Rsvp[];
   initialReminders: Record<string, RsvpReminderLog>;
+  initialPlaceSends: Record<string, RsvpPlaceSendLog>;
   initialSite: SiteContent;
   initialStory: StoryContent;
   initialSchedule: ScheduleContent;
@@ -303,6 +311,7 @@ export function AdminPanel({
   initialPhotos,
   initialRsvps,
   initialReminders,
+  initialPlaceSends,
   initialSite,
   initialStory,
   initialSchedule,
@@ -327,6 +336,7 @@ export function AdminPanel({
   const [rsvps, setRsvps] = useState(initialRsvps);
   const [seatingPlan, setSeatingPlan] = useState(initialSeatingPlan);
   const [reminders, setReminders] = useState(initialReminders);
+  const [placeSends, setPlaceSends] = useState(initialPlaceSends);
   const [site, setSite] = useState(initialSite);
   const [privacy, setPrivacy] = useState(initialPrivacy);
   const [album, setAlbum] = useState<PhotoAlbum>("gallery");
@@ -342,12 +352,17 @@ export function AdminPanel({
   const [rsvpQuery, setRsvpQuery] = useState("");
   const [criteria, setCriteria] = useState<GuestCriteria>(emptyGuestCriteria);
   const [openRsvpId, setOpenRsvpId] = useState<string | null>(null);
+  const [cardBusyId, setCardBusyId] = useState<string | null>(null);
   const rsvpSearchRef = useRef<HTMLDivElement>(null);
   const canBlockRsvp = isOwner;
   /** Propriétaire toujours en clair ; équipe masquée seulement si le propriétaire l’active. */
   const showGuestPii = isOwner || !privacy.maskGuestPiiForTeam;
 
   const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
+  const receptionTime = useMemo(
+    () => receptionTimeLabel(initialSchedule.venues, "fr"),
+    [initialSchedule.venues],
+  );
   const RSVP_PAGE_SIZE = 10;
 
   const filteredRsvps = useMemo(() => {
@@ -641,6 +656,25 @@ export function AdminPanel({
     }
   }
 
+  async function recordPlaceSend(id: string) {
+    try {
+      const res = await fetch("/api/rsvp/place-sent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = (await res.json()) as { log?: RsvpPlaceSendLog; error?: string };
+      if (res.status === 403) return;
+      if (!res.ok || !data.log) {
+        showError(data.error || "Le compteur d’envoi n’a pas pu être mis à jour.");
+        return;
+      }
+      setPlaceSends((prev) => ({ ...prev, [id]: data.log! }));
+    } catch {
+      showError("Le compteur d’envoi n’a pas pu être mis à jour.");
+    }
+  }
+
   function guestExportContext(): GuestExportContext {
     return {
       guestOfLabels,
@@ -648,6 +682,7 @@ export function AdminPanel({
       partnerTwo: site.partnerTwo,
       reminderPlans: site.whatsappReminders,
       reminders,
+      placeSends,
       showGuestPii,
     };
   }
@@ -670,6 +705,65 @@ export function AdminPanel({
     } catch {
       showError("Export Excel impossible.");
     }
+  }
+
+  async function downloadGuestCard(rsvp: Rsvp) {
+    if (!rsvp.ticketToken) {
+      showError("Cette invitation n’a pas encore de carte.");
+      return;
+    }
+    const coupleNames =
+      site.eventTitle?.fr?.trim() ||
+      [site.partnerOne, site.partnerTwo].filter(Boolean).join(" & ") ||
+      "Événement";
+    const dateLabel = site.hero.weddingDateLabel.fr || site.weddingDate;
+    setCardBusyId(rsvp.id);
+    try {
+      const qrDataUrl = await guestTicketQrDataUrl(rsvp.ticketToken);
+      const blob = await invitationCardBlob({
+        guestName: rsvp.name,
+        coupleNames,
+        dateLabel,
+        qrDataUrl,
+        ticketCode: rsvp.ticketToken,
+      });
+      const filename = invitationCardFilename(rsvp.name, new Set());
+      const file = new File([blob], filename, { type: "image/png" });
+      if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: rsvp.name });
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      showError("Téléchargement de la carte impossible.");
+    } finally {
+      setCardBusyId(null);
+    }
+  }
+
+  function cardDownloadButton(rsvp: Rsvp) {
+    const busy = cardBusyId === rsvp.id;
+    return (
+      <button
+        type="button"
+        disabled={busy || !rsvp.ticketToken}
+        onClick={() => void downloadGuestCard(rsvp)}
+        className="text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist disabled:opacity-50"
+      >
+        {busy ? "Téléchargement…" : "Télécharger"}
+      </button>
+    );
   }
 
   return (
@@ -865,6 +959,7 @@ export function AdminPanel({
           seatingPlan={initialSeatingPlan}
           guestOfLabels={guestOfLabels}
           reminders={reminders}
+          placeSends={placeSends}
           showGuestPii={showGuestPii}
         />
       ) : null}
@@ -924,11 +1019,16 @@ export function AdminPanel({
             partnerOne={site.partnerOne}
             partnerTwo={site.partnerTwo}
           />
-          {rsvpFiltering ? (
-            <p className="mt-2 text-xs tracking-[0.12em] text-soft uppercase">
-              {filteredRsvps.length} résultat{filteredRsvps.length > 1 ? "s" : ""} — la liste défile ici
-            </p>
-          ) : null}
+          <p className="mt-3 text-sm text-mist">
+            {filteredRsvps.length}{" "}
+            {rsvpFiltering
+              ? filteredRsvps.length === 1
+                ? "résultat"
+                : "résultats"
+              : filteredRsvps.length === 1
+                ? "invité"
+                : "invités"}
+          </p>
         </div>
 
         {rsvpFiltering ? (
@@ -992,6 +1092,7 @@ export function AdminPanel({
                               >
                                 Carte
                               </a>
+                              {cardDownloadButton(rsvp)}
                               {can("manage_rsvp") ? (
                                 <button
                                   type="button"
@@ -1150,6 +1251,7 @@ export function AdminPanel({
                         >
                           Carte
                         </a>
+                        {cardDownloadButton(rsvp)}
                         {can("manage_rsvp") ? (
                           <button
                             type="button"
@@ -1330,6 +1432,7 @@ export function AdminPanel({
                             >
                               Carte
                             </a>
+                            {cardDownloadButton(rsvp)}
                             {can("manage_rsvp") ? (
                               <button
                                 type="button"
@@ -1433,6 +1536,9 @@ export function AdminPanel({
           guestOfLabels={guestOfLabels}
           canEdit={can("manage_rsvp")}
           showGuestPii={showGuestPii}
+          receptionTime={receptionTime}
+          placeSends={placeSends}
+          onPlaceSend={(id) => void recordPlaceSend(id)}
           onUpdated={(updated) =>
             setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
           }
@@ -1442,8 +1548,10 @@ export function AdminPanel({
       {can("check_in") ? (
         <AdminCheckIn
           site={site}
+          receptionTime={receptionTime}
           rsvps={rsvps}
           showGuestPii={showGuestPii}
+          onPlaceSend={(id) => void recordPlaceSend(id)}
           onCheckedIn={(updated) =>
             setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
           }

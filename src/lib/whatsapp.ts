@@ -238,6 +238,9 @@ export function buildSeatingWhatsAppMessage(input: {
   tableLabel: string;
   seatLabel: string;
   childPlaces?: string[];
+  dateLabel?: string;
+  receptionTime?: string;
+  ticketUrl?: string;
   locale?: "fr" | "en";
 }) {
   const locale = input.locale || "fr";
@@ -245,6 +248,9 @@ export function buildSeatingWhatsAppMessage(input: {
   const couple = input.coupleNames.trim();
   const table = input.tableLabel.trim();
   const seat = input.seatLabel.trim();
+  const dateLabel = (input.dateLabel || "").trim();
+  const receptionTime = (input.receptionTime || "").trim();
+  const ticketUrl = (input.ticketUrl || "").trim();
 
   const placeFr = [table && `Table ${table}`, seat && `Siège ${seat}`]
     .filter(Boolean)
@@ -252,46 +258,78 @@ export function buildSeatingWhatsAppMessage(input: {
   const placeEn = [table && `Table ${table}`, seat && `Seat ${seat}`]
     .filter(Boolean)
     .join(" · ");
-  const childLines = input.childPlaces || [];
+  const childLines = (input.childPlaces || []).map((line) => `👶 ${line}`);
   const adultLine = locale === "en" ? placeEn : placeFr;
+  const when = [dateLabel, receptionTime].filter(Boolean);
 
   if (locale === "en") {
     return joinWhatsAppLines([
-      `Hello *${name}*,`,
+      `Hello *${name}*, 🌿`,
       "",
-      `Your place for the celebration with *${couple}*:`,
+      "We are pleased to confirm your place at our reception.",
       "",
+      dateLabel ? `📅 *${dateLabel}*` : false,
+      receptionTime ? `🕖 *Reception at ${receptionTime}*` : false,
+      when.length ? "" : false,
       adultLine ? `🪑 *${adultLine}*` : false,
       ...childLines,
       "",
-      "See you very soon!",
+      ticketUrl ? "🎟️ Your personal invitation card:" : false,
+      ticketUrl || false,
+      ticketUrl ? "" : false,
+      "📱 Please present it at the entrance. It will help us welcome you simply and with care.",
       "",
+      "We look forward to seeing you. 🤍",
+      "",
+      "With all our affection,",
       `*${couple}*`,
     ]);
   }
 
   return joinWhatsAppLines([
-    `Bonjour *${name}*,`,
+    `Bonjour *${name}*, 🌿`,
     "",
-    `Voici votre place pour la célébration de *${couple}* :`,
+    "Nous avons le plaisir de vous confirmer votre place pour notre réception.",
     "",
+    dateLabel ? `📅 *${dateLabel}*` : false,
+    receptionTime ? `🕖 *Réception à ${receptionTime}*` : false,
+    when.length ? "" : false,
     adultLine ? `🪑 *${adultLine}*` : false,
     ...childLines,
     "",
-    "À très bientôt !",
+    ticketUrl ? "🎟️ Votre carte d’invitation personnelle :" : false,
+    ticketUrl || false,
+    ticketUrl ? "" : false,
+    "📱 Merci de la présenter à l’entrée. Elle permettra de vous accueillir simplement et avec attention.",
     "",
+    "Nous nous réjouissons de vous retrouver. 🤍",
+    "",
+    "Avec toute notre affection,",
     `*${couple}*`,
   ]);
+}
+
+/** Heure de la réception dans le programme (créneau « reception » ou titre Réception). */
+export function receptionTimeLabel(
+  venues: { id: string; title: { fr: string; en: string }; time: { fr: string; en: string } }[],
+  locale: "fr" | "en" = "fr",
+) {
+  const venue =
+    venues.find((item) => item.id === "reception") ||
+    venues.find((item) => /réception|reception/i.test(`${item.title.fr} ${item.title.en}`));
+  if (!venue) return "";
+  return (locale === "en" ? venue.time.en : venue.time.fr).trim();
 }
 
 /** Message WhatsApp dédié table/siège — null si placement incomplet ou numéro invalide (envoi invité). */
 export function seatingWhatsAppForRsvp(
   rsvp: Pick<Rsvp, "name" | "phone" | "tableLabel" | "seatLabel"> &
-    Partial<Pick<Rsvp, "childCount" | "childSeats">>,
+    Partial<Pick<Rsvp, "childCount" | "childSeats" | "ticketToken">>,
   siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo"> & {
     eventTitle?: SiteContent["eventTitle"];
+    hero?: SiteContent["hero"];
   },
-  options?: { locale?: "fr" | "en"; toGuest?: boolean },
+  options?: { locale?: "fr" | "en"; toGuest?: boolean; receptionTime?: string },
 ) {
   const tableLabel = (rsvp.tableLabel || "").trim();
   const seatLabel = (rsvp.seatLabel || "").trim();
@@ -310,12 +348,22 @@ export function seatingWhatsAppForRsvp(
   const digits = toGuest ? phoneToWhatsAppDigits(rsvp.phone) : null;
   if (toGuest && !digits) return null;
 
+  const dateLabel = siteContent.hero
+    ? locale === "en"
+      ? siteContent.hero.weddingDateLabel.en
+      : siteContent.hero.weddingDateLabel.fr
+    : "";
+  const ticketUrl = rsvp.ticketToken ? ticketPageUrl(rsvp.ticketToken) : "";
+
   const message = buildSeatingWhatsAppMessage({
     guestName: rsvp.name,
     coupleNames: coupleLabel(siteContent, locale),
     tableLabel,
     seatLabel,
     childPlaces,
+    dateLabel,
+    receptionTime: options?.receptionTime,
+    ticketUrl,
     locale,
   });
 

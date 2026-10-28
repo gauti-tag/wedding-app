@@ -8,6 +8,7 @@ export type AdminAlertTone = "success" | "error" | "info";
 export type AdminAlertAction = {
   label: string;
   href: string;
+  onActivate?: () => void;
 };
 
 export type AdminAlertState = {
@@ -70,7 +71,10 @@ export function AdminAlertDialog({
               target="_blank"
               rel="noreferrer"
               className="btn-ghost inline-flex justify-center no-underline"
-              onClick={onClose}
+              onClick={() => {
+                alert.action?.onActivate?.();
+                onClose();
+              }}
             >
               {alert.action.label}
             </a>

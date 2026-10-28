@@ -90,13 +90,17 @@ function vibrate(pattern: number | number[]) {
 
 export function AdminCheckIn({
   site,
+  receptionTime = "",
   rsvps,
   showGuestPii = true,
+  onPlaceSend,
   onCheckedIn,
 }: {
-  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig">;
+  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig" | "hero">;
+  receptionTime?: string;
   rsvps: Rsvp[];
   showGuestPii?: boolean;
+  onPlaceSend?: (id: string) => void;
   onCheckedIn?: (rsvp: Rsvp) => void;
 }) {
   const [manualToken, setManualToken] = useState("");
@@ -140,8 +144,11 @@ export function AdminCheckIn({
   );
 
   const seatingWa = useMemo(
-    () => (lastGuest ? seatingWhatsAppForRsvp(lastGuest, site, { toGuest: true }) : null),
-    [lastGuest, site],
+    () =>
+      lastGuest
+        ? seatingWhatsAppForRsvp(lastGuest, site, { toGuest: true, receptionTime })
+        : null,
+    [lastGuest, receptionTime, site],
   );
 
   useEffect(() => {
@@ -223,11 +230,18 @@ export function AdminCheckIn({
       const guestLines = guest
         ? formatCheckInGuestLines(resolveCheckInGuestDetails(guest, site, guestOfLabels))
         : "";
-      const wa = guest ? seatingWhatsAppForRsvp(guest, site, { toGuest: true }) : null;
-      const waAction =
-        wa?.url
-          ? { label: "Envoyer place WhatsApp", href: wa.url }
-          : undefined;
+      const wa = guest
+        ? seatingWhatsAppForRsvp(guest, site, { toGuest: true, receptionTime })
+        : null;
+      const waAction = wa?.url
+        ? {
+            label: "Envoyer place WhatsApp",
+            href: wa.url,
+            onActivate: () => {
+              if (guest) onPlaceSend?.(guest.id);
+            },
+          }
+        : undefined;
 
       if (data.alreadyCheckedIn) {
         vibrate([60, 40, 60]);
@@ -459,6 +473,7 @@ export function AdminCheckIn({
                   target="_blank"
                   rel="noreferrer"
                   className="btn-primary mt-4 inline-flex w-full justify-center no-underline"
+                  onClick={() => lastGuest && onPlaceSend?.(lastGuest.id)}
                 >
                   Envoyer place par WhatsApp
                 </a>

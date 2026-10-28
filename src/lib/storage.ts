@@ -47,6 +47,7 @@ import type {
   Photo,
   Rsvp,
   RsvpCheckInActor,
+  RsvpPlaceSendLog,
   RsvpReminderLog,
   ScheduleContent,
   SeatingPlanContent,
@@ -328,6 +329,38 @@ export async function markRsvpReminder(id: string, reminderId: string) {
   all[id] = { ...prev, [reminderId]: new Date().toISOString() };
   await saveContent("rsvp_reminders", all);
   return all[id];
+}
+
+function normalizePlaceSendLog(raw: unknown): RsvpPlaceSendLog | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as { count?: unknown; lastAt?: unknown };
+  const count = Number(row.count);
+  const lastAt = typeof row.lastAt === "string" ? row.lastAt.trim() : "";
+  if (!Number.isFinite(count) || count < 1 || !lastAt) return null;
+  return { count: Math.floor(count), lastAt };
+}
+
+/** Invité → nombre d’envois « Envoyer place » et date du dernier. */
+export async function getRsvpPlaceSends(): Promise<Record<string, RsvpPlaceSendLog>> {
+  const raw = await getContent<Record<string, unknown>>("rsvp_place_sends", {});
+  if (!raw || typeof raw !== "object") return {};
+  const logs: Record<string, RsvpPlaceSendLog> = {};
+  for (const [id, value] of Object.entries(raw)) {
+    const log = normalizePlaceSendLog(value);
+    if (log) logs[id] = log;
+  }
+  return logs;
+}
+
+export async function markRsvpPlaceSend(id: string): Promise<RsvpPlaceSendLog> {
+  const all = { ...(await getRsvpPlaceSends()) };
+  const next: RsvpPlaceSendLog = {
+    count: (all[id]?.count || 0) + 1,
+    lastAt: new Date().toISOString(),
+  };
+  all[id] = next;
+  await saveContent("rsvp_place_sends", all);
+  return next;
 }
 
 export async function saveRsvps(rsvps: Rsvp[]) {

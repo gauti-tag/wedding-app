@@ -68,6 +68,13 @@ export type Rsvp = {
 /** Suivi des rappels WhatsApp envoyés (reminderId → date ISO). */
 export type RsvpReminderLog = Record<string, string>;
 
+/** Envois « Envoyer place » pour un invité. */
+export type RsvpPlaceSendLog = {
+  count: number;
+  /** Date ISO du dernier envoi. */
+  lastAt: string;
+};
+
 /** Compte qui a enregistré le premier check-in d’un invité. */
 export type RsvpCheckInActor = {
   name: string;

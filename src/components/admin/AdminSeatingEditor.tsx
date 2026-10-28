@@ -19,7 +19,14 @@ import {
   seatingOccupancy,
 } from "@/lib/seating";
 import type { SeatPresence } from "@/lib/seating";
-import type { ChildSeat, Rsvp, SeatingPlanContent, SeatingPlanTable, SiteContent } from "@/lib/types";
+import type {
+  ChildSeat,
+  Rsvp,
+  RsvpPlaceSendLog,
+  SeatingPlanContent,
+  SeatingPlanTable,
+  SiteContent,
+} from "@/lib/types";
 import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
 import {
   emptyGuestCriteria,
@@ -630,15 +637,33 @@ function FoldBlock({
   );
 }
 
+function placeSendLabel(log?: RsvpPlaceSendLog) {
+  if (!log || log.count < 1) return "Non";
+  const date = new Date(log.lastAt);
+  const when = Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+  const times = log.count === 1 ? "1 fois" : `${log.count} fois`;
+  return when ? `${times} · ${when}` : times;
+}
+
 type Props = {
   rsvps: Rsvp[];
   initialPlan: SeatingPlanContent;
-  site: Pick<SiteContent, "partnerOne" | "partnerTwo">;
+  site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "hero">;
   guestOfLabels: Record<string, string>;
   onUpdated: (rsvp: Rsvp) => void;
   onPlanChange?: (plan: SeatingPlanContent) => void;
   canEdit: boolean;
   showGuestPii?: boolean;
+  receptionTime?: string;
+  placeSends?: Record<string, RsvpPlaceSendLog>;
+  onPlaceSend?: (id: string) => void;
 };
 
 export function AdminSeatingEditor({
@@ -650,6 +675,9 @@ export function AdminSeatingEditor({
   onPlanChange,
   canEdit,
   showGuestPii = true,
+  receptionTime = "",
+  placeSends = {},
+  onPlaceSend,
 }: Props) {
   const [plan, setPlan] = useState<SeatingPlanContent>(initialPlan);
   const [planBusy, setPlanBusy] = useState(false);
@@ -664,6 +692,7 @@ export function AdminSeatingEditor({
   const [showCartography, setShowCartography] = useState(false);
   const [showPresetTables, setShowPresetTables] = useState(false);
   const [showAssignments, setShowAssignments] = useState(false);
+  const [assignmentQuery, setAssignmentQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, SeatDraft>>({});
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
@@ -689,18 +718,36 @@ export function AdminSeatingEditor({
     [yesGuests],
   );
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return yesGuests.filter((r) => {
-      if (hasEventRole(r) && (r.childCount ?? 0) === 0) return false;
-      if (!matchesGuestCriteria(r, criteria)) return false;
+  const assignmentGuests = useMemo(() => {
+    const q = assignmentQuery.trim().toLowerCase();
+    return yesGuests.filter((guest) => {
+      if (hasEventRole(guest) && (guest.childCount ?? 0) === 0) return false;
       if (!q) return true;
-      const lien = guestOfLabels[r.guestOf] || r.guestOf || "";
-      const roles = formatEventRoles(r.eventRoles);
-      const hay = `${r.name} ${r.phone} ${lien} ${r.message} ${roles} ${r.tableLabel} ${r.seatLabel}`.toLowerCase();
+      const lien = guestOfLabels[guest.guestOf] || guest.guestOf || "";
+      const roles = formatEventRoles(guest.eventRoles);
+      const children = normalizeChildSeats(guest.childSeats, guest.childCount)
+        .map((seat) => `${seat.tableLabel} ${seat.seatLabel}`)
+        .join(" ");
+      const hay =
+        `${guest.name} ${guest.phone} ${lien} ${guest.message} ${roles} ${guest.tableLabel} ${guest.seatLabel} ${children}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [yesGuests, query, criteria, guestOfLabels]);
+  }, [yesGuests, assignmentQuery, guestOfLabels]);
+
+  const assignmentRoles = useMemo(() => {
+    const q = assignmentQuery.trim().toLowerCase();
+    return roleGuests.filter((guest) => {
+      if (!q) return true;
+      const lien = guestOfLabels[guest.guestOf] || guest.guestOf || "";
+      return `${guest.name} ${guest.phone} ${lien} ${formatEventRoles(guest.eventRoles)}`
+        .toLowerCase()
+        .includes(q);
+    });
+  }, [roleGuests, assignmentQuery, guestOfLabels]);
+
+  const assignmentResultCount =
+    assignmentGuests.length +
+    assignmentRoles.filter((guest) => (guest.childCount ?? 0) === 0).length;
 
   const filtering = Boolean(query.trim()) || criteriaActive;
 
@@ -1438,26 +1485,45 @@ export function AdminSeatingEditor({
 
       <FoldBlock
         title="Liste d’attribution"
-        meta={filtered.length}
+        meta={assignmentGuests.length}
         open={showAssignments}
         onToggle={() => setShowAssignments((open) => !open)}
       >
-          {roleGuests.filter((guest) => {
-            const q = query.trim().toLowerCase();
-            if (!q) return true;
-            return `${guest.name} ${formatEventRoles(guest.eventRoles)}`.toLowerCase().includes(q);
-          }).length > 0 ? (
+          <div className="flex items-center gap-2">
+            <input
+              id="assignment-search"
+              type="search"
+              className="field min-w-0 flex-1 !py-2 [&::-webkit-search-cancel-button]:hidden"
+              value={assignmentQuery}
+              onChange={(event) => setAssignmentQuery(event.target.value)}
+              placeholder="Nom, lien, téléphone, table…"
+              autoComplete="off"
+              enterKeyHint="search"
+              aria-label="Rechercher dans la liste d’attribution"
+            />
+            {assignmentQuery.trim() ? (
+              <button
+                type="button"
+                className="shrink-0 px-1 text-xs tracking-[0.12em] text-soft uppercase"
+                onClick={() => setAssignmentQuery("")}
+              >
+                Effacer
+              </button>
+            ) : null}
+          </div>
+          {assignmentQuery.trim() ? (
+            <p className="text-sm text-mist">
+              {assignmentResultCount} {assignmentResultCount === 1 ? "résultat" : "résultats"}
+            </p>
+          ) : null}
+          {assignmentRoles.length > 0 ? (
             <div className="border border-line p-3">
               <p className="text-xs tracking-[0.16em] text-champagne uppercase">Rôles du jour</p>
               <p className="mt-1 text-xs text-soft">
                 Ces invités n’ont pas de chaise. Leurs enfants restent plaçables dans la liste.
               </p>
               <ul className="mt-3 space-y-1 text-sm text-mist">
-                {roleGuests.filter((guest) => {
-                  const q = query.trim().toLowerCase();
-                  if (!q) return true;
-                  return `${guest.name} ${formatEventRoles(guest.eventRoles)}`.toLowerCase().includes(q);
-                }).map((guest) => (
+                {assignmentRoles.map((guest) => (
                   <li key={guest.id}>
                     {displayGuestName(guest.name)}
                     <span className="text-soft"> · {formatEventRoles(guest.eventRoles)}</span>
@@ -1475,12 +1541,14 @@ export function AdminSeatingEditor({
 
           {/* Mobile : cartes empilées */}
           <div className="space-y-3 md:hidden">
-            {filtered.length === 0 ? (
+            {assignmentGuests.length === 0 && assignmentRoles.length === 0 ? (
               <p className="border border-line px-3 py-5 text-sm text-soft">
-                Aucun invité confirmé à placer.
+                {assignmentQuery.trim()
+                  ? `Aucun résultat pour « ${assignmentQuery.trim()} ».`
+                  : "Aucun invité confirmé à placer."}
               </p>
             ) : (
-              filtered.map((rsvp) => {
+              assignmentGuests.map((rsvp) => {
                 const draft = draftFor(rsvp);
                 const dirty = isDirty(rsvp, draft);
                 const selectedTable = plan.tables.find(
@@ -1489,7 +1557,11 @@ export function AdminSeatingEditor({
                     normalizeSeatingLabel(draft.tableLabel).toLowerCase(),
                 );
                 const occupied = occupiedFor(rsvp, draft, "adult");
-                const wa = seatingWhatsAppForRsvp(rsvp, site, { toGuest: true });
+                const wa = seatingWhatsAppForRsvp(rsvp, site, {
+                  toGuest: true,
+                  receptionTime,
+                });
+                const placeSent = placeSendLabel(placeSends[rsvp.id]);
                 return (
                   <article key={rsvp.id} className="space-y-3 border border-line p-3">
                     <div>
@@ -1655,13 +1727,15 @@ export function AdminSeatingEditor({
                         })}
                       </div>
                     ) : null}
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-xs text-soft">Place envoyée : {placeSent}</p>
                       {wa?.url ? (
                         <a
                           href={wa.url}
                           target="_blank"
                           rel="noreferrer"
                           className="min-h-10 text-xs tracking-[0.12em] text-champagne uppercase no-underline hover:text-mist"
+                          onClick={() => onPlaceSend?.(rsvp.id)}
                         >
                           WhatsApp place
                         </a>
@@ -1692,18 +1766,21 @@ export function AdminSeatingEditor({
                   <th className="px-3 py-2 font-medium">Table</th>
                   <th className="px-3 py-2 font-medium">Siège</th>
                   <th className="px-3 py-2 font-medium">WhatsApp</th>
+                  <th className="px-3 py-2 font-medium">Place envoyée</th>
                   {canEdit ? <th className="px-3 py-2 font-medium"> </th> : null}
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {assignmentGuests.length === 0 && assignmentRoles.length === 0 ? (
                   <tr>
-                    <td colSpan={canEdit ? 5 : 4} className="px-3 py-5 text-soft">
-                      Aucun invité confirmé à placer.
+                    <td colSpan={canEdit ? 6 : 5} className="px-3 py-5 text-soft">
+                      {assignmentQuery.trim()
+                        ? `Aucun résultat pour « ${assignmentQuery.trim()} ».`
+                        : "Aucun invité confirmé à placer."}
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((rsvp) => {
+                  assignmentGuests.map((rsvp) => {
                     const draft = draftFor(rsvp);
                     const dirty = isDirty(rsvp, draft);
                     const selectedTable = plan.tables.find(
@@ -1712,7 +1789,11 @@ export function AdminSeatingEditor({
                         normalizeSeatingLabel(draft.tableLabel).toLowerCase(),
                     );
                     const occupied = occupiedFor(rsvp, draft, "adult");
-                    const wa = seatingWhatsAppForRsvp(rsvp, site, { toGuest: true });
+                    const wa = seatingWhatsAppForRsvp(rsvp, site, {
+                      toGuest: true,
+                      receptionTime,
+                    });
+                    const placeSent = placeSendLabel(placeSends[rsvp.id]);
                     return (
                       <Fragment key={rsvp.id}>
                       <tr className="border-t border-line">
@@ -1797,6 +1878,7 @@ export function AdminSeatingEditor({
                               target="_blank"
                               rel="noreferrer"
                               className="text-xs tracking-[0.12em] text-champagne uppercase no-underline hover:text-mist"
+                              onClick={() => onPlaceSend?.(rsvp.id)}
                             >
                               Envoyer place
                             </a>
@@ -1804,6 +1886,7 @@ export function AdminSeatingEditor({
                             <span className="text-xs text-soft">—</span>
                           )}
                         </td>
+                        <td className="px-3 py-2 text-xs text-mist">{placeSent}</td>
                         {canEdit ? (
                           <td className="px-3 py-2">
                             <button
@@ -1879,6 +1962,7 @@ export function AdminSeatingEditor({
                                 <span className="text-soft">{child.seatLabel || "—"}</span>
                               )}
                             </td>
+                            <td className="px-3 py-2 text-xs text-soft">—</td>
                             <td className="px-3 py-2 text-xs text-soft">—</td>
                             {canEdit ? (
                               <td className="px-3 py-2">

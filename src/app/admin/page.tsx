@@ -13,6 +13,7 @@ import {
   getMcRundown,
   getMenu,
   getPhotos,
+  getRsvpPlaceSends,
   getRsvpReminders,
   getRsvps,
   getSchedule,
@@ -56,6 +57,7 @@ export default async function AdminPage() {
     photos,
     rsvps,
     reminders,
+    placeSends,
     siteContent,
     story,
     schedule,
@@ -75,6 +77,7 @@ export default async function AdminPage() {
     canPhotos || canContent ? getPhotos() : Promise.resolve([]),
     canRsvp ? getRsvps() : Promise.resolve([]),
     canRsvp ? getRsvpReminders() : Promise.resolve({}),
+    canRsvp ? getRsvpPlaceSends() : Promise.resolve({}),
     getSiteContent(),
     canContent
       ? getStory()
@@ -84,7 +87,7 @@ export default async function AdminPage() {
           body: { fr: "", en: "" },
           scripture: emptyStoryScriptureBlock(),
         }),
-    canContent
+    canRsvp || canContent
       ? getSchedule()
       : Promise.resolve({
           eyebrow: { fr: "", en: "" },
@@ -115,6 +118,7 @@ export default async function AdminPage() {
       initialPhotos={photos}
       initialRsvps={rsvps}
       initialReminders={reminders}
+      initialPlaceSends={placeSends}
       initialSite={siteContent}
       initialStory={story}
       initialSchedule={schedule}
