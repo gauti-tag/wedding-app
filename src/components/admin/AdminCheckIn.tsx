@@ -3,10 +3,7 @@
 import { Html5Qrcode } from "html5-qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
-import {
-  formatCheckInGuestLines,
-  resolveCheckInGuestDetails,
-} from "@/lib/guest-of";
+import { resolveCheckInGuestDetails } from "@/lib/guest-of";
 import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
 import { formatSeatingLabel, normalizeChildSeats } from "@/lib/seating";
 import { maskName, maskPhone } from "@/lib/mask-pii";
@@ -88,6 +85,56 @@ function vibrate(pattern: number | number[]) {
   }
 }
 
+type ScanCue = "success" | "repeat" | "error";
+
+let scanAudio: AudioContext | null = null;
+
+function scanAudioContext() {
+  if (typeof window === "undefined") return null;
+  const Ctx =
+    window.AudioContext ||
+    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return null;
+  if (!scanAudio || scanAudio.state === "closed") scanAudio = new Ctx();
+  return scanAudio;
+}
+
+/** À appeler dans le geste qui lance la caméra, sinon le navigateur bloque le son. */
+function armScanFeedback() {
+  const ctx = scanAudioContext();
+  if (ctx && ctx.state === "suspended") void ctx.resume();
+}
+
+function playTone(ctx: AudioContext, frequency: number, start: number, duration: number) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(0.2, start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.02);
+}
+
+function playScanCue(kind: ScanCue) {
+  const ctx = scanAudioContext();
+  if (ctx && ctx.state === "running") {
+    const now = ctx.currentTime;
+    if (kind === "success") playTone(ctx, 988, now, 0.14);
+    if (kind === "repeat") {
+      playTone(ctx, 740, now, 0.09);
+      playTone(ctx, 740, now + 0.16, 0.09);
+    }
+    if (kind === "error") playTone(ctx, 196, now, 0.24);
+  }
+  if (kind === "success") vibrate(180);
+  if (kind === "repeat") vibrate([70, 50, 70]);
+  if (kind === "error") vibrate([40, 30, 40, 30, 80]);
+}
+
 export function AdminCheckIn({
   site,
   reception,
@@ -110,9 +157,13 @@ export function AdminCheckIn({
   const [scanning, setScanning] = useState(false);
   const [lastGuest, setLastGuest] = useState<Rsvp | null>(null);
   const [repeatScan, setRepeatScan] = useState(false);
+  const [scanCue, setScanCue] = useState<ScanCue | null>(null);
+  const [scanCueText, setScanCueText] = useState("");
   const { showSuccess, showError, showInfo, AlertDialog } = useAdminAlert();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lastScanRef = useRef("");
+  const lastScanAtRef = useRef(0);
+  const busyRef = useRef(false);
 
   const guestOfLabels = useMemo(() => guestOfLabelsFromSite(site), [site]);
   const displayName = (name: string) => (showGuestPii ? name : maskName(name));
@@ -152,6 +203,10 @@ export function AdminCheckIn({
   );
 
   useEffect(() => {
+    busyRef.current = busy;
+  }, [busy]);
+
+  useEffect(() => {
     return () => {
       void stopScanner();
     };
@@ -172,6 +227,7 @@ export function AdminCheckIn({
   }
 
   async function startScanner() {
+    armScanFeedback();
     try {
       const reader = document.getElementById("admin-qr-reader");
       const box = Math.max(
@@ -185,8 +241,11 @@ export function AdminCheckIn({
         { facingMode: "environment" },
         { fps: 8, qrbox: { width: box, height: box }, aspectRatio: 1 },
         (decoded) => {
-          if (decoded === lastScanRef.current || busy) return;
+          const now = Date.now();
+          if (busyRef.current) return;
+          if (decoded === lastScanRef.current && now - lastScanAtRef.current < 6000) return;
           lastScanRef.current = decoded;
+          lastScanAtRef.current = now;
           void onCheckIn(decoded);
         },
         () => undefined,
@@ -198,6 +257,7 @@ export function AdminCheckIn({
   }
 
   async function onCheckIn(rawToken: string) {
+    armScanFeedback();
     const token = rawToken.trim();
     if (!token) return;
     setBusy(true);
@@ -209,10 +269,13 @@ export function AdminCheckIn({
       });
       const data = (await res.json()) as CheckInResult;
       if (!res.ok) {
+        const message = data.error || "Check-in refusé.";
         setLastGuest(data.rsvp || null);
         setRepeatScan(false);
-        vibrate([40, 30, 40, 30, 80]);
-        showError(data.error || "Check-in refusé.");
+        setScanCue("error");
+        setScanCueText(message);
+        playScanCue("error");
+        showError(message);
         return;
       }
 
@@ -221,60 +284,17 @@ export function AdminCheckIn({
       if (guest) onCheckedIn?.(guest);
       setLastGuest(guest);
       setRepeatScan(repeat);
-
-      const roleLabel = guest && hasEventRole(guest) ? formatEventRoles(guest.eventRoles) : "";
-      const who = roleLabel
-        ? `${guest?.name || "Invité"} — ${roleLabel}`
-        : guest?.name || "Invité";
-      const place = guest ? formatScanPlace(guest, repeat) : "";
-      const guestLines = guest
-        ? formatCheckInGuestLines(resolveCheckInGuestDetails(guest, site, guestOfLabels))
-        : "";
-      const wa = guest
-        ? seatingWhatsAppForRsvp(guest, site, { toGuest: true, reception })
-        : null;
-      const waAction = wa?.url
-        ? {
-            label: "Envoyer place WhatsApp",
-            href: wa.url,
-            onActivate: () => {
-              if (guest) onPlaceSend?.(guest.id);
-            },
-          }
-        : undefined;
-
-      if (data.alreadyCheckedIn) {
-        vibrate([60, 40, 60]);
-        showInfo(
-          [
-            `${who} est déjà enregistré(e).`,
-            guestLines ? `\n\n${guestLines}` : "",
-            place ? `\n\n${place}` : "",
-          ].join(""),
-          "Déjà check-in",
-          waAction,
-        );
-      } else {
-        vibrate(200);
-        showSuccess(
-          [
-            `${who} — présence enregistrée.`,
-            guestLines ? `\n\n${guestLines}` : "",
-            place ? `\n\n${place}` : "",
-          ].join(""),
-          "Check-in réussi",
-          waAction,
-        );
-      }
+      setScanCue(repeat ? "repeat" : "success");
+      setScanCueText(repeat ? "Déjà enregistré" : "Présence enregistrée");
+      playScanCue(repeat ? "repeat" : "success");
       setManualToken("");
     } catch {
-      vibrate([40, 30, 40, 30, 80]);
+      setScanCue("error");
+      setScanCueText("Erreur réseau lors du check-in.");
+      playScanCue("error");
       showError("Erreur réseau lors du check-in.");
     } finally {
       setBusy(false);
-      window.setTimeout(() => {
-        lastScanRef.current = "";
-      }, 2500);
     }
   }
 
@@ -310,10 +330,11 @@ export function AdminCheckIn({
         <div>
           <h2 className="section-title text-3xl text-mist">Check-in jour J</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Scannez le QR code de la carte d’invitation pour marquer la présence. Le premier scan
-            affiche la table et le siège, ou le rôle si l’invité est hors plan. Un second scan
-            rappelle aussi la date, l’heure et le compte du premier check-in. Si le QR est perdu,
-            retrouvez l’invité ci-dessous.
+            Scannez le QR code de la carte d’invitation pour marquer la présence. Un son et une
+            vibration confirment le résultat, et la caméra reste prête pour l’invité suivant. Le
+            premier scan affiche la table et le siège, ou le rôle si l’invité est hors plan. Un
+            second scan rappelle aussi la date, l’heure et le compte du premier check-in. Si le QR
+            est perdu, retrouvez l’invité ci-dessous.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -416,6 +437,21 @@ export function AdminCheckIn({
               <p className="mt-3 text-xs text-soft">Saisissez au moins 2 caractères.</p>
             )}
           </div>
+
+          {scanCue ? (
+            <p
+              className={
+                scanCue === "success"
+                  ? "border border-champagne bg-champagne/15 px-3 py-2 text-sm text-mist"
+                  : scanCue === "repeat"
+                    ? "border border-champagne px-3 py-2 text-sm text-champagne"
+                    : "border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
+              }
+              role="status"
+            >
+              {scanCueText}
+            </p>
+          ) : null}
 
           {lastGuest ? (
             <div className="border border-line bg-forest p-4 text-sm">
