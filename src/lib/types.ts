@@ -73,6 +73,11 @@ export type RsvpPlaceSendLog = {
   count: number;
   /** Date ISO du dernier envoi. */
   lastAt: string;
+  /**
+   * false seulement après un déverrouillage du propriétaire.
+   * Absent ou true = place figée dès le premier envoi.
+   */
+  locked?: boolean;
 };
 
 /** L’invité a libéré sa place après confirmation. Le statut SQL reste « no ». */

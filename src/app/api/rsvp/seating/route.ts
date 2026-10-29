@@ -12,7 +12,8 @@ import {
   seatingKey,
 } from "@/lib/seating";
 import type { ChildSeat, Rsvp } from "@/lib/types";
-import { getRsvps, getSeatingPlan, saveRsvps } from "@/lib/storage";
+import { isPlaceLocked } from "@/lib/place-lock";
+import { getRsvps, getRsvpPlaceSends, getSeatingPlan, saveRsvps } from "@/lib/storage";
 import { ensureRsvpTicketFields } from "@/lib/tickets";
 
 const schema = z.object({
@@ -67,6 +68,33 @@ export async function PATCH(request: Request) {
 
     const storedCount = normalizeChildCount(current.childCount);
     const nextCount = normalizeChildCount(parsed.data.childCount ?? storedCount);
+    const sends = await getRsvpPlaceSends();
+    if (isPlaceLocked(sends[current.id])) {
+      const storedChildren = normalizeChildSeats(current.childSeats, storedCount);
+      const requestedChildren = normalizeChildSeats(parsed.data.childSeats, nextCount);
+      const samePlace =
+        nextCount === storedCount &&
+        normalizeSeatingLabel(parsed.data.tableLabel) === normalizeSeatingLabel(current.tableLabel) &&
+        normalizeSeatingLabel(parsed.data.seatLabel) === normalizeSeatingLabel(current.seatLabel) &&
+        requestedChildren.length === storedChildren.length &&
+        requestedChildren.every(
+          (seat, index) =>
+            normalizeSeatingLabel(seat.tableLabel) ===
+              normalizeSeatingLabel(storedChildren[index]?.tableLabel) &&
+            normalizeSeatingLabel(seat.seatLabel) ===
+              normalizeSeatingLabel(storedChildren[index]?.seatLabel),
+        );
+      if (!samePlace) {
+        return NextResponse.json(
+          {
+            error:
+              "Place verrouillée après l’envoi WhatsApp. Seul le propriétaire peut la déverrouiller.",
+            code: "place_locked",
+          },
+          { status: 409 },
+        );
+      }
+    }
     if (nextCount > storedCount) {
       return NextResponse.json(
         { error: "Le nombre d’enfants ne peut pas augmenter depuis le plan de table." },

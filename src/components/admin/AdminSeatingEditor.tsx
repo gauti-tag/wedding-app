@@ -37,6 +37,7 @@ import {
 import { GuestCriteriaBar } from "@/components/admin/GuestCriteriaBar";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { seatingWhatsAppForRsvp, type ReceptionNotice } from "@/lib/whatsapp";
+import { isPlaceLocked } from "@/lib/place-lock";
 
 const seatStateClass: Record<SeatPresence, string> = {
   free: "bg-forest text-soft",
@@ -637,6 +638,10 @@ function FoldBlock({
   );
 }
 
+function placeWasSent(log?: RsvpPlaceSendLog) {
+  return Boolean(log && log.count >= 1);
+}
+
 function placeSendLabel(log?: RsvpPlaceSendLog) {
   if (!log || log.count < 1) return "Non";
   const date = new Date(log.lastAt);
@@ -664,6 +669,8 @@ type Props = {
   reception?: ReceptionNotice;
   placeSends?: Record<string, RsvpPlaceSendLog>;
   onPlaceSend?: (id: string) => void;
+  canUnlock?: boolean;
+  onUnlock?: (id: string) => void;
 };
 
 export function AdminSeatingEditor({
@@ -678,6 +685,8 @@ export function AdminSeatingEditor({
   reception,
   placeSends = {},
   onPlaceSend,
+  canUnlock = false,
+  onUnlock,
 }: Props) {
   const [plan, setPlan] = useState<SeatingPlanContent>(initialPlan);
   const [planBusy, setPlanBusy] = useState(false);
@@ -856,6 +865,7 @@ export function AdminSeatingEditor({
   }
 
   function setDraft(id: string, patch: Partial<SeatDraft>) {
+    if (isPlaceLocked(placeSends[id])) return;
     setDrafts((prev) => {
       const rsvp = yesGuests.find((r) => r.id === id);
       const current = prev[id] || (rsvp ? savedDraft(rsvp) : { tableLabel: "", seatLabel: "", childSeats: [] });
@@ -864,6 +874,7 @@ export function AdminSeatingEditor({
   }
 
   function setChildDraft(id: string, index: number, patch: Partial<ChildSeat>) {
+    if (isPlaceLocked(placeSends[id])) return;
     const rsvp = yesGuests.find((guest) => guest.id === id);
     if (!rsvp) return;
     const draft = draftFor(rsvp);
@@ -900,6 +911,10 @@ export function AdminSeatingEditor({
   }
 
   function placeChildrenBeside(rsvp: Rsvp) {
+    if (isPlaceLocked(placeSends[rsvp.id])) {
+      showError("Place verrouillée après l’envoi WhatsApp. Seul le propriétaire peut la déverrouiller.");
+      return;
+    }
     const draft = draftFor(rsvp);
     if (!isCompleteSeat(draft)) {
       showError("Placez d’abord l’invité, puis les enfants à côté.");
@@ -1023,6 +1038,10 @@ export function AdminSeatingEditor({
   }
 
   async function saveSeating(rsvp: Rsvp) {
+    if (isPlaceLocked(placeSends[rsvp.id])) {
+      showError("Place verrouillée après l’envoi WhatsApp. Seul le propriétaire peut la déverrouiller.");
+      return;
+    }
     const draft = draftFor(rsvp);
     setBusyId(rsvp.id);
     try {
@@ -1072,6 +1091,10 @@ export function AdminSeatingEditor({
   }
 
   async function removeChild(rsvp: Rsvp, index: number) {
+    if (isPlaceLocked(placeSends[rsvp.id])) {
+      showError("Place verrouillée après l’envoi WhatsApp. Seul le propriétaire peut la déverrouiller.");
+      return;
+    }
     const savedChildren = normalizeChildSeats(rsvp.childSeats, rsvp.childCount);
     if (index < 0 || index >= savedChildren.length) return;
     if (!confirm(`Supprimer l’enfant ${index + 1} de ${displayGuestName(rsvp.name)} ?`)) return;
@@ -1120,6 +1143,7 @@ export function AdminSeatingEditor({
 
   function renderSeatEditor(rsvp: Rsvp) {
     if (!canEdit) return null;
+    const locked = isPlaceLocked(placeSends[rsvp.id]);
     const draft = draftFor(rsvp);
     const dirty = isDirty(rsvp, draft);
     const selectedTable = plan.tables.find(
@@ -1137,6 +1161,7 @@ export function AdminSeatingEditor({
               className="field !py-2"
               aria-label="Table"
               value={draft.tableLabel}
+              disabled={locked}
               onChange={(e) => setDraft(rsvp.id, { tableLabel: e.target.value, seatLabel: "" })}
             >
               <option value="">Table</option>
@@ -1150,7 +1175,7 @@ export function AdminSeatingEditor({
               className="field !py-2"
               aria-label="Siège"
               value={draft.seatLabel}
-              disabled={!selectedTable}
+              disabled={locked || !selectedTable}
               onChange={(e) => setDraft(rsvp.id, { seatLabel: e.target.value })}
             >
               <option value="">Siège</option>
@@ -1180,6 +1205,7 @@ export function AdminSeatingEditor({
                 className="field !py-2"
                 aria-label={`Table enfant ${index + 1}`}
                 value={child.tableLabel}
+                disabled={locked}
                 onChange={(e) =>
                   setChildDraft(rsvp.id, index, { tableLabel: e.target.value, seatLabel: "" })
                 }
@@ -1195,7 +1221,7 @@ export function AdminSeatingEditor({
                 className="field !py-2"
                 aria-label={`Siège enfant ${index + 1}`}
                 value={child.seatLabel}
-                disabled={!childTable}
+                disabled={locked || !childTable}
                 onChange={(e) => setChildDraft(rsvp.id, index, { seatLabel: e.target.value })}
               >
                 <option value="">Siège</option>
@@ -1213,7 +1239,7 @@ export function AdminSeatingEditor({
               <button
                 type="button"
                 className="text-[10px] tracking-[0.12em] text-red-700 uppercase hover:text-red-900 disabled:opacity-50"
-                disabled={busyId === rsvp.id}
+                disabled={locked || busyId === rsvp.id}
                 onClick={() => void removeChild(rsvp, index)}
               >
                 Supprimer
@@ -1224,16 +1250,31 @@ export function AdminSeatingEditor({
         {!hasEventRole(rsvp) && rsvp.childCount > 0 ? (
           <button
             type="button"
-            className="text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist"
+            className="text-[10px] tracking-[0.12em] text-champagne uppercase hover:text-mist disabled:opacity-40"
+            disabled={locked}
             onClick={() => placeChildrenBeside(rsvp)}
           >
             Enfants à côté
           </button>
         ) : null}
+        {locked ? (
+          <p className="text-xs text-champagne">
+            Place verrouillée après l’envoi WhatsApp.
+            {canUnlock ? (
+              <button
+                type="button"
+                className="ml-2 tracking-[0.12em] uppercase hover:text-mist"
+                onClick={() => onUnlock?.(rsvp.id)}
+              >
+                Déverrouiller
+              </button>
+            ) : null}
+          </p>
+        ) : null}
         <button
           type="button"
           className="btn-primary !px-3 !py-2 text-xs disabled:opacity-50"
-          disabled={!dirty || busyId === rsvp.id}
+          disabled={locked || !dirty || busyId === rsvp.id}
           onClick={() => void saveSeating(rsvp)}
         >
           {busyId === rsvp.id ? "Enregistrement…" : "Sauver"}
@@ -1516,6 +1557,10 @@ export function AdminSeatingEditor({
               {assignmentResultCount} {assignmentResultCount === 1 ? "résultat" : "résultats"}
             </p>
           ) : null}
+          <p className="flex items-center gap-2 text-xs text-soft">
+            <span className="inline-block h-3 w-6 border border-caramel/40 bg-caramel/20" aria-hidden />
+            Place déjà envoyée
+          </p>
           {assignmentRoles.length > 0 ? (
             <div className="border border-line p-3">
               <p className="text-xs tracking-[0.16em] text-champagne uppercase">Rôles du jour</p>
@@ -1562,8 +1607,13 @@ export function AdminSeatingEditor({
                   reception,
                 });
                 const placeSent = placeSendLabel(placeSends[rsvp.id]);
+                const locked = isPlaceLocked(placeSends[rsvp.id]);
+                const sent = placeWasSent(placeSends[rsvp.id]);
                 return (
-                  <article key={rsvp.id} className="space-y-3 border border-line p-3">
+                  <article
+                    key={rsvp.id}
+                    className={`space-y-3 border border-line p-3 ${sent ? "bg-caramel/20" : ""}`}
+                  >
                     <div>
                       <p className="font-medium text-mist">{displayGuestName(rsvp.name)}</p>
                       <GuestAssignmentFacts
@@ -1587,6 +1637,7 @@ export function AdminSeatingEditor({
                             id={`table-m-${rsvp.id}`}
                             className="field !py-2"
                             value={draft.tableLabel}
+                            disabled={locked}
                             onChange={(e) =>
                               setDraft(rsvp.id, {
                                 tableLabel: e.target.value,
@@ -1729,6 +1780,16 @@ export function AdminSeatingEditor({
                     ) : null}
                     <div className="flex flex-wrap items-center gap-3">
                       <p className="text-xs text-soft">Place envoyée : {placeSent}</p>
+                      {locked ? <p className="text-xs text-champagne">Verrouillée</p> : null}
+                      {locked && canUnlock ? (
+                        <button
+                          type="button"
+                          className="min-h-10 text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist"
+                          onClick={() => onUnlock?.(rsvp.id)}
+                        >
+                          Déverrouiller
+                        </button>
+                      ) : null}
                       {wa?.url && onPlaceSend ? (
                         <a
                           href={wa.url}
@@ -1744,7 +1805,7 @@ export function AdminSeatingEditor({
                         <button
                           type="button"
                           className="min-h-10 text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist disabled:opacity-40"
-                          disabled={busyId === rsvp.id || !dirty}
+                          disabled={locked || busyId === rsvp.id || !dirty}
                           onClick={() => void saveSeating(rsvp)}
                         >
                           {busyId === rsvp.id ? "…" : "Sauver"}
@@ -1794,9 +1855,11 @@ export function AdminSeatingEditor({
                       reception,
                     });
                     const placeSent = placeSendLabel(placeSends[rsvp.id]);
+                    const locked = isPlaceLocked(placeSends[rsvp.id]);
+                    const sent = placeWasSent(placeSends[rsvp.id]);
                     return (
                       <Fragment key={rsvp.id}>
-                      <tr className="border-t border-line">
+                      <tr className={`border-t border-line ${sent ? "bg-caramel/20" : ""}`}>
                         <td className="px-3 py-2 text-mist">
                           <p>{displayGuestName(rsvp.name)}</p>
                           <GuestAssignmentFacts
@@ -1824,6 +1887,7 @@ export function AdminSeatingEditor({
                             <select
                               className="field !py-1.5"
                               value={draft.tableLabel}
+                              disabled={locked}
                               onChange={(e) =>
                                 setDraft(rsvp.id, {
                                   tableLabel: e.target.value,
@@ -1886,13 +1950,25 @@ export function AdminSeatingEditor({
                             <span className="text-xs text-soft">—</span>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-xs text-mist">{placeSent}</td>
+                        <td className="px-3 py-2 text-xs text-mist">
+                          <p>{placeSent}</p>
+                          {locked ? <p className="mt-1 text-champagne">Verrouillée</p> : null}
+                          {locked && canUnlock ? (
+                            <button
+                              type="button"
+                              className="mt-1 tracking-[0.12em] text-champagne uppercase hover:text-mist"
+                              onClick={() => onUnlock?.(rsvp.id)}
+                            >
+                              Déverrouiller
+                            </button>
+                          ) : null}
+                        </td>
                         {canEdit ? (
                           <td className="px-3 py-2">
                             <button
                               type="button"
                               className="text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist disabled:opacity-40"
-                              disabled={busyId === rsvp.id || !dirty}
+                              disabled={locked || busyId === rsvp.id || !dirty}
                               onClick={() => void saveSeating(rsvp)}
                             >
                               {busyId === rsvp.id ? "…" : "Sauver"}
@@ -1908,7 +1984,10 @@ export function AdminSeatingEditor({
                         );
                         const childOccupied = occupiedFor(rsvp, draft, index);
                         return (
-                          <tr key={`${rsvp.id}-child-${index}`} className="border-t border-line/70 bg-ivory/40">
+                          <tr
+                            key={`${rsvp.id}-child-${index}`}
+                            className={`border-t border-line/70 ${sent ? "bg-caramel/30" : "bg-ivory/40"}`}
+                          >
                             <td className="px-3 py-2 pl-6 text-sm text-soft">Enfant {index + 1}</td>
                             <td className="px-3 py-2">
                               {canEdit ? (

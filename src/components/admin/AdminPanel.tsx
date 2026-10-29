@@ -680,6 +680,25 @@ export function AdminPanel({
     }
   }
 
+  async function unlockPlace(id: string) {
+    try {
+      const res = await fetch("/api/rsvp/place-unlock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = (await res.json()) as { log?: RsvpPlaceSendLog; error?: string };
+      if (!res.ok || !data.log) {
+        showError(data.error || "Déverrouillage impossible.");
+        return;
+      }
+      setPlaceSends((prev) => ({ ...prev, [id]: data.log! }));
+      showSuccess("Place déverrouillée. Vous pouvez attribuer une nouvelle place.");
+    } catch {
+      showError("Déverrouillage impossible.");
+    }
+  }
+
   function guestExportContext(): GuestExportContext {
     return {
       guestOfLabels,
@@ -1563,6 +1582,8 @@ export function AdminPanel({
               ? (id) => void recordPlaceSend(id)
               : undefined
           }
+          canUnlock={isOwner}
+          onUnlock={isOwner ? (id) => void unlockPlace(id) : undefined}
           onUpdated={(updated) =>
             setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
           }

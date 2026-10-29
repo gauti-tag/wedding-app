@@ -334,11 +334,11 @@ export async function markRsvpReminder(id: string, reminderId: string) {
 
 function normalizePlaceSendLog(raw: unknown): RsvpPlaceSendLog | null {
   if (!raw || typeof raw !== "object") return null;
-  const row = raw as { count?: unknown; lastAt?: unknown };
+  const row = raw as { count?: unknown; lastAt?: unknown; locked?: unknown };
   const count = Number(row.count);
   const lastAt = typeof row.lastAt === "string" ? row.lastAt.trim() : "";
   if (!Number.isFinite(count) || count < 1 || !lastAt) return null;
-  return { count: Math.floor(count), lastAt };
+  return { count: Math.floor(count), lastAt, locked: row.locked === false ? false : true };
 }
 
 /** Invité → nombre d’envois « Envoyer place » et date du dernier. */
@@ -358,7 +358,19 @@ export async function markRsvpPlaceSend(id: string): Promise<RsvpPlaceSendLog> {
   const next: RsvpPlaceSendLog = {
     count: (all[id]?.count || 0) + 1,
     lastAt: new Date().toISOString(),
+    locked: true,
   };
+  all[id] = next;
+  await saveContent("rsvp_place_sends", all);
+  return next;
+}
+
+/** Le propriétaire rouvre la place. Le prochain envoi la verrouille à nouveau. */
+export async function unlockRsvpPlace(id: string): Promise<RsvpPlaceSendLog | null> {
+  const all = { ...(await getRsvpPlaceSends()) };
+  const current = all[id];
+  if (!current) return null;
+  const next: RsvpPlaceSendLog = { ...current, locked: false };
   all[id] = next;
   await saveContent("rsvp_place_sends", all);
   return next;
