@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditAs, requirePermission } from "@/lib/auth";
-import { getRsvps, saveRsvps, setRsvpCheckInActor } from "@/lib/storage";
+import { getRsvpReleases, getRsvps, saveRsvps, setRsvpCheckInActor } from "@/lib/storage";
 import { ensureRsvpTicketFields } from "@/lib/tickets";
 
 const schema = z.object({
@@ -57,9 +57,12 @@ export async function POST(request: Request) {
     }
 
     if (guest.status === "no") {
+      const releases = await getRsvpReleases();
       return NextResponse.json(
         {
-          error: "Cet invité a décliné l’invitation.",
+          error: releases[guest.id]
+            ? "Cet invité a libéré sa place."
+            : "Cet invité a décliné l’invitation.",
           code: "declined",
           rsvp: guest,
         },

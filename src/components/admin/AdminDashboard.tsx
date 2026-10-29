@@ -14,9 +14,10 @@ import {
   type GuestRelation,
 } from "@/lib/guest-of";
 import { eventRoleLabel } from "@/lib/event-roles";
+import { guestStatusLabel } from "@/lib/rsvp-release";
 import { maskName } from "@/lib/mask-pii";
 import { countAssignedSeatsByGuestOf, seatingOccupancy } from "@/lib/seating";
-import type { Rsvp, SeatingPlanContent, SiteContent } from "@/lib/types";
+import type { Rsvp, RsvpReleaseLog, SeatingPlanContent, SiteContent } from "@/lib/types";
 
 const relationLabels: Record<GuestRelation, string> = {
   parent: "Parent",
@@ -46,6 +47,7 @@ type Props = {
   showGuestPii?: boolean;
   seatingPlan: SeatingPlanContent;
   showPlanLink?: boolean;
+  releases?: Record<string, RsvpReleaseLog>;
 };
 
 const statusLabels: Record<"yes" | "no" | "maybe", string> = {
@@ -64,6 +66,7 @@ export function AdminDashboard({
   showGuestPii = true,
   seatingPlan,
   showPlanLink = false,
+  releases = {},
 }: Props) {
   const insights = useMemo(() => computeRsvpInsights(rsvps, site), [rsvps, site]);
   const occupancy = useMemo(
@@ -390,7 +393,7 @@ export function AdminDashboard({
                     {showGuestPii ? rsvp.name : maskName(rsvp.name)}
                   </p>
                   <p className="text-xs text-soft">
-                    {statusLabels[rsvp.status as "yes" | "no" | "maybe"] || rsvp.status}
+                    {guestStatusLabel(rsvp.status, releases[rsvp.id])}
                     {" · "}
                     {guestOfLabels[rsvp.guestOf]}
                   </p>

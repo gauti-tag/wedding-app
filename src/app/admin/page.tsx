@@ -14,6 +14,7 @@ import {
   getMenu,
   getPhotos,
   getRsvpPlaceSends,
+  getRsvpReleases,
   getRsvpReminders,
   getRsvps,
   getSchedule,
@@ -58,6 +59,7 @@ export default async function AdminPage() {
     rsvps,
     reminders,
     placeSends,
+    releases,
     siteContent,
     story,
     schedule,
@@ -78,6 +80,7 @@ export default async function AdminPage() {
     canRsvp ? getRsvps() : Promise.resolve([]),
     canRsvp ? getRsvpReminders() : Promise.resolve({}),
     canRsvp ? getRsvpPlaceSends() : Promise.resolve({}),
+    canRsvp ? getRsvpReleases() : Promise.resolve({}),
     getSiteContent(),
     canContent
       ? getStory()
@@ -119,6 +122,7 @@ export default async function AdminPage() {
       initialRsvps={rsvps}
       initialReminders={reminders}
       initialPlaceSends={placeSends}
+      initialReleases={releases}
       initialSite={siteContent}
       initialStory={story}
       initialSchedule={schedule}

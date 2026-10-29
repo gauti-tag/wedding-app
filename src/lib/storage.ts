@@ -48,6 +48,7 @@ import type {
   Rsvp,
   RsvpCheckInActor,
   RsvpPlaceSendLog,
+  RsvpReleaseLog,
   RsvpReminderLog,
   ScheduleContent,
   SeatingPlanContent,
@@ -360,6 +361,35 @@ export async function markRsvpPlaceSend(id: string): Promise<RsvpPlaceSendLog> {
   };
   all[id] = next;
   await saveContent("rsvp_place_sends", all);
+  return next;
+}
+
+function normalizeReleaseLog(raw: unknown): RsvpReleaseLog | null {
+  if (!raw || typeof raw !== "object") return null;
+  const releasedAt = typeof (raw as { releasedAt?: unknown }).releasedAt === "string"
+    ? (raw as { releasedAt: string }).releasedAt.trim()
+    : "";
+  if (!releasedAt) return null;
+  return { releasedAt };
+}
+
+/** Invités qui ont libéré leur place depuis le message WhatsApp. */
+export async function getRsvpReleases(): Promise<Record<string, RsvpReleaseLog>> {
+  const raw = await getContent<Record<string, unknown>>("rsvp_releases", {});
+  if (!raw || typeof raw !== "object") return {};
+  const logs: Record<string, RsvpReleaseLog> = {};
+  for (const [id, value] of Object.entries(raw)) {
+    const log = normalizeReleaseLog(value);
+    if (log) logs[id] = log;
+  }
+  return logs;
+}
+
+export async function markRsvpRelease(id: string): Promise<RsvpReleaseLog> {
+  const all = { ...(await getRsvpReleases()) };
+  const next: RsvpReleaseLog = all[id] || { releasedAt: new Date().toISOString() };
+  all[id] = next;
+  await saveContent("rsvp_releases", all);
   return next;
 }
 

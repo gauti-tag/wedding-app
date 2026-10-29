@@ -55,6 +55,7 @@ import {
   type GuestCriteria,
 } from "@/lib/guest-criteria";
 import { GuestCriteriaBar } from "@/components/admin/GuestCriteriaBar";
+import { guestStatusLabel } from "@/lib/rsvp-release";
 import { hasPermission, roleLabel, type Permission } from "@/lib/roles";
 import type {
   AdminUserPublic,
@@ -67,6 +68,7 @@ import type {
   PhotoAlbum,
   Rsvp,
   RsvpPlaceSendLog,
+  RsvpReleaseLog,
   RsvpReminderLog,
   ScheduleContent,
   SeatingPlanContent,
@@ -236,6 +238,7 @@ type Props = {
   initialRsvps: Rsvp[];
   initialReminders: Record<string, RsvpReminderLog>;
   initialPlaceSends: Record<string, RsvpPlaceSendLog>;
+  initialReleases: Record<string, RsvpReleaseLog>;
   initialSite: SiteContent;
   initialStory: StoryContent;
   initialSchedule: ScheduleContent;
@@ -312,6 +315,7 @@ export function AdminPanel({
   initialRsvps,
   initialReminders,
   initialPlaceSends,
+  initialReleases,
   initialSite,
   initialStory,
   initialSchedule,
@@ -337,6 +341,7 @@ export function AdminPanel({
   const [seatingPlan, setSeatingPlan] = useState(initialSeatingPlan);
   const [reminders, setReminders] = useState(initialReminders);
   const [placeSends, setPlaceSends] = useState(initialPlaceSends);
+  const [releases] = useState(initialReleases);
   const [site, setSite] = useState(initialSite);
   const [privacy, setPrivacy] = useState(initialPrivacy);
   const [album, setAlbum] = useState<PhotoAlbum>("gallery");
@@ -683,6 +688,7 @@ export function AdminPanel({
       reminderPlans: site.whatsappReminders,
       reminders,
       placeSends,
+      releases,
       showGuestPii,
     };
   }
@@ -826,6 +832,7 @@ export function AdminPanel({
           showGuestPii={showGuestPii}
           seatingPlan={seatingPlan}
           showPlanLink={can("view_rsvp")}
+          releases={releases}
         />
       ) : null}
 
@@ -960,6 +967,7 @@ export function AdminPanel({
           guestOfLabels={guestOfLabels}
           reminders={reminders}
           placeSends={placeSends}
+          releases={releases}
           showGuestPii={showGuestPii}
         />
       ) : null}
@@ -1070,7 +1078,7 @@ export function AdminPanel({
                           </span>
                         </span>
                         <span className="shrink-0 text-xs tracking-[0.12em] text-champagne uppercase">
-                          {rsvp.status}
+                          {guestStatusLabel(rsvp.status, releases[rsvp.id])}
                         </span>
                       </button>
                       {open ? (
@@ -1197,7 +1205,7 @@ export function AdminPanel({
                       <p className="mt-0.5 break-all text-sm text-soft">{displayPhone}</p>
                     </div>
                     <span className="shrink-0 text-xs tracking-[0.12em] text-champagne uppercase">
-                      {rsvp.status}
+                      {guestStatusLabel(rsvp.status, releases[rsvp.id])}
                     </span>
                   </div>
                   <dl className="admin-grid-2 grid gap-x-3 gap-y-2 text-xs text-soft">
@@ -1359,7 +1367,7 @@ export function AdminPanel({
                       ) : null}
                     </td>
                     <td className="px-4 py-3 text-soft">{displayPhone}</td>
-                    <td className="px-4 py-3 text-champagne">{rsvp.status}</td>
+                    <td className="px-4 py-3 text-champagne">{guestStatusLabel(rsvp.status, releases[rsvp.id])}</td>
                     <td className="px-4 py-3 text-mist">
                       {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
                     </td>

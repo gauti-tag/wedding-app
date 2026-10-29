@@ -8,13 +8,8 @@ import {
   matchesTablePresence,
   normalizeChildSeats,
 } from "@/lib/seating";
-import type { Rsvp, RsvpPlaceSendLog, RsvpReminderLog, SeatingPlanContent, WhatsAppReminderPlan } from "@/lib/types";
-
-const STATUS_LABELS: Record<Rsvp["status"], string> = {
-  yes: "Oui",
-  no: "Non",
-  maybe: "Peut-être",
-};
+import type { Rsvp, RsvpPlaceSendLog, RsvpReleaseLog, RsvpReminderLog, SeatingPlanContent, WhatsAppReminderPlan } from "@/lib/types";
+import { guestStatusLabel } from "@/lib/rsvp-release";
 
 export type GuestExportContext = {
   guestOfLabels: Record<string, string>;
@@ -23,6 +18,7 @@ export type GuestExportContext = {
   reminderPlans: Pick<WhatsAppReminderPlan, "id" | "label">[];
   reminders: Record<string, RsvpReminderLog>;
   placeSends: Record<string, RsvpPlaceSendLog>;
+  releases: Record<string, RsvpReleaseLog>;
   showGuestPii: boolean;
 };
 
@@ -179,7 +175,7 @@ export function guestExportRow(rsvp: Rsvp, ctx: GuestExportContext): (string | n
     displayName(rsvp.name, ctx.showGuestPii),
     displayPhone(rsvp.phone || "", ctx.showGuestPii),
     displayEmail(rsvp.email || "", ctx.showGuestPii),
-    STATUS_LABELS[rsvp.status] || rsvp.status,
+    guestStatusLabel(rsvp.status, ctx.releases[rsvp.id]),
     blankDash(details.relation),
     blankDash(details.side),
     blankDash(details.guestOfLabel),

@@ -11,7 +11,7 @@ import {
   seatingExportRows,
   type GuestExportContext,
 } from "@/lib/guest-export";
-import type { Rsvp, RsvpPlaceSendLog, RsvpReminderLog, SeatingPlanContent, SiteContent } from "@/lib/types";
+import type { Rsvp, RsvpPlaceSendLog, RsvpReleaseLog, RsvpReminderLog, SeatingPlanContent, SiteContent } from "@/lib/types";
 
 type Props = {
   rsvps: Rsvp[];
@@ -20,6 +20,7 @@ type Props = {
   guestOfLabels: Record<string, string>;
   reminders: Record<string, RsvpReminderLog>;
   placeSends: Record<string, RsvpPlaceSendLog>;
+  releases: Record<string, RsvpReleaseLog>;
   showGuestPii: boolean;
 };
 
@@ -30,6 +31,7 @@ export function AdminPdfExport({
   guestOfLabels,
   reminders,
   placeSends,
+  releases,
   showGuestPii,
 }: Props) {
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
@@ -49,9 +51,10 @@ export function AdminPdfExport({
       reminderPlans: site.whatsappReminders,
       reminders,
       placeSends,
+      releases,
       showGuestPii,
     }),
-    [guestOfLabels, placeSends, reminders, showGuestPii, site.partnerOne, site.partnerTwo, site.whatsappReminders],
+    [guestOfLabels, placeSends, releases, reminders, showGuestPii, site.partnerOne, site.partnerTwo, site.whatsappReminders],
   );
 
   function exportRsvpPdf() {

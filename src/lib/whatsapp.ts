@@ -251,6 +251,7 @@ export function buildSeatingWhatsAppMessage(input: {
   venueAddress?: string;
   mapUrl?: string;
   ticketUrl?: string;
+  releaseUrl?: string;
   locale?: "fr" | "en";
 }) {
   const locale = input.locale || "fr";
@@ -264,6 +265,7 @@ export function buildSeatingWhatsAppMessage(input: {
   const venueAddress = (input.venueAddress || "").trim();
   const mapUrl = (input.mapUrl || "").trim();
   const ticketUrl = (input.ticketUrl || "").trim();
+  const releaseUrl = (input.releaseUrl || "").trim();
   const siteBase = site.siteUrl.replace(/\/$/, "");
   const programmeUrl = siteBase ? `${siteBase}/#schedule` : "";
   const menuUrl = siteBase ? `${siteBase}/#menu` : "";
@@ -317,6 +319,9 @@ export function buildSeatingWhatsAppMessage(input: {
       "",
       "With all our affection,",
       `*${couple}* 🤍`,
+      "",
+      releaseUrl ? "If you can no longer join us, you can release your place here:" : false,
+      releaseUrl || false,
     ]);
   }
 
@@ -344,6 +349,11 @@ export function buildSeatingWhatsAppMessage(input: {
     "",
     "Avec toute notre affection,",
     `*${couple}* 🤍`,
+    "",
+    releaseUrl
+      ? "Si vous ne pouvez plus être des nôtres, vous pouvez libérer votre place ici :"
+      : false,
+    releaseUrl || false,
   ]);
 }
 
@@ -459,6 +469,9 @@ export function seatingWhatsAppForRsvp(
     venueAddress: options?.reception?.address,
     mapUrl: options?.reception?.mapUrl,
     ticketUrl,
+    releaseUrl: rsvp.ticketToken
+      ? `${site.siteUrl.replace(/\/$/, "")}/place/${rsvp.ticketToken}`
+      : "",
     locale,
   });
 
