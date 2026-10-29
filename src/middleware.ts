@@ -21,6 +21,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/ticket") ||
+    pathname.startsWith("/place") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/uploads") ||
     pathname.includes(".")
