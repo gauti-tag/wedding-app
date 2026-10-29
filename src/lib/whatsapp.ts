@@ -1,4 +1,4 @@
-import { coupleLabel } from "@/lib/site";
+import { coupleLabel, site } from "@/lib/site";
 import { formatSeatingLabel, isCompleteSeat, normalizeChildSeats } from "@/lib/seating";
 import { ticketPageUrl } from "@/lib/tickets";
 import type { EventType, Rsvp, SiteContent } from "@/lib/types";
@@ -264,6 +264,9 @@ export function buildSeatingWhatsAppMessage(input: {
   const venueAddress = (input.venueAddress || "").trim();
   const mapUrl = (input.mapUrl || "").trim();
   const ticketUrl = (input.ticketUrl || "").trim();
+  const siteBase = site.siteUrl.replace(/\/$/, "");
+  const programmeUrl = siteBase ? `${siteBase}/#schedule` : "";
+  const menuUrl = siteBase ? `${siteBase}/#menu` : "";
 
   const placeFr = [table && `Table ${table}`, seat && `Siège ${seat}`]
     .filter(Boolean)
@@ -281,6 +284,13 @@ export function buildSeatingWhatsAppMessage(input: {
     mapUrl || false,
   ];
   const hasVenue = venueLines.some((line) => typeof line === "string" && line.length > 0);
+  const guideLines: Array<string | false> = [
+    programmeUrl ? (locale === "en" ? "✨ Schedule :" : "✨ Programme :") : false,
+    programmeUrl || false,
+    menuUrl ? (locale === "en" ? "🥂 Menu :" : "🥂 Menu :") : false,
+    menuUrl || false,
+  ];
+  const hasGuide = guideLines.some((line) => typeof line === "string" && line.length > 0);
 
   if (locale === "en") {
     return joinWhatsAppLines([
@@ -293,6 +303,8 @@ export function buildSeatingWhatsAppMessage(input: {
       when.length ? "" : false,
       ...venueLines,
       hasVenue ? "" : false,
+      ...guideLines,
+      hasGuide ? "" : false,
       adultLine ? `💍 *${adultLine}*` : false,
       ...childLines,
       "",
@@ -318,6 +330,8 @@ export function buildSeatingWhatsAppMessage(input: {
     when.length ? "" : false,
     ...venueLines,
     hasVenue ? "" : false,
+    ...guideLines,
+    hasGuide ? "" : false,
     adultLine ? `💍 *${adultLine}*` : false,
     ...childLines,
     "",
