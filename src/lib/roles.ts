@@ -25,14 +25,15 @@ export const roleLabels: Record<Role, string> = {
 
 export const roleDescriptions: Record<Role, string> = {
   admin:
-    "Accès total : site, invités, utilisateurs, audit. Réservé au responsable de l’événement.",
+    "Accès total : site, photos, invités, cartes, plan de table, envois, check-in, utilisateurs et audit.",
   editor:
-    "Met à jour le site public (identité, sections, thème, programme, menu, photos). Pas d’accès RSVP.",
+    "Met à jour le site public : identité, programme, menu, photos, livre d’or et album. Pas d’accès aux invités ni au check-in.",
   guests:
-    "Suit les confirmations, exporte, envoie les cartes, plan de table et check-in le jour J.",
+    "Gère les invités : confirmations, rôles du jour, cartes, rappels, envoi de place, plan de table, exports et check-in. Pas le site ni les comptes.",
   reader:
-    "Consultation seule du tableau de bord et de la liste des invités (sans modification).",
-  scanner: "Uniquement le scan / check-in à l’entrée le jour J.",
+    "Consulte la synthèse, les confirmations, les cartes, le plan de table et les exports. Ne modifie pas, n’envoie pas et ne scanne pas.",
+  scanner:
+    "Check-in à l’entrée : scan, fiche, renvoi du QR et envoi de place. Pas la liste des invités, ni le plan de table, ni les exports.",
 };
 
 export const rolePermissions: Record<Role, Permission[]> = {

@@ -3,7 +3,7 @@
 import { Html5Qrcode } from "html5-qrcode";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAdminAlert } from "@/components/admin/AdminAlertDialog";
-import { resolveCheckInGuestDetails } from "@/lib/guest-of";
+import { formatCheckInGuestLines, resolveCheckInGuestDetails } from "@/lib/guest-of";
 import { formatEventRoles, hasEventRole } from "@/lib/event-roles";
 import { formatSeatingLabel, normalizeChildSeats } from "@/lib/seating";
 import { maskName, maskPhone } from "@/lib/mask-pii";
@@ -287,6 +287,34 @@ export function AdminCheckIn({
       setScanCue(repeat ? "repeat" : "success");
       setScanCueText(repeat ? "Déjà enregistré" : "Présence enregistrée");
       playScanCue(repeat ? "repeat" : "success");
+
+      const roleLabel = guest && hasEventRole(guest) ? formatEventRoles(guest.eventRoles) : "";
+      const whoName = guest ? displayName(guest.name) : "Invité";
+      const who = roleLabel ? `${whoName} — ${roleLabel}` : whoName;
+      const place = guest ? formatScanPlace(guest, repeat) : "";
+      const guestLines = guest
+        ? formatCheckInGuestLines(resolveCheckInGuestDetails(guest, site, guestOfLabels))
+        : "";
+      const wa = guest
+        ? seatingWhatsAppForRsvp(guest, site, { toGuest: true, reception })
+        : null;
+      const waAction = wa?.url
+        ? {
+            label: "Envoyer place WhatsApp",
+            href: wa.url,
+            onActivate: () => {
+              if (guest) onPlaceSend?.(guest.id);
+            },
+          }
+        : undefined;
+      const details = [
+        repeat ? `${who} est déjà enregistré(e).` : `${who} — présence enregistrée.`,
+        guestLines ? `\n\n${guestLines}` : "",
+        place ? `\n\n${place}` : "",
+      ].join("");
+
+      if (repeat) showInfo(details, "Déjà check-in", waAction);
+      else showSuccess(details, "Check-in réussi", waAction);
       setManualToken("");
     } catch {
       setScanCue("error");
@@ -331,10 +359,10 @@ export function AdminCheckIn({
           <h2 className="section-title text-3xl text-mist">Check-in jour J</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
             Scannez le QR code de la carte d’invitation pour marquer la présence. Un son et une
-            vibration confirment le résultat, et la caméra reste prête pour l’invité suivant. Le
-            premier scan affiche la table et le siège, ou le rôle si l’invité est hors plan. Un
-            second scan rappelle aussi la date, l’heure et le compte du premier check-in. Si le QR
-            est perdu, retrouvez l’invité ci-dessous.
+            vibration confirment le résultat, puis la fiche s’ouvre à l’écran. Le premier scan
+            affiche la table et le siège, ou le rôle si l’invité est hors plan. Un second scan
+            rappelle aussi la date, l’heure et le compte du premier check-in. Si le QR est perdu,
+            retrouvez l’invité ci-dessous.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -455,13 +483,13 @@ export function AdminCheckIn({
 
           {lastGuest ? (
             <div className="border border-line bg-forest p-4 text-sm">
-              <p className="text-mist">{lastGuest.name}</p>
+              <p className="text-mist">{displayName(lastGuest.name)}</p>
               {hasEventRole(lastGuest) ? (
                 <p className="mt-1 text-xs tracking-[0.12em] text-champagne uppercase">
                   {formatEventRoles(lastGuest.eventRoles)}
                 </p>
               ) : null}
-              <p className="mt-1 text-soft">{lastGuest.phone}</p>
+              <p className="mt-1 text-soft">{displayPhone(lastGuest.phone)}</p>
               {lastGuestDetails ? (
                 <dl className="mt-3 space-y-1.5 text-xs text-soft">
                   {lastGuestDetails.relation !== "—" ? (

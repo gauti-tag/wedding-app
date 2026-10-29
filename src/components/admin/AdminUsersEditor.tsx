@@ -165,7 +165,7 @@ export function AdminUsersEditor({
                 Masquer nom et téléphone pour l’équipe
               </span>
               <span className="mt-1 block text-xs text-soft">
-                Impacte RSVP, synthèse et plan de table pour Gestion invités, Lecteur, etc.
+                Impacte la synthèse, les RSVP, le plan de table et le check-in pour tous les profils sauf le propriétaire.
               </span>
             </span>
           </label>

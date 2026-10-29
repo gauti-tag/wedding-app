@@ -815,7 +815,7 @@ export function AdminPanel({
       ) : null}
 
       <div className="admin-panel-body mt-0 min-w-0 max-w-full">
-      {can("view_dashboard") || can("view_rsvp") || can("check_in") ? (
+      {can("view_dashboard") || can("view_rsvp") ? (
         <AdminDashboard
           rsvps={rsvps}
           site={site}
@@ -1538,7 +1538,11 @@ export function AdminPanel({
           showGuestPii={showGuestPii}
           reception={reception}
           placeSends={placeSends}
-          onPlaceSend={(id) => void recordPlaceSend(id)}
+          onPlaceSend={
+            can("manage_rsvp") || can("check_in")
+              ? (id) => void recordPlaceSend(id)
+              : undefined
+          }
           onUpdated={(updated) =>
             setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
           }

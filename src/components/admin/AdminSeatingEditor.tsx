@@ -1729,7 +1729,7 @@ export function AdminSeatingEditor({
                     ) : null}
                     <div className="flex flex-wrap items-center gap-3">
                       <p className="text-xs text-soft">Place envoyée : {placeSent}</p>
-                      {wa?.url ? (
+                      {wa?.url && onPlaceSend ? (
                         <a
                           href={wa.url}
                           target="_blank"
@@ -1872,7 +1872,7 @@ export function AdminSeatingEditor({
                           )}
                         </td>
                         <td className="px-3 py-2">
-                          {wa?.url ? (
+                          {wa?.url && onPlaceSend ? (
                             <a
                               href={wa.url}
                               target="_blank"

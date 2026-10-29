@@ -15,7 +15,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
   }
   if (
-    !hasPermission(user.role, "view_rsvp") &&
     !hasPermission(user.role, "manage_rsvp") &&
     !hasPermission(user.role, "check_in")
   ) {
