@@ -1060,27 +1060,39 @@ export function AdminPanel({
                     : formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "Sans table";
                   return (
                     <li key={rsvp.id} className="border-b border-line last:border-b-0">
-                      <button
-                        type="button"
-                        className="flex w-full items-start justify-between gap-3 px-3 py-2.5 text-left"
-                        aria-expanded={open}
-                        onClick={() => setOpenRsvpId(open ? null : rsvp.id)}
-                      >
-                        <span className="min-w-0">
-                          <span className="block break-words font-medium text-mist">{displayName}</span>
-                          <span className="mt-0.5 block text-xs text-soft">
-                            {displayPhone}
-                            {" · "}
-                            {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
-                            {" · "}
-                            {place}
-                            {rsvp.checkedInAt ? " · Arrivé" : ""}
+                      <div className="flex items-start gap-2 px-3 py-2.5">
+                        <button
+                          type="button"
+                          className="flex min-w-0 flex-1 items-start justify-between gap-3 text-left"
+                          aria-expanded={open}
+                          onClick={() => setOpenRsvpId(open ? null : rsvp.id)}
+                        >
+                          <span className="min-w-0">
+                            <span className="block break-words font-medium text-mist">{displayName}</span>
+                            <span className="mt-0.5 block text-xs text-soft">
+                              {displayPhone}
+                              {" · "}
+                              {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
+                              {" · "}
+                              {place}
+                              {rsvp.checkedInAt ? " · Arrivé" : ""}
+                            </span>
                           </span>
-                        </span>
-                        <span className="shrink-0 text-xs tracking-[0.12em] text-champagne uppercase">
-                          {guestStatusLabel(rsvp.status, releases[rsvp.id])}
-                        </span>
-                      </button>
+                          <span className="shrink-0 text-xs tracking-[0.12em] text-champagne uppercase">
+                            {guestStatusLabel(rsvp.status, releases[rsvp.id])}
+                          </span>
+                        </button>
+                        {can("manage_rsvp") ? (
+                          <button
+                            type="button"
+                            disabled={deleteBusyId === rsvp.id}
+                            onClick={() => void onDeleteRsvp(rsvp.id, rsvp.name)}
+                            className="shrink-0 text-xs tracking-[0.12em] text-red-700 uppercase hover:text-red-900 disabled:opacity-50"
+                          >
+                            {deleteBusyId === rsvp.id ? "Suppression…" : "Supprimer"}
+                          </button>
+                        ) : null}
+                      </div>
                       {open ? (
                         <div className="flex flex-wrap items-center gap-2 px-3 pb-3">
                           {can("manage_rsvp") && rsvp.status !== "no" ? (
