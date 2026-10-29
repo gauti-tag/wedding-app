@@ -11,7 +11,7 @@ import {
   normalizeSeatingLabel,
   seatingKey,
 } from "@/lib/seating";
-import type { ChildSeat } from "@/lib/types";
+import type { ChildSeat, Rsvp } from "@/lib/types";
 import { getRsvps, getSeatingPlan, saveRsvps } from "@/lib/storage";
 import { ensureRsvpTicketFields } from "@/lib/tickets";
 
@@ -146,7 +146,7 @@ export async function PATCH(request: Request) {
     }
 
     const [adult, ...childSeats] = canonical;
-    const updated = {
+    const updated: Rsvp = {
       ...current,
       childCount: nextCount,
       tableLabel: adult?.tableLabel || "",
