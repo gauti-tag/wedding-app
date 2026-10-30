@@ -28,7 +28,7 @@ import type { GuestbookContent } from "@/lib/guestbook";
 import type { InfoContent } from "@/lib/info-content";
 import type { AdminPrivacySettings } from "@/lib/admin-privacy";
 import { type TeeStudioContent } from "@/lib/tee-studio";
-import type { ThanksPageContent } from "@/lib/thanks-page";
+import { emptyThanksPage, type ThanksPageContent } from "@/lib/thanks-page";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
@@ -968,7 +968,7 @@ export function AdminPanel({
         <>
           <AdminSiteEditor initialSite={site} onSaved={setSite} />
           <AdminThanksEditor
-            initial={initialThanks}
+            initial={initialThanks ?? emptyThanksPage()}
             site={site}
             schedule={initialSchedule}
             guestbook={initialGuestbook}

@@ -11,6 +11,7 @@ import type { GuestbookContent } from "@/lib/guestbook";
 import { parseLocalDateTime } from "@/lib/rsvp-deadline";
 import {
   isThanksPageLive,
+  normalizeThanksPage,
   type ThanksMode,
   type ThanksPageContent,
 } from "@/lib/thanks-page";
@@ -70,10 +71,11 @@ function LocalizedFields({
   );
 }
 
-function statusLabel(content: ThanksPageContent) {
-  if (content.mode === "open") return "Ouverte maintenant. Les invités la voient.";
-  if (content.mode === "closed") return "Masquée, même après l’heure prévue.";
-  const opens = parseLocalDateTime(content.opensAt);
+function statusLabel(content?: ThanksPageContent | null) {
+  const page = normalizeThanksPage(content);
+  if (page.mode === "open") return "Ouverte maintenant. Les invités la voient.";
+  if (page.mode === "closed") return "Masquée, même après l’heure prévue.";
+  const opens = parseLocalDateTime(page.opensAt);
   if (!opens) return "Heure d’ouverture invalide.";
   const when = opens.toLocaleString("fr-FR", {
     weekday: "long",
@@ -82,7 +84,7 @@ function statusLabel(content: ThanksPageContent) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return isThanksPageLive(content)
+  return isThanksPageLive(page)
     ? `Ouverte depuis le ${when}.`
     : `S’ouvrira le ${when}.`;
 }
@@ -94,18 +96,21 @@ export function AdminThanksEditor({
   guestbook,
   guestAlbum,
 }: {
-  initial: ThanksPageContent;
+  initial: ThanksPageContent | undefined;
   site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "hero">;
   schedule: ScheduleContent;
   guestbook: GuestbookContent;
   guestAlbum: GuestAlbumContent;
 }) {
   const { showSuccess, showError, AlertDialog } = useAdminAlert();
-  const [saved, setSaved] = useState(initial);
-  const [draft, setDraft] = useState(initial);
+  const starting = normalizeThanksPage(initial);
+  const [saved, setSaved] = useState(starting);
+  const [draft, setDraft] = useState(starting);
   const [busy, setBusy] = useState(false);
   const [locale, setLocale] = useState<Locale>("fr");
-  const dirty = JSON.stringify(draft) !== JSON.stringify(saved);
+  const savedPage = normalizeThanksPage(saved);
+  const draftPage = normalizeThanksPage(draft);
+  const dirty = JSON.stringify(draftPage) !== JSON.stringify(savedPage);
 
   async function save(next: ThanksPageContent) {
     setBusy(true);
@@ -120,12 +125,13 @@ export function AdminThanksEditor({
         showError(data.error || "Enregistrement impossible.");
         return;
       }
-      setSaved(data.thanks);
-      setDraft(data.thanks);
+      const stored = normalizeThanksPage(data.thanks);
+      setSaved(stored);
+      setDraft(stored);
       showSuccess(
-        data.thanks.mode === "open"
+        stored.mode === "open"
           ? "Page de remerciement ouverte."
-          : data.thanks.mode === "closed"
+          : stored.mode === "closed"
             ? "Page de remerciement masquée."
             : "Page de remerciement enregistrée.",
       );
@@ -137,7 +143,7 @@ export function AdminThanksEditor({
   }
 
   function setMode(mode: ThanksMode) {
-    const next = { ...draft, mode };
+    const next = { ...draftPage, mode };
     setDraft(next);
     void save(next);
   }
@@ -153,7 +159,7 @@ export function AdminThanksEditor({
             type="button"
             className="btn-primary disabled:opacity-60"
             disabled={busy || !dirty}
-            onClick={() => void save(draft)}
+            onClick={() => void save(draftPage)}
           >
             {busy ? "Enregistrement…" : "Enregistrer"}
           </button>
@@ -161,7 +167,7 @@ export function AdminThanksEditor({
       />
 
       <div className="space-y-5 border border-line bg-white p-5">
-        <p className="text-sm text-soft">{statusLabel(saved)}</p>
+        <p className="text-sm text-soft">{statusLabel(savedPage)}</p>
         <div className="grid min-w-0 gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <div>
             <label className="label" htmlFor="thanks-opens">
@@ -171,14 +177,16 @@ export function AdminThanksEditor({
               id="thanks-opens"
               type="datetime-local"
               className="field max-w-md"
-              value={draft.opensAt}
-              onChange={(event) => setDraft((prev) => ({ ...prev, opensAt: event.target.value }))}
+              value={draftPage.opensAt}
+              onChange={(event) =>
+                setDraft((prev) => ({ ...normalizeThanksPage(prev), opensAt: event.target.value }))
+              }
             />
           </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className={draft.mode === "auto" ? "btn-primary" : "btn-ghost"}
+              className={draftPage.mode === "auto" ? "btn-primary" : "btn-ghost"}
               disabled={busy}
               onClick={() => setMode("auto")}
             >
@@ -186,7 +194,7 @@ export function AdminThanksEditor({
             </button>
             <button
               type="button"
-              className={draft.mode === "open" ? "btn-primary" : "btn-ghost"}
+              className={draftPage.mode === "open" ? "btn-primary" : "btn-ghost"}
               disabled={busy}
               onClick={() => setMode("open")}
             >
@@ -194,7 +202,7 @@ export function AdminThanksEditor({
             </button>
             <button
               type="button"
-              className={draft.mode === "closed" ? "btn-primary" : "btn-ghost"}
+              className={draftPage.mode === "closed" ? "btn-primary" : "btn-ghost"}
               disabled={busy}
               onClick={() => setMode("closed")}
             >
@@ -207,32 +215,35 @@ export function AdminThanksEditor({
         </p>
         <LocalizedFields
           label="Titre"
-          value={draft.title}
-          onChange={(title) => setDraft((prev) => ({ ...prev, title }))}
+          value={draftPage.title}
+          onChange={(title) => setDraft((prev) => ({ ...normalizeThanksPage(prev), title }))}
         />
         <LocalizedFields
           label="Phrase"
-          value={draft.phrase}
-          onChange={(phrase) => setDraft((prev) => ({ ...prev, phrase }))}
+          value={draftPage.phrase}
+          onChange={(phrase) => setDraft((prev) => ({ ...normalizeThanksPage(prev), phrase }))}
         />
         <LocalizedFields
           label="Lettre"
-          value={draft.letter}
-          onChange={(letter) => setDraft((prev) => ({ ...prev, letter }))}
+          value={draftPage.letter}
+          onChange={(letter) => setDraft((prev) => ({ ...normalizeThanksPage(prev), letter }))}
           multiline
         />
         <LocalizedFields
           label="Signature"
-          value={draft.closing}
-          onChange={(closing) => setDraft((prev) => ({ ...prev, closing }))}
+          value={draftPage.closing}
+          onChange={(closing) => setDraft((prev) => ({ ...normalizeThanksPage(prev), closing }))}
         />
         <label className="flex min-h-11 items-center gap-3">
           <input
             type="checkbox"
             className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
-            checked={draft.showSchedule}
+            checked={draftPage.showSchedule}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, showSchedule: event.target.checked }))
+              setDraft((prev) => ({
+                ...normalizeThanksPage(prev),
+                showSchedule: event.target.checked,
+              }))
             }
           />
           <span className="text-sm text-mist">Afficher « Revoir la journée »</span>
@@ -264,7 +275,7 @@ export function AdminThanksEditor({
         </div>
         <div className="max-h-[80vh] overflow-y-auto bg-ivory">
           <ThanksPage
-            content={draft}
+            content={draftPage}
             siteContent={site}
             locale={locale}
             dict={getDictionary(locale)}
