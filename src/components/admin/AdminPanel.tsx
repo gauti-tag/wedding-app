@@ -17,6 +17,7 @@ import { AdminPdfExport } from "@/components/admin/AdminPdfExport";
 import { AdminRsvpComposer } from "@/components/admin/AdminRsvpComposer";
 import { AdminPhotosList } from "@/components/admin/AdminPhotosList";
 import { AdminScheduleEditor } from "@/components/admin/AdminScheduleEditor";
+import { AdminThanksEditor } from "@/components/admin/AdminThanksEditor";
 import { AdminSeatingEditor } from "@/components/admin/AdminSeatingEditor";
 import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
@@ -26,7 +27,8 @@ import type { GuestAlbumContent } from "@/lib/guest-album";
 import type { GuestbookContent } from "@/lib/guestbook";
 import type { InfoContent } from "@/lib/info-content";
 import type { AdminPrivacySettings } from "@/lib/admin-privacy";
-import type { TeeStudioContent } from "@/lib/tee-studio";
+import { type TeeStudioContent } from "@/lib/tee-studio";
+import type { ThanksPageContent } from "@/lib/thanks-page";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { MAX_HERO_PHOTOS } from "@/lib/hero-carousel";
 import { ALBUM_IMAGE_TARGETS } from "@/lib/image-targets";
@@ -251,6 +253,7 @@ type Props = {
   initialGuestbook: GuestbookContent;
   initialGuestAlbum: GuestAlbumContent;
   initialTeeStudio: TeeStudioContent;
+  initialThanks: ThanksPageContent;
   initialUsers: AdminUserPublic[];
   initialAudit: AuditEntry[];
   initialPrivacy: AdminPrivacySettings;
@@ -268,6 +271,7 @@ const adminNav: { href: string; label: string; permission: Permission }[] = [
   { href: "#admin-tees", label: "Tees", permission: "manage_content" },
   { href: "#admin-photos", label: "Photos", permission: "manage_photos" },
   { href: "#admin-site", label: "Site", permission: "manage_content" },
+  { href: "#admin-thanks", label: "Merci", permission: "manage_content" },
   { href: "#admin-story", label: "Histoire", permission: "manage_content" },
   { href: "#admin-schedule", label: "Programme", permission: "manage_content" },
   { href: "#admin-mc-rundown", label: "MC", permission: "manage_content" },
@@ -328,6 +332,7 @@ export function AdminPanel({
   initialGuestbook,
   initialGuestAlbum,
   initialTeeStudio,
+  initialThanks,
   initialUsers,
   initialAudit,
   initialPrivacy,
@@ -962,6 +967,13 @@ export function AdminPanel({
       {can("manage_content") ? (
         <>
           <AdminSiteEditor initialSite={site} onSaved={setSite} />
+          <AdminThanksEditor
+            initial={initialThanks}
+            site={site}
+            schedule={initialSchedule}
+            guestbook={initialGuestbook}
+            guestAlbum={initialGuestAlbum}
+          />
           <AdminStoryEditor initialStory={initialStory} />
           <AdminScheduleEditor initialSchedule={initialSchedule} />
           <AdminMcRundownEditor

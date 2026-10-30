@@ -3,6 +3,8 @@ import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteSections } from "@/components/SiteSections";
+import { ThanksHandoff } from "@/components/ThanksHandoff";
+import { ThanksPage } from "@/components/ThanksPage";
 import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { isGuestCapacityFull, seatsRemaining, seatsTakenByRelation } from "@/lib/guest-capacity";
@@ -21,7 +23,9 @@ import {
   getSchedule,
   getSiteContent,
   getStory,
+  getThanksPage,
 } from "@/lib/storage";
+import { isThanksPageLive } from "@/lib/thanks-page";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +51,7 @@ export default async function Home({ params }: Props) {
     guestbook,
     guestAlbum,
     rsvps,
+    thanks,
   ] = await Promise.all([
     getPhotos(),
     getSiteContent(),
@@ -59,6 +64,7 @@ export default async function Home({ params }: Props) {
     getGuestbook(),
     getGuestAlbum(),
     getRsvps(),
+    getThanksPage(),
   ]);
   const dict = resolveDictionary(baseDict, siteContent.vocabulary, raw);
   const heroPhotos = photos
@@ -70,6 +76,29 @@ export default async function Home({ params }: Props) {
   const remainingSeats = seatsRemaining(siteContent.guestCapacity, rsvps);
   const takenByRelation = seatsTakenByRelation(rsvps);
   const features = siteContent.features;
+  const thanksLive = isThanksPageLive(thanks);
+
+  if (thanksLive) {
+    return (
+      <>
+        <main>
+          <ThanksPage
+            content={thanks}
+            siteContent={siteContent}
+            locale={raw}
+            dict={dict}
+            schedule={schedule}
+            guestbook={guestbook}
+            guestAlbum={guestAlbum}
+          />
+        </main>
+        <PwaInstallPrompt
+          copy={resolvePwaBannerCopy(siteContent.pwaBanner, dict.footer, raw)}
+          settings={siteContent.pwaBanner}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -79,6 +108,7 @@ export default async function Home({ params }: Props) {
         coupleName={names}
         features={features}
       />
+      <ThanksHandoff opensAt={thanks.opensAt} mode={thanks.mode} />
       <main id={features.enabled.hero ? undefined : "top"}>
         {features.enabled.hero ? (
           <Hero heroPhotos={heroPhotos} siteContent={siteContent} locale={raw} />

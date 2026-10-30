@@ -37,6 +37,7 @@ import {
 } from "@/lib/admin-privacy";
 import { normalizeStoryContent, emptyStoryScriptureBlock } from "@/lib/story-scripture";
 import { emptyTeeStudio, normalizeTeeStudio, type TeeStudioContent } from "@/lib/tee-studio";
+import { normalizeThanksPage, type ThanksPageContent } from "@/lib/thanks-page";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -551,6 +552,15 @@ export async function getGuestAlbum(): Promise<GuestAlbumContent> {
 
 export async function saveGuestAlbum(content: GuestAlbumContent) {
   await saveContent("guest-album", normalizeGuestAlbumContent(content));
+}
+
+export async function getThanksPage(): Promise<ThanksPageContent> {
+  const raw = await getContent<unknown>("thanks-page", null);
+  return normalizeThanksPage(raw);
+}
+
+export async function saveThanksPage(content: ThanksPageContent) {
+  await saveContent("thanks-page", normalizeThanksPage(content));
 }
 
 export async function getTeeStudio(): Promise<TeeStudioContent> {

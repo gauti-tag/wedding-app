@@ -22,6 +22,7 @@ import {
   getSiteContent,
   getStory,
   getTeeStudio,
+  getThanksPage,
 } from "@/lib/storage";
 import { defaultAdminPrivacy } from "@/lib/admin-privacy";
 import { emptyMcRundown } from "@/lib/mc-rundown";
@@ -35,6 +36,7 @@ import {
   emptyMenuContent,
 } from "@/lib/menu-headings";
 import { emptyTeeStudio } from "@/lib/tee-studio";
+import { emptyThanksPage } from "@/lib/thanks-page";
 import { emptyStoryScriptureBlock } from "@/lib/story-scripture";
 import { ensureSeedAdmin, listPublicUsers, publicUser } from "@/lib/users";
 
@@ -72,6 +74,7 @@ export default async function AdminPage() {
     guestbook,
     guestAlbum,
     teeStudio,
+    thanks,
     users,
     audit,
     privacy,
@@ -110,6 +113,7 @@ export default async function AdminPage() {
     canContent ? getGuestbook() : Promise.resolve(emptyGuestbookContent()),
     canContent ? getGuestAlbum() : Promise.resolve(emptyGuestAlbumContent()),
     canContent ? getTeeStudio() : Promise.resolve(emptyTeeStudio()),
+    canContent ? getThanksPage() : Promise.resolve(emptyThanksPage()),
     canUsers ? listPublicUsers() : Promise.resolve([]),
     canAudit ? getAuditLog(300) : Promise.resolve([]),
     getAdminPrivacy(),
@@ -135,6 +139,7 @@ export default async function AdminPage() {
       initialGuestbook={guestbook}
       initialGuestAlbum={guestAlbum}
       initialTeeStudio={teeStudio}
+      initialThanks={thanks}
       initialUsers={users}
       initialAudit={audit}
       initialPrivacy={privacy ?? defaultAdminPrivacy()}

@@ -895,8 +895,8 @@ export function AdminSeatingEditor({
 
   function savedDraft(rsvp: Rsvp): SeatDraft {
     return {
-      tableLabel: rsvp.tableLabel || "",
-      seatLabel: rsvp.seatLabel || "",
+        tableLabel: rsvp.tableLabel || "",
+        seatLabel: rsvp.seatLabel || "",
       childSeats: normalizeChildSeats(rsvp.childSeats, rsvp.childCount),
     };
   }
@@ -1591,14 +1591,14 @@ export function AdminSeatingEditor({
         onToggle={() => setShowAssignments((open) => !open)}
       >
           <div className="flex items-center gap-2">
-            <input
+              <input
               id="assignment-search"
-              type="search"
+                type="search"
               className="field min-w-0 flex-1 !py-2 [&::-webkit-search-cancel-button]:hidden"
               value={assignmentQuery}
               onChange={(event) => setAssignmentQuery(event.target.value)}
               placeholder="Nom, lien, téléphone, table…"
-              autoComplete="off"
+                autoComplete="off"
               enterKeyHint="search"
               aria-label="Rechercher dans la liste d’attribution"
             />
@@ -1611,7 +1611,7 @@ export function AdminSeatingEditor({
                 Effacer
               </button>
             ) : null}
-          </div>
+            </div>
           {assignmentQuery.trim() ? (
             <p className="text-sm text-mist">
               {assignmentResultCount} {assignmentResultCount === 1 ? "résultat" : "résultats"}
@@ -1635,7 +1635,7 @@ export function AdminSeatingEditor({
                   </li>
                 ))}
               </ul>
-            </div>
+          </div>
           ) : null}
 
           {!canEdit ? (
@@ -1675,7 +1675,7 @@ export function AdminSeatingEditor({
                     className={`space-y-3 border border-line p-3 ${sent ? "bg-caramel/20" : ""}`}
                   >
                     <div>
-                      <p className="font-medium text-mist">{displayGuestName(rsvp.name)}</p>
+                    <p className="font-medium text-mist">{displayGuestName(rsvp.name)}</p>
                       <GuestAssignmentFacts
                         lien={guestOfLabels[rsvp.guestOf] || rsvp.guestOf}
                         phone={displayPhone(rsvp.phone)}
@@ -2088,14 +2088,14 @@ export function AdminSeatingEditor({
                                   {(childTable?.seats || []).map((seat) => {
                                     const taken = childOccupied.has(
                                       seatingKey(childTable?.label || "", seat),
-                                    );
-                                    return (
+                          );
+                          return (
                                       <option key={seat} value={seat} disabled={taken}>
                                         {seat}
                                         {taken ? " (pris)" : ""}
                                       </option>
-                                    );
-                                  })}
+                          );
+                        })}
                                 </select>
                               ) : (
                                 <span className="text-soft">{child.seatLabel || "—"}</span>
@@ -2116,8 +2116,8 @@ export function AdminSeatingEditor({
                               </td>
                             ) : null}
                           </tr>
-                        );
-                      })}
+                  );
+                })}
                       </Fragment>
                     );
                   })

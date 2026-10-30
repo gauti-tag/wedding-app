@@ -11,10 +11,12 @@ export function GuestbookSection({
   initial,
   locale,
   dict,
+  readOnly = false,
 }: {
   initial: GuestbookContent;
   locale: Locale;
   dict: Dictionary;
+  readOnly?: boolean;
 }) {
   const [entries, setEntries] = useState(
     initial.entries.filter((e) => e.status === "approved"),
@@ -67,6 +69,13 @@ export function GuestbookSection({
             {t(initial.intro, locale) || dict.guestbook.intro}
           </p>
 
+          {readOnly ? (
+            <p className="mt-4 text-sm text-soft">
+              {locale === "en"
+                ? "Notes are turned off in this preview."
+                : "Les mots sont désactivés dans cet aperçu."}
+            </p>
+          ) : (
           <form onSubmit={onSubmit} className="site-section-body site-section-panel site-section-stack max-w-xl">
             <div>
               <label className="label" htmlFor="gb-name">
@@ -101,6 +110,7 @@ export function GuestbookSection({
             </button>
             {feedback ? <p className="text-sm text-soft">{feedback}</p> : null}
           </form>
+          )}
         </Reveal>
 
         <div className="site-section-stack">

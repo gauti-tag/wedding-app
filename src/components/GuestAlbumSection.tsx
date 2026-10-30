@@ -11,10 +11,12 @@ export function GuestAlbumSection({
   initial,
   locale,
   dict,
+  readOnly = false,
 }: {
   initial: GuestAlbumContent;
   locale: Locale;
   dict: Dictionary;
+  readOnly?: boolean;
 }) {
   const [photos, setPhotos] = useState(
     initial.photos.filter((p) => p.status === "approved"),
@@ -76,6 +78,13 @@ export function GuestAlbumSection({
           </p>
         </Reveal>
 
+        {readOnly ? (
+          <p className="site-section-body text-sm text-soft">
+            {locale === "en"
+              ? "Photo uploads are turned off in this preview."
+              : "L’envoi de photos est désactivé dans cet aperçu."}
+          </p>
+        ) : (
         <form
           onSubmit={onSubmit}
           className="site-section-body site-section-panel site-section-stack max-w-xl"
@@ -123,6 +132,7 @@ export function GuestAlbumSection({
           </button>
           {feedback ? <p className="text-sm text-soft">{feedback}</p> : null}
         </form>
+        )}
 
         <div className="site-section-body site-section-cards sm:grid-cols-2 lg:grid-cols-3">
           {photos.length === 0 ? (
