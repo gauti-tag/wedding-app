@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   computeRsvpInsights,
   followUpReasonLabel,
@@ -14,8 +14,9 @@ import {
   type GuestRelation,
 } from "@/lib/guest-of";
 import { eventRoleLabel } from "@/lib/event-roles";
+import { normalizeChildCount } from "@/lib/guest-capacity";
 import { guestStatusLabel } from "@/lib/rsvp-release";
-import { maskName } from "@/lib/mask-pii";
+import { maskName, maskPhone } from "@/lib/mask-pii";
 import { countAssignedSeatsByGuestOf, seatingOccupancy } from "@/lib/seating";
 import type { Rsvp, RsvpReleaseLog, SeatingPlanContent, SiteContent } from "@/lib/types";
 
@@ -55,6 +56,8 @@ const statusLabels: Record<"yes" | "no" | "maybe", string> = {
   no: "Non",
   maybe: "Peut-être",
 };
+
+const RELEASED_PAGE_SIZE = 10;
 
 export function AdminDashboard({
   rsvps,
@@ -104,6 +107,44 @@ export function AdminDashboard({
   }, [assignedByGuestOf, occupancy.free, site.partnerOne, site.partnerTwo]);
   const occupiedPct =
     occupancy.total > 0 ? Math.round((occupancy.occupied / occupancy.total) * 100) : 0;
+  const releasedGuests = useMemo(() => {
+    return rsvps
+      .filter((rsvp) => Boolean(releases[rsvp.id]?.releasedAt))
+      .map((rsvp) => ({
+        rsvp,
+        releasedAt: releases[rsvp.id]!.releasedAt,
+        seats: 1 + normalizeChildCount(rsvp.childCount),
+      }))
+      .sort((a, b) => b.releasedAt.localeCompare(a.releasedAt));
+  }, [releases, rsvps]);
+  const releasedSeats = releasedGuests.reduce((sum, row) => sum + row.seats, 0);
+  const [releasedQuery, setReleasedQuery] = useState("");
+  const [releasedPage, setReleasedPage] = useState(1);
+  const filteredReleased = useMemo(() => {
+    const q = releasedQuery.trim().toLowerCase();
+    if (!q) return releasedGuests;
+    return releasedGuests.filter(({ rsvp, releasedAt, seats }) => {
+      const lien = guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "";
+      const hay = [
+        rsvp.name,
+        rsvp.phone,
+        lien,
+        formatReleasedAt(releasedAt),
+        String(normalizeChildCount(rsvp.childCount)),
+        String(seats),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [guestOfLabels, releasedGuests, releasedQuery]);
+  const filteredReleasedSeats = filteredReleased.reduce((sum, row) => sum + row.seats, 0);
+  const releasedPageCount = Math.max(1, Math.ceil(filteredReleased.length / RELEASED_PAGE_SIZE));
+  const currentReleasedPage = Math.min(releasedPage, releasedPageCount);
+  const releasedPageRows = filteredReleased.slice(
+    (currentReleasedPage - 1) * RELEASED_PAGE_SIZE,
+    currentReleasedPage * RELEASED_PAGE_SIZE,
+  );
 
   return (
     <section id="admin-dashboard" className="mt-10 min-w-0 max-w-full scroll-mt-28 space-y-6">
@@ -111,7 +152,7 @@ export function AdminDashboard({
         <div>
           <h2 className="section-title text-3xl text-mist">Tableau de bord</h2>
           <p className="mt-2 max-w-2xl text-sm font-normal text-soft">
-            Synthèse des réponses, places restantes et liste des invités à relancer.
+            Synthèse des réponses, places restantes, places libérées et invités à relancer.
           </p>
         </div>
         {canExport ? (
@@ -136,13 +177,22 @@ export function AdminDashboard({
         ) : null}
       </div>
 
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
           { label: "Réponses", value: String(insights.total) },
           {
             label: "Places restantes",
             value: `${insights.seatsRemaining}`,
             hint: `${insights.seatsTaken} places / ${insights.capacity}`,
+          },
+          {
+            label: "Places libérées",
+            value: String(releasedSeats),
+            hint:
+              releasedGuests.length === 0
+                ? "Aucune invitation libérée"
+                : `${releasedGuests.length} invitation${releasedGuests.length > 1 ? "s" : ""}`,
+            href: "#admin-released",
           },
           {
             label: "Enfants attendus",
@@ -157,6 +207,14 @@ export function AdminDashboard({
             <p className="meta-date mt-2 text-4xl text-mist">{item.value}</p>
             {"hint" in item && item.hint ? (
               <p className="mt-1 text-xs text-soft">{item.hint}</p>
+            ) : null}
+            {"href" in item && item.href ? (
+              <a
+                href={item.href}
+                className="mt-3 inline-block text-xs tracking-[0.14em] text-champagne uppercase no-underline hover:text-mist"
+              >
+                Voir la liste
+              </a>
             ) : null}
           </div>
         ))}
@@ -418,12 +476,137 @@ export function AdminDashboard({
           </p>
         ) : null}
       </div>
+
+      <div id="admin-released" className="border border-line bg-white p-5">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-xs tracking-[0.16em] text-champagne uppercase">Places libérées</p>
+            <p className="mt-1 text-sm text-soft">
+              Invitations dont l’invité a libéré sa place. Ces places ne comptent plus dans les confirmations.
+            </p>
+          </div>
+          <p className="text-xs text-soft">
+            {seatCountLabel(releasedGuests.length, "invitation", "invitations")}
+            {" · "}
+            {seatCountLabel(releasedSeats, "place", "places")}
+          </p>
+        </div>
+
+        {releasedGuests.length === 0 ? (
+          <p className="mt-4 text-sm text-soft">Aucune place libérée.</p>
+        ) : (
+          <>
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                id="released-search"
+                type="search"
+                className="field min-w-0 flex-1 !py-2 [&::-webkit-search-cancel-button]:hidden"
+                value={releasedQuery}
+                onChange={(event) => {
+                  setReleasedQuery(event.target.value);
+                  setReleasedPage(1);
+                }}
+                placeholder="Nom, lien, téléphone…"
+                autoComplete="off"
+                enterKeyHint="search"
+                aria-label="Filtrer les places libérées"
+              />
+              {releasedQuery.trim() ? (
+                <button
+                  type="button"
+                  className="shrink-0 px-1 text-xs tracking-[0.12em] text-soft uppercase"
+                  onClick={() => {
+                    setReleasedQuery("");
+                    setReleasedPage(1);
+                  }}
+                >
+                  Effacer
+                </button>
+              ) : null}
+            </div>
+            <p className="mt-3 text-sm text-mist">
+              {filteredReleased.length}{" "}
+              {releasedQuery.trim()
+                ? filteredReleased.length === 1
+                  ? "résultat"
+                  : "résultats"
+                : filteredReleased.length === 1
+                  ? "invitation"
+                  : "invitations"}
+              {" · "}
+              {seatCountLabel(filteredReleasedSeats, "place", "places")}
+            </p>
+            {filteredReleased.length === 0 ? (
+              <p className="mt-4 text-sm text-soft">
+                Aucun résultat pour « {releasedQuery.trim()} ».
+              </p>
+            ) : (
+              <ul className="mt-4 divide-y divide-line border border-line">
+                {releasedPageRows.map(({ rsvp, releasedAt, seats }) => (
+                  <li key={rsvp.id} className="px-3 py-2.5 text-sm">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className="text-mist">{showGuestPii ? rsvp.name : maskName(rsvp.name)}</p>
+                      <p className="text-xs text-champagne">{formatReleasedAt(releasedAt)}</p>
+                    </div>
+                    <p className="mt-1 text-xs text-soft">
+                      {guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "—"}
+                      {" · "}
+                      {showGuestPii ? rsvp.phone || "—" : maskPhone(rsvp.phone || "")}
+                      {" · "}
+                      {seatCountLabel(normalizeChildCount(rsvp.childCount), "enfant", "enfants")}
+                      {" · "}
+                      {seatCountLabel(seats, "place", "places")}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {filteredReleased.length > RELEASED_PAGE_SIZE ? (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs tracking-[0.12em] text-soft uppercase">
+                  Page {currentReleasedPage} / {releasedPageCount}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="btn-ghost !px-4 !py-2 disabled:opacity-40"
+                    disabled={currentReleasedPage <= 1}
+                    onClick={() => setReleasedPage((page) => Math.max(1, page - 1))}
+                  >
+                    Précédent
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-ghost !px-4 !py-2 disabled:opacity-40"
+                    disabled={currentReleasedPage >= releasedPageCount}
+                    onClick={() => setReleasedPage((page) => Math.min(releasedPageCount, page + 1))}
+                  >
+                    Suivant
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
     </section>
   );
 }
 
 function seatCountLabel(count: number, one: string, many: string) {
   return `${count} ${count === 1 ? one : many}`;
+}
+
+function formatReleasedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function legacyHost(guestOf: string): GuestHostSuffix | "autre" {
