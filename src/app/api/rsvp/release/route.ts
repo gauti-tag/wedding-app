@@ -57,7 +57,12 @@ export async function POST(request: Request) {
     };
     rsvps[index] = updated;
     await saveRsvps(rsvps);
-    await markRsvpRelease(current.id);
+    await markRsvpRelease(current.id, {
+      tableLabel: current.tableLabel,
+      seatLabel: current.seatLabel,
+      childSeats: current.childSeats,
+      childCount: current.childCount,
+    });
 
     return NextResponse.json({ ok: true });
   } catch {

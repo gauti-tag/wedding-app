@@ -9,6 +9,7 @@ import { formatSeatingLabel, normalizeChildSeats } from "@/lib/seating";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import type { Rsvp, SiteContent } from "@/lib/types";
 import { seatingWhatsAppForRsvp, type ReceptionNotice } from "@/lib/whatsapp";
+import { WhatsAppSenderHint } from "@/components/admin/WhatsAppSenderHint";
 
 function guestOfLabelsFromSite(
   site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig">,
@@ -142,6 +143,7 @@ export function AdminCheckIn({
   showGuestPii = true,
   onPlaceSend,
   onCheckedIn,
+  senderPhone = "",
 }: {
   site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig" | "hero">;
   reception?: ReceptionNotice;
@@ -149,6 +151,7 @@ export function AdminCheckIn({
   showGuestPii?: boolean;
   onPlaceSend?: (id: string) => void;
   onCheckedIn?: (rsvp: Rsvp) => void;
+  senderPhone?: string;
 }) {
   const [manualToken, setManualToken] = useState("");
   const [lookup, setLookup] = useState("");
@@ -307,10 +310,16 @@ export function AdminCheckIn({
             },
           }
         : undefined;
+      const senderLine = wa?.url
+        ? senderPhone
+          ? `\n\nEnvoyez depuis ${senderPhone} : ouvrez WhatsApp avec ce compte sur ce téléphone.`
+          : "\n\nLe message part du compte WhatsApp ouvert sur ce téléphone."
+        : "";
       const details = [
         repeat ? `${who} est déjà enregistré(e).` : `${who} — présence enregistrée.`,
         guestLines ? `\n\n${guestLines}` : "",
         place ? `\n\n${place}` : "",
+        senderLine,
       ].join("");
 
       if (repeat) showInfo(details, "Déjà check-in", waAction);
@@ -532,15 +541,20 @@ export function AdminCheckIn({
                   : "Pas encore check-in"}
               </p>
               {seatingWa?.url ? (
-                <a
-                  href={seatingWa.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-primary mt-4 inline-flex w-full justify-center no-underline"
-                  onClick={() => lastGuest && onPlaceSend?.(lastGuest.id)}
-                >
-                  Envoyer place par WhatsApp
-                </a>
+                <>
+                  <a
+                    href={seatingWa.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn-primary mt-4 inline-flex w-full justify-center no-underline"
+                    onClick={() => lastGuest && onPlaceSend?.(lastGuest.id)}
+                  >
+                    Envoyer place par WhatsApp
+                  </a>
+                  <div className="mt-2">
+                    <WhatsAppSenderHint phone={senderPhone} />
+                  </div>
+                </>
               ) : null}
             </div>
           ) : null}

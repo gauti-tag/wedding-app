@@ -38,6 +38,7 @@ import { GuestCriteriaBar } from "@/components/admin/GuestCriteriaBar";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { seatingWhatsAppForRsvp, type ReceptionNotice } from "@/lib/whatsapp";
 import { isPlaceLocked } from "@/lib/place-lock";
+import { WhatsAppSenderHint } from "@/components/admin/WhatsAppSenderHint";
 
 const seatStateClass: Record<SeatPresence, string> = {
   free: "bg-forest text-soft",
@@ -714,6 +715,7 @@ type Props = {
   onPlaceSend?: (id: string) => void;
   canUnlock?: boolean;
   onUnlock?: (id: string) => void;
+  senderPhone?: string;
 };
 
 export function AdminSeatingEditor({
@@ -730,6 +732,7 @@ export function AdminSeatingEditor({
   onPlaceSend,
   canUnlock = false,
   onUnlock,
+  senderPhone = "",
 }: Props) {
   const [plan, setPlan] = useState<SeatingPlanContent>(initialPlan);
   const [planBusy, setPlanBusy] = useState(false);
@@ -1621,6 +1624,7 @@ export function AdminSeatingEditor({
             <span className="inline-block h-3 w-6 border border-caramel/40 bg-caramel/20" aria-hidden />
             Place déjà envoyée
           </p>
+          {onPlaceSend ? <WhatsAppSenderHint phone={senderPhone} /> : null}
           {assignmentRoles.length > 0 ? (
             <div className="border border-line p-3">
               <p className="text-xs tracking-[0.16em] text-champagne uppercase">Rôles du jour</p>

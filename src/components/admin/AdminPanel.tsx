@@ -23,6 +23,7 @@ import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
 import { AdminTeeStudio } from "@/components/admin/AdminTeeStudio";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
+import { WhatsAppSenderHint } from "@/components/admin/WhatsAppSenderHint";
 import type { GuestAlbumContent } from "@/lib/guest-album";
 import type { GuestbookContent } from "@/lib/guestbook";
 import type { InfoContent } from "@/lib/info-content";
@@ -257,6 +258,7 @@ type Props = {
   initialUsers: AdminUserPublic[];
   initialAudit: AuditEntry[];
   initialPrivacy: AdminPrivacySettings;
+  initialWhatsAppPhone: string;
 };
 
 const albumLabels: Record<PhotoAlbum, string> = {
@@ -336,6 +338,7 @@ export function AdminPanel({
   initialUsers,
   initialAudit,
   initialPrivacy,
+  initialWhatsAppPhone,
 }: Props) {
   const can = (permission: Permission) => hasPermission(currentUser.role, permission);
   const navItems = adminNav.filter((item) => can(item.permission));
@@ -349,6 +352,9 @@ export function AdminPanel({
   const [releases] = useState(initialReleases);
   const [site, setSite] = useState(initialSite);
   const [privacy, setPrivacy] = useState(initialPrivacy);
+  const [whatsAppPhone, setWhatsAppPhone] = useState(initialWhatsAppPhone);
+  const [whatsAppDraft, setWhatsAppDraft] = useState(initialWhatsAppPhone);
+  const [whatsAppBusy, setWhatsAppBusy] = useState(false);
   const [album, setAlbum] = useState<PhotoAlbum>("gallery");
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -478,6 +484,36 @@ export function AdminPanel({
     setPhotos((prev) => prev.filter((photo) => photo.id !== id));
   }
 
+  async function saveWhatsAppPhone() {
+    setWhatsAppBusy(true);
+    try {
+      const res = await fetch("/api/admin/whatsapp-phone", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: whatsAppDraft }),
+      });
+      const data = (await res.json()) as { phone?: string; error?: string };
+      if (!res.ok) {
+        showError(data.error || "Numéro impossible à enregistrer.");
+        return;
+      }
+      const phone = data.phone || "";
+      setWhatsAppPhone(phone);
+      setWhatsAppDraft(phone);
+      showSuccess(phone ? `Numéro WhatsApp enregistré : ${phone}.` : "Numéro WhatsApp retiré.");
+    } catch {
+      showError("Numéro impossible à enregistrer.");
+    } finally {
+      setWhatsAppBusy(false);
+    }
+  }
+
+  function whatsAppOpenedMessage(base: string) {
+    return whatsAppPhone
+      ? `${base} Ouvrez WhatsApp avec le compte ${whatsAppPhone} sur ce téléphone.`
+      : `${base} Le message part du compte WhatsApp ouvert sur ce téléphone.`;
+  }
+
   async function onLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
     window.location.reload();
@@ -529,7 +565,7 @@ export function AdminPanel({
       if (data.whatsappUrl) {
         window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
       }
-      showSuccess("WhatsApp ouvert — envoyez le message à l’invité.");
+      showSuccess(whatsAppOpenedMessage("WhatsApp ouvert — envoyez le message à l’invité."));
     } catch {
       showError("WhatsApp impossible.");
     } finally {
@@ -557,7 +593,7 @@ export function AdminPanel({
       if (data.whatsappUrl) {
         window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
       }
-      showSuccess(`WhatsApp ouvert — envoyez le rappel « ${reminderLabel} ».`);
+      showSuccess(whatsAppOpenedMessage(`WhatsApp ouvert — envoyez le rappel « ${reminderLabel} ».`));
     } catch {
       showError("Rappel WhatsApp impossible.");
     } finally {
@@ -808,6 +844,36 @@ export function AdminPanel({
           <p className="mt-3 max-w-full break-words text-sm font-normal text-soft sm:max-w-xl">
             Connecté : {currentUser.name} · {roleLabel(currentUser.role)}
           </p>
+          <form
+            className="mt-4 max-w-xl space-y-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveWhatsAppPhone();
+            }}
+          >
+            <label className="label" htmlFor="my-whatsapp-phone">
+              Mon numéro WhatsApp
+            </label>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <input
+                id="my-whatsapp-phone"
+                type="tel"
+                className="field min-w-0 flex-1"
+                value={whatsAppDraft}
+                placeholder="+2250700000000"
+                autoComplete="tel"
+                onChange={(event) => setWhatsAppDraft(event.target.value)}
+              />
+              <button
+                type="submit"
+                className="btn-primary disabled:opacity-60"
+                disabled={whatsAppBusy || whatsAppDraft.trim() === whatsAppPhone}
+              >
+                {whatsAppBusy ? "Enregistrement…" : "Enregistrer"}
+              </button>
+            </div>
+            <WhatsAppSenderHint phone={whatsAppPhone} />
+          </form>
         </div>
         <div className="flex w-full min-w-0 max-w-full flex-wrap gap-2 sm:w-auto sm:gap-3">
           <a href="/" className="btn-ghost !px-3 !py-2.5 text-[0.65rem] sm:!px-4 sm:text-[0.72rem]">
@@ -1184,6 +1250,9 @@ export function AdminPanel({
               Chaque confirmation « oui » a ces rappels dans ses actions. Un clic ouvre WhatsApp
               pour cet invité seulement. Les rappels se planifient dans Couple & hero.
             </p>
+            <div className="mt-2">
+              <WhatsAppSenderHint phone={whatsAppPhone} />
+            </div>
             {site.whatsappReminders.length === 0 ? (
               <p className="mt-3 text-xs text-soft">
                 Aucun rappel planifié. Ajoutez-en dans Couple & hero.
@@ -1596,6 +1665,7 @@ export function AdminPanel({
           }
           canUnlock={isOwner}
           onUnlock={isOwner ? (id) => void unlockPlace(id) : undefined}
+          senderPhone={whatsAppPhone}
           onUpdated={(updated) =>
             setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
           }
@@ -1609,6 +1679,7 @@ export function AdminPanel({
           rsvps={rsvps}
           showGuestPii={showGuestPii}
           onPlaceSend={(id) => void recordPlaceSend(id)}
+          senderPhone={whatsAppPhone}
           onCheckedIn={(updated) =>
             setRsvps((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
           }

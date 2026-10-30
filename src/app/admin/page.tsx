@@ -23,6 +23,7 @@ import {
   getStory,
   getTeeStudio,
   getThanksPage,
+  getAdminWhatsAppPhone,
 } from "@/lib/storage";
 import { defaultAdminPrivacy } from "@/lib/admin-privacy";
 import { emptyMcRundown } from "@/lib/mc-rundown";
@@ -118,6 +119,7 @@ export default async function AdminPage() {
     canAudit ? getAuditLog(300) : Promise.resolve([]),
     getAdminPrivacy(),
   ]);
+  const whatsAppPhone = await getAdminWhatsAppPhone(user.id);
 
   return (
     <AdminPanel
@@ -143,6 +145,7 @@ export default async function AdminPage() {
       initialUsers={users}
       initialAudit={audit}
       initialPrivacy={privacy ?? defaultAdminPrivacy()}
+      initialWhatsAppPhone={whatsAppPhone}
     />
   );
 }

@@ -83,6 +83,10 @@ export type RsvpPlaceSendLog = {
 /** L’invité a libéré sa place après confirmation. Le statut SQL reste « no ». */
 export type RsvpReleaseLog = {
   releasedAt: string;
+  /** Absents sur les libérations antérieures à cet enregistrement. */
+  tableLabel?: string;
+  seatLabel?: string;
+  childSeats?: ChildSeat[];
 };
 
 /** Compte qui a enregistré le premier check-in d’un invité. */

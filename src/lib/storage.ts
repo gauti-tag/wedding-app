@@ -8,7 +8,7 @@ import { normalizeGuestCapacity, emptyGuestRelationQuotas, normalizeGuestRelatio
 import { emptyMcRundown, normalizeMcRundown } from "@/lib/mc-rundown";
 import { normalizePhotos, requirePersistentStorage } from "@/lib/photo-urls";
 import { normalizeOptionalDatetime } from "@/lib/rsvp-deadline";
-import { emptySeatingPlan, normalizeSeatingPlan } from "@/lib/seating";
+import { emptySeatingPlan, normalizeChildSeats, normalizeSeatingPlan } from "@/lib/seating";
 import { defaultSiteFeatures, normalizeSiteFeatures } from "@/lib/site-features";
 import { defaultSiteTheme, normalizeSiteTheme } from "@/lib/site-theme";
 import {
@@ -38,6 +38,7 @@ import {
 import { normalizeStoryContent, emptyStoryScriptureBlock } from "@/lib/story-scripture";
 import { emptyTeeStudio, normalizeTeeStudio, type TeeStudioContent } from "@/lib/tee-studio";
 import { normalizeThanksPage, type ThanksPageContent } from "@/lib/thanks-page";
+import { formatCiWhatsAppPhone } from "@/lib/whatsapp";
 import { normalizeWhatsAppReminders } from "@/lib/whatsapp-reminders";
 import { ensureRsvpTicketFields } from "./tickets";
 import type {
@@ -379,11 +380,28 @@ export async function unlockRsvpPlace(id: string): Promise<RsvpPlaceSendLog | nu
 
 function normalizeReleaseLog(raw: unknown): RsvpReleaseLog | null {
   if (!raw || typeof raw !== "object") return null;
-  const releasedAt = typeof (raw as { releasedAt?: unknown }).releasedAt === "string"
-    ? (raw as { releasedAt: string }).releasedAt.trim()
-    : "";
+  const row = raw as {
+    releasedAt?: unknown;
+    tableLabel?: unknown;
+    seatLabel?: unknown;
+    childSeats?: unknown;
+  };
+  const releasedAt = typeof row.releasedAt === "string" ? row.releasedAt.trim() : "";
   if (!releasedAt) return null;
-  return { releasedAt };
+  const recorded =
+    typeof row.tableLabel === "string" ||
+    typeof row.seatLabel === "string" ||
+    Array.isArray(row.childSeats);
+  if (!recorded) return { releasedAt };
+  const childSeats = Array.isArray(row.childSeats)
+    ? normalizeChildSeats(row.childSeats, row.childSeats.length)
+    : [];
+  return {
+    releasedAt,
+    tableLabel: typeof row.tableLabel === "string" ? row.tableLabel.trim().slice(0, 40) : "",
+    seatLabel: typeof row.seatLabel === "string" ? row.seatLabel.trim().slice(0, 40) : "",
+    childSeats,
+  };
 }
 
 /** Invités qui ont libéré leur place depuis le message WhatsApp. */
@@ -398,9 +416,20 @@ export async function getRsvpReleases(): Promise<Record<string, RsvpReleaseLog>>
   return logs;
 }
 
-export async function markRsvpRelease(id: string): Promise<RsvpReleaseLog> {
+export async function markRsvpRelease(
+  id: string,
+  place?: Pick<Rsvp, "tableLabel" | "seatLabel" | "childSeats" | "childCount">,
+): Promise<RsvpReleaseLog> {
   const all = { ...(await getRsvpReleases()) };
-  const next: RsvpReleaseLog = all[id] || { releasedAt: new Date().toISOString() };
+  if (all[id]) return all[id];
+  const next: RsvpReleaseLog = place
+    ? {
+        releasedAt: new Date().toISOString(),
+        tableLabel: place.tableLabel || "",
+        seatLabel: place.seatLabel || "",
+        childSeats: normalizeChildSeats(place.childSeats, place.childCount),
+      }
+    : { releasedAt: new Date().toISOString() };
   all[id] = next;
   await saveContent("rsvp_releases", all);
   return next;
@@ -561,6 +590,38 @@ export async function getThanksPage(): Promise<ThanksPageContent> {
 
 export async function saveThanksPage(content: ThanksPageContent) {
   await saveContent("thanks-page", normalizeThanksPage(content));
+}
+
+export async function getAdminWhatsAppPhones(): Promise<Record<string, string>> {
+  const raw = await getContent<unknown>("admin_whatsapp_phones", {});
+  if (!raw || typeof raw !== "object") return {};
+  const phones: Record<string, string> = {};
+  for (const [id, value] of Object.entries(raw)) {
+    if (typeof value !== "string") continue;
+    const phone = formatCiWhatsAppPhone(value);
+    if (phone) phones[id] = phone;
+  }
+  return phones;
+}
+
+export async function getAdminWhatsAppPhone(userId: string) {
+  const phones = await getAdminWhatsAppPhones();
+  return phones[userId] || "";
+}
+
+export async function saveAdminWhatsAppPhone(userId: string, phone: string) {
+  const phones = await getAdminWhatsAppPhones();
+  const trimmed = phone.trim();
+  if (!trimmed) {
+    delete phones[userId];
+    await saveContent("admin_whatsapp_phones", phones);
+    return "";
+  }
+  const formatted = formatCiWhatsAppPhone(trimmed);
+  if (!formatted) throw new Error("invalid_phone");
+  phones[userId] = formatted;
+  await saveContent("admin_whatsapp_phones", phones);
+  return formatted;
 }
 
 export async function getTeeStudio(): Promise<TeeStudioContent> {

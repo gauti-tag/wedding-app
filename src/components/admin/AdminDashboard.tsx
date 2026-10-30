@@ -15,7 +15,7 @@ import {
 } from "@/lib/guest-of";
 import { eventRoleLabel } from "@/lib/event-roles";
 import { normalizeChildCount } from "@/lib/guest-capacity";
-import { guestStatusLabel } from "@/lib/rsvp-release";
+import { guestStatusLabel, releasedPlaceSummary } from "@/lib/rsvp-release";
 import { maskName, maskPhone } from "@/lib/mask-pii";
 import { countAssignedSeatsByGuestOf, seatingOccupancy } from "@/lib/seating";
 import type { Rsvp, RsvpReleaseLog, SeatingPlanContent, SiteContent } from "@/lib/types";
@@ -114,6 +114,7 @@ export function AdminDashboard({
         rsvp,
         releasedAt: releases[rsvp.id]!.releasedAt,
         seats: 1 + normalizeChildCount(rsvp.childCount),
+        places: releasedPlaceSummary(releases[rsvp.id]),
       }))
       .sort((a, b) => b.releasedAt.localeCompare(a.releasedAt));
   }, [releases, rsvps]);
@@ -123,7 +124,7 @@ export function AdminDashboard({
   const filteredReleased = useMemo(() => {
     const q = releasedQuery.trim().toLowerCase();
     if (!q) return releasedGuests;
-    return releasedGuests.filter(({ rsvp, releasedAt, seats }) => {
+    return releasedGuests.filter(({ rsvp, releasedAt, seats, places }) => {
       const lien = guestOfLabels[rsvp.guestOf] || rsvp.guestOf || "";
       const hay = [
         rsvp.name,
@@ -132,6 +133,7 @@ export function AdminDashboard({
         formatReleasedAt(releasedAt),
         String(normalizeChildCount(rsvp.childCount)),
         String(seats),
+        places.join(" "),
       ]
         .join(" ")
         .toLowerCase();
@@ -506,7 +508,7 @@ export function AdminDashboard({
                   setReleasedQuery(event.target.value);
                   setReleasedPage(1);
                 }}
-                placeholder="Nom, lien, téléphone…"
+                placeholder="Nom, lien, table, siège…"
                 autoComplete="off"
                 enterKeyHint="search"
                 aria-label="Filtrer les places libérées"
@@ -542,7 +544,7 @@ export function AdminDashboard({
               </p>
             ) : (
               <ul className="mt-4 divide-y divide-line border border-line">
-                {releasedPageRows.map(({ rsvp, releasedAt, seats }) => (
+                {releasedPageRows.map(({ rsvp, releasedAt, seats, places }) => (
                   <li key={rsvp.id} className="px-3 py-2.5 text-sm">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <p className="text-mist">{showGuestPii ? rsvp.name : maskName(rsvp.name)}</p>
@@ -557,6 +559,11 @@ export function AdminDashboard({
                       {" · "}
                       {seatCountLabel(seats, "place", "places")}
                     </p>
+                    <ul className="mt-1 space-y-0.5 text-xs text-mist">
+                      {places.map((place, index) => (
+                        <li key={`${rsvp.id}-place-${index}`}>{place}</li>
+                      ))}
+                    </ul>
                   </li>
                 ))}
               </ul>
