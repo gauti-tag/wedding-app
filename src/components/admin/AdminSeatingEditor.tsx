@@ -147,6 +147,26 @@ function previewChipClass(active: boolean) {
   }`;
 }
 
+function PlaceSentFlag({ log }: { log?: RsvpPlaceSendLog }) {
+  if (!placeWasSent(log)) return null;
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-1">
+      <span className="bg-caramel/40 px-1.5 py-0.5 text-[10px] leading-4 tracking-[0.12em] text-cacao uppercase">
+        Place envoyée · {placeSendLabel(log)}
+      </span>
+      {isPlaceLocked(log) ? (
+        <span className="border border-cacao/25 px-1.5 py-0.5 text-[10px] leading-4 tracking-[0.12em] text-cacao uppercase">
+          Verrouillée
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function sentRowClass(log?: RsvpPlaceSendLog) {
+  return placeWasSent(log) ? "bg-caramel/20" : "";
+}
+
 function SeatingPreview({
   tables,
   unassigned,
@@ -166,6 +186,7 @@ function SeatingPreview({
   openGuestId,
   onOpenGuest,
   editorFor,
+  placeSends,
 }: {
   tables: PreviewTable[];
   unassigned: { key: string; guestId: string; label: string; detail: string }[];
@@ -185,6 +206,7 @@ function SeatingPreview({
   openGuestId: string | null;
   onOpenGuest: (id: string | null) => void;
   editorFor: (guestId: string) => ReactNode;
+  placeSends: Record<string, RsvpPlaceSendLog>;
 }) {
   const headerRef = useRef<HTMLDivElement>(null);
   const paneRef = useRef<HTMLDivElement>(null);
@@ -300,7 +322,7 @@ function SeatingPreview({
           (query.trim() && !seat.match) || (tableFilter === "with" && !seat.guestId) ? null : (
           <li
             key={`${table.id}-${seat.label}`}
-            className="border-b border-line/60 py-1.5 last:border-b-0"
+            className={`border-b border-line/60 py-1.5 last:border-b-0 ${sentRowClass(seat.guestId ? placeSends[seat.guestId] : undefined)}`}
           >
             <button
               type="button"
@@ -321,6 +343,7 @@ function SeatingPreview({
                     {[seat.lien, seat.phone].filter(Boolean).join(" · ")}
                   </span>
                 ) : null}
+                <PlaceSentFlag log={seat.guestId ? placeSends[seat.guestId] : undefined} />
               </span>
             </button>
             {anchor?.label === seat.label && seat.guestId ? (
@@ -454,6 +477,10 @@ function SeatingPreview({
             </button>
           ) : null}
         </div>
+        <p className="mt-2 flex items-center gap-2 text-xs text-soft">
+          <span className="inline-block h-3 w-6 border border-caramel/40 bg-caramel/20" aria-hidden />
+          Place déjà envoyée
+        </p>
       </div>
       <div
         ref={paneRef}
@@ -474,7 +501,10 @@ function SeatingPreview({
                   openGuestId === item.guestId &&
                   unassigned.find((entry) => entry.guestId === openGuestId)?.key === item.key;
                 return (
-                  <li key={item.key} className="border-b border-line/60 py-2 last:border-b-0">
+                  <li
+                    key={item.key}
+                    className={`border-b border-line/60 py-2 last:border-b-0 ${sentRowClass(placeSends[item.guestId])}`}
+                  >
                     <button
                       type="button"
                       className="min-h-11 w-full touch-manipulation py-1 text-left"
@@ -483,6 +513,7 @@ function SeatingPreview({
                     >
                       <span className="block text-sm text-mist">{item.label}</span>
                       {item.detail ? <span className="block text-xs text-soft">{item.detail}</span> : null}
+                      <PlaceSentFlag log={placeSends[item.guestId]} />
                     </button>
                     {showEditor ? <div data-seating-editor>{editorFor(item.guestId)}</div> : null}
                   </li>
@@ -493,9 +524,13 @@ function SeatingPreview({
         ) : rolesMode ? (
           <ul>
             {roles.map((role) => (
-              <li key={role.id} className="border-b border-line/60 py-2 text-sm text-soft last:border-b-0">
+              <li
+                key={role.id}
+                className={`border-b border-line/60 py-2 text-sm text-soft last:border-b-0 ${sentRowClass(placeSends[role.id])}`}
+              >
                 <span className="text-mist">{role.name}</span>
                 {role.detail ? ` · ${role.detail}` : ""}
+                <PlaceSentFlag log={placeSends[role.id]} />
               </li>
             ))}
           </ul>
@@ -514,7 +549,10 @@ function SeatingPreview({
                   openGuestId === row.guestId &&
                   seatedRows.find((entry) => entry.guestId === openGuestId)?.key === row.key;
                 return (
-                  <li key={row.key} className="border-b border-line/60 py-2 last:border-b-0">
+                  <li
+                    key={row.key}
+                    className={`border-b border-line/60 py-2 last:border-b-0 ${sentRowClass(placeSends[row.guestId])}`}
+                  >
                     <button
                       type="button"
                       className="flex min-h-11 w-full touch-manipulation items-start gap-2 py-1 text-left"
@@ -530,6 +568,7 @@ function SeatingPreview({
                         <span className="block break-words text-xs text-soft">
                           {[row.place, row.detail].filter(Boolean).join(" · ")}
                         </span>
+                        <PlaceSentFlag log={placeSends[row.guestId]} />
                       </span>
                     </button>
                     {showEditor ? <div data-seating-editor>{editorFor(row.guestId)}</div> : null}
@@ -551,7 +590,10 @@ function SeatingPreview({
                   openGuestId === hit.guestId &&
                   hits.find((entry) => entry.guestId === openGuestId)?.key === hit.key;
                 return (
-                  <li key={hit.key} className="border-b border-line/60 py-2 last:border-b-0">
+                  <li
+                    key={hit.key}
+                    className={`border-b border-line/60 py-2 last:border-b-0 ${sentRowClass(hit.guestId ? placeSends[hit.guestId] : undefined)}`}
+                  >
                     <button
                       type="button"
                       className="flex min-h-11 w-full touch-manipulation items-start gap-2 py-1 text-left disabled:cursor-default"
@@ -572,6 +614,7 @@ function SeatingPreview({
                         <span className="block break-words text-xs text-soft">
                           {[hit.place, hit.detail].filter(Boolean).join(" · ")}
                         </span>
+                        <PlaceSentFlag log={hit.guestId ? placeSends[hit.guestId] : undefined} />
                       </span>
                     </button>
                     {showEditor && hit.guestId ? (
@@ -1153,6 +1196,9 @@ export function AdminSeatingEditor({
     const occupied = occupiedFor(rsvp, draft, "adult");
     return (
       <div className="mt-2 space-y-2">
+        <p className="text-xs text-soft">
+          Place envoyée : {placeSendLabel(placeSends[rsvp.id])}
+        </p>
         {hasEventRole(rsvp) ? (
           <p className="text-xs text-champagne">Pas de table ni de siège pour l’adulte.</p>
         ) : (
@@ -1332,6 +1378,7 @@ export function AdminSeatingEditor({
           const guest = yesGuests.find((item) => item.id === guestId);
           return guest ? renderSeatEditor(guest) : null;
         }}
+        placeSends={placeSends}
       />
 
       {!filtering ? (
@@ -1370,6 +1417,12 @@ export function AdminSeatingEditor({
               <span className="inline-block h-3 w-3 bg-red-700" />
               Occupé — QR scanné
             </li>
+            <li className="flex items-center gap-2">
+              <span className="relative inline-block h-3 w-3 bg-champagne">
+                <span className="absolute top-0 right-0 size-1.5 bg-ivory" />
+              </span>
+              Pastille claire — place déjà envoyée
+            </li>
           </ul>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {occupancy.tables.map((table) => (
@@ -1394,19 +1447,26 @@ export function AdminSeatingEditor({
                   <p className="mt-3 text-xs text-soft">Aucun siège défini.</p>
                 ) : (
                   <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={`Sièges de la table ${table.label}`}>
-                    {table.seats.map((seat) => (
-                      <li
-                        key={seat.label}
-                        title={
-                          seat.guestName
-                            ? `Siège ${seat.label} · ${seatStateLabel[seat.state]} · ${displayGuestName(seat.guestName)}`
-                            : `Siège ${seat.label} · ${seatStateLabel[seat.state]}`
-                        }
-                        className={`grid h-7 min-w-7 place-items-center px-1 text-[0.65rem] ${seatStateClass[seat.state]}`}
-                      >
-                        {seat.label}
-                      </li>
-                    ))}
+                    {table.seats.map((seat) => {
+                      const occupant = findSeatOccupant(yesGuests, table.label, seat.label);
+                      const log = occupant ? placeSends[occupant.rsvpId] : undefined;
+                      const sent = placeWasSent(log);
+                      const base = seat.guestName
+                        ? `Siège ${seat.label} · ${seatStateLabel[seat.state]} · ${displayGuestName(seat.guestName)}`
+                        : `Siège ${seat.label} · ${seatStateLabel[seat.state]}`;
+                      return (
+                        <li
+                          key={seat.label}
+                          title={sent ? `${base} · Place envoyée · ${placeSendLabel(log)}` : base}
+                          className={`relative grid h-7 min-w-7 place-items-center px-1 text-[0.65rem] ${seatStateClass[seat.state]}`}
+                        >
+                          {seat.label}
+                          {sent ? (
+                            <span className="absolute top-0 right-0 size-1.5 bg-ivory" aria-label="Place envoyée" />
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </article>
