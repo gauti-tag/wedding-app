@@ -10,6 +10,7 @@ import { maskName, maskPhone } from "@/lib/mask-pii";
 import type { Rsvp, SiteContent } from "@/lib/types";
 import { seatingWhatsAppForRsvp, type ReceptionNotice } from "@/lib/whatsapp";
 import { WhatsAppSenderHint } from "@/components/admin/WhatsAppSenderHint";
+import { CopyWhatsAppButton } from "@/components/admin/CopyWhatsAppButton";
 
 function guestOfLabelsFromSite(
   site: Pick<SiteContent, "partnerOne" | "partnerTwo" | "rsvpConfig">,
@@ -322,8 +323,8 @@ export function AdminCheckIn({
         senderLine,
       ].join("");
 
-      if (repeat) showInfo(details, "Déjà check-in", waAction);
-      else showSuccess(details, "Check-in réussi", waAction);
+      if (repeat) showInfo(details, "Déjà check-in", waAction, wa?.message);
+      else showSuccess(details, "Check-in réussi", waAction, wa?.message);
       setManualToken("");
     } catch {
       setScanCue("error");
@@ -551,6 +552,12 @@ export function AdminCheckIn({
                   >
                     Envoyer place par WhatsApp
                   </a>
+                  {seatingWa.message ? (
+                    <CopyWhatsAppButton
+                      message={seatingWa.message}
+                      className="btn-ghost mt-2 inline-flex w-full justify-center"
+                    />
+                  ) : null}
                   <div className="mt-2">
                     <WhatsAppSenderHint phone={senderPhone} />
                   </div>

@@ -39,6 +39,7 @@ import { maskName, maskPhone } from "@/lib/mask-pii";
 import { seatingWhatsAppForRsvp, type ReceptionNotice } from "@/lib/whatsapp";
 import { isPlaceLocked } from "@/lib/place-lock";
 import { WhatsAppSenderHint } from "@/components/admin/WhatsAppSenderHint";
+import { CopyWhatsAppButton } from "@/components/admin/CopyWhatsAppButton";
 
 const seatStateClass: Record<SeatPresence, string> = {
   free: "bg-forest text-soft",
@@ -1854,6 +1855,7 @@ export function AdminSeatingEditor({
                           Déverrouiller
                         </button>
                       ) : null}
+                      {wa?.message ? <CopyWhatsAppButton message={wa.message} /> : null}
                       {wa?.url && onPlaceSend ? (
                         <a
                           href={wa.url}
@@ -2000,6 +2002,13 @@ export function AdminSeatingEditor({
                           )}
                         </td>
                         <td className="px-3 py-2">
+                          <div className="flex flex-col items-start gap-1">
+                          {wa?.message ? (
+                            <CopyWhatsAppButton
+                              message={wa.message}
+                              className="text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist"
+                            />
+                          ) : null}
                           {wa?.url && onPlaceSend ? (
                             <a
                               href={wa.url}
@@ -2010,9 +2019,10 @@ export function AdminSeatingEditor({
                             >
                               Envoyer place
                             </a>
-                          ) : (
+                          ) : wa?.message ? null : (
                             <span className="text-xs text-soft">—</span>
                           )}
+                          </div>
                         </td>
                         <td className="px-3 py-2 text-xs text-mist">
                           <p>{placeSent}</p>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { copyToClipboard } from "@/lib/copy-text";
 
 export type AdminAlertTone = "success" | "error" | "info";
 
@@ -16,6 +17,8 @@ export type AdminAlertState = {
   message: string;
   tone?: AdminAlertTone;
   action?: AdminAlertAction;
+  /** Texte du message de place, copiable sans ouvrir WhatsApp. */
+  copyMessage?: string;
 };
 
 const TITLES: Record<AdminAlertTone, string> = {
@@ -32,7 +35,9 @@ export function AdminAlertDialog({
   onClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [copyLabel, setCopyLabel] = useState("Copier");
   useEffect(() => setMounted(true), []);
+  useEffect(() => setCopyLabel("Copier"), [alert?.copyMessage, alert?.message]);
 
   if (!mounted || !alert) return null;
 
@@ -65,6 +70,20 @@ export function AdminAlertDialog({
           {alert.message}
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          {alert.copyMessage ? (
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => {
+                const text = alert.copyMessage || "";
+                void copyToClipboard(text)
+                  .then(() => setCopyLabel("Copié"))
+                  .catch(() => setCopyLabel("Copie impossible"));
+              }}
+            >
+              {copyLabel}
+            </button>
+          ) : null}
           {alert.action ? (
             <a
               href={alert.action.href}
@@ -93,12 +112,12 @@ export function useAdminAlert() {
   const [alert, setAlert] = useState<AdminAlertState | null>(null);
 
   const showSuccess = useCallback(
-    (message: string, titleOrAction?: string | AdminAlertAction, action?: AdminAlertAction) => {
+    (message: string, titleOrAction?: string | AdminAlertAction, action?: AdminAlertAction, copyMessage?: string) => {
       if (typeof titleOrAction === "object") {
-        setAlert({ message, tone: "success", action: titleOrAction });
+        setAlert({ message, tone: "success", action: titleOrAction, copyMessage });
         return;
       }
-      setAlert({ message, title: titleOrAction, tone: "success", action });
+      setAlert({ message, title: titleOrAction, tone: "success", action, copyMessage });
     },
     [],
   );
@@ -108,12 +127,12 @@ export function useAdminAlert() {
   }, []);
 
   const showInfo = useCallback(
-    (message: string, titleOrAction?: string | AdminAlertAction, action?: AdminAlertAction) => {
+    (message: string, titleOrAction?: string | AdminAlertAction, action?: AdminAlertAction, copyMessage?: string) => {
       if (typeof titleOrAction === "object") {
-        setAlert({ message, tone: "info", action: titleOrAction });
+        setAlert({ message, tone: "info", action: titleOrAction, copyMessage });
         return;
       }
-      setAlert({ message, title: titleOrAction, tone: "info", action });
+      setAlert({ message, title: titleOrAction, tone: "info", action, copyMessage });
     },
     [],
   );
