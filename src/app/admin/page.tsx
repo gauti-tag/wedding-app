@@ -15,6 +15,7 @@ import {
   getPhotos,
   getRsvpPlaceSends,
   getRsvpReleases,
+  getRsvpThanksSends,
   getRsvpReminders,
   getRsvps,
   getSchedule,
@@ -114,12 +115,15 @@ export default async function AdminPage() {
     canContent ? getGuestbook() : Promise.resolve(emptyGuestbookContent()),
     canContent ? getGuestAlbum() : Promise.resolve(emptyGuestAlbumContent()),
     canContent ? getTeeStudio() : Promise.resolve(emptyTeeStudio()),
-    canContent ? getThanksPage() : Promise.resolve(emptyThanksPage()),
+    canContent || canRsvp ? getThanksPage() : Promise.resolve(emptyThanksPage()),
     canUsers ? listPublicUsers() : Promise.resolve([]),
     canAudit ? getAuditLog(300) : Promise.resolve([]),
     getAdminPrivacy(),
   ]);
-  const whatsAppPhone = await getAdminWhatsAppPhone(user.id);
+  const [whatsAppPhone, thanksSends] = await Promise.all([
+    getAdminWhatsAppPhone(user.id),
+    canRsvp ? getRsvpThanksSends() : Promise.resolve({}),
+  ]);
 
   return (
     <AdminPanel
@@ -128,6 +132,7 @@ export default async function AdminPage() {
       initialRsvps={rsvps}
       initialReminders={reminders}
       initialPlaceSends={placeSends}
+      initialThanksSends={thanksSends}
       initialReleases={releases}
       initialSite={siteContent}
       initialStory={story}

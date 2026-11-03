@@ -55,18 +55,22 @@ export function ThanksPage({
         </section>
       ) : null}
 
-      <GuestAlbumSection
-        initial={guestAlbum}
-        locale={locale}
-        dict={dict}
-        readOnly={preview}
-      />
-      <GuestbookSection
-        initial={guestbook}
-        locale={locale}
-        dict={dict}
-        readOnly={preview}
-      />
+      {content.showGuestAlbum ? (
+        <GuestAlbumSection
+          initial={guestAlbum}
+          locale={locale}
+          dict={dict}
+          readOnly={preview}
+        />
+      ) : null}
+      {content.showGuestbook ? (
+        <GuestbookSection
+          initial={guestbook}
+          locale={locale}
+          dict={dict}
+          readOnly={preview}
+        />
+      ) : null}
 
       {content.showSchedule && schedule.venues.length > 0 ? (
         <section className="site-section site-section--border-t">

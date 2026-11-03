@@ -238,6 +238,34 @@ export function AdminThanksEditor({
           <input
             type="checkbox"
             className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
+            checked={draftPage.showGuestAlbum}
+            onChange={(event) =>
+              setDraft((prev) => ({
+                ...normalizeThanksPage(prev),
+                showGuestAlbum: event.target.checked,
+              }))
+            }
+          />
+          <span className="text-sm text-mist">Afficher l’album photo invité</span>
+        </label>
+        <label className="flex min-h-11 items-center gap-3">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
+            checked={draftPage.showGuestbook}
+            onChange={(event) =>
+              setDraft((prev) => ({
+                ...normalizeThanksPage(prev),
+                showGuestbook: event.target.checked,
+              }))
+            }
+          />
+          <span className="text-sm text-mist">Afficher le livre d’or</span>
+        </label>
+        <label className="flex min-h-11 items-center gap-3">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[var(--champagne,#b08d57)]"
             checked={draftPage.showSchedule}
             onChange={(event) =>
               setDraft((prev) => ({

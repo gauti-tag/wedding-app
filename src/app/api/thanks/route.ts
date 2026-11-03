@@ -17,6 +17,8 @@ const schema = z.object({
   letter: localizedSchema,
   closing: localizedSchema,
   showSchedule: z.boolean(),
+  showGuestAlbum: z.boolean(),
+  showGuestbook: z.boolean(),
 });
 
 export async function PUT(request: Request) {

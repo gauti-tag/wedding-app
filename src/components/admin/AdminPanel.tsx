@@ -23,6 +23,7 @@ import { AdminSiteEditor } from "@/components/admin/AdminSiteEditor";
 import { AdminStoryEditor } from "@/components/admin/AdminStoryEditor";
 import { AdminTeeStudio } from "@/components/admin/AdminTeeStudio";
 import { AdminUsersEditor } from "@/components/admin/AdminUsersEditor";
+import { CopyWhatsAppButton } from "@/components/admin/CopyWhatsAppButton";
 import { WhatsAppSenderHint } from "@/components/admin/WhatsAppSenderHint";
 import type { GuestAlbumContent } from "@/lib/guest-album";
 import type { GuestbookContent } from "@/lib/guestbook";
@@ -40,7 +41,7 @@ import {
   invitationCardBlob,
   invitationCardFilename,
 } from "@/lib/invitation-card";
-import { receptionNotice } from "@/lib/whatsapp";
+import { receptionNotice, thanksWhatsAppForRsvp } from "@/lib/whatsapp";
 import { downloadRsvpExcel } from "@/lib/rsvp-excel";
 import {
   EVENT_ROLES,
@@ -73,6 +74,7 @@ import type {
   RsvpPlaceSendLog,
   RsvpReleaseLog,
   RsvpReminderLog,
+  RsvpThanksSendLog,
   ScheduleContent,
   SeatingPlanContent,
   SiteContent,
@@ -241,6 +243,7 @@ type Props = {
   initialRsvps: Rsvp[];
   initialReminders: Record<string, RsvpReminderLog>;
   initialPlaceSends: Record<string, RsvpPlaceSendLog>;
+  initialThanksSends: Record<string, RsvpThanksSendLog>;
   initialReleases: Record<string, RsvpReleaseLog>;
   initialSite: SiteContent;
   initialStory: StoryContent;
@@ -321,6 +324,7 @@ export function AdminPanel({
   initialRsvps,
   initialReminders,
   initialPlaceSends,
+  initialThanksSends,
   initialReleases,
   initialSite,
   initialStory,
@@ -349,6 +353,7 @@ export function AdminPanel({
   const [seatingPlan, setSeatingPlan] = useState(initialSeatingPlan);
   const [reminders, setReminders] = useState(initialReminders);
   const [placeSends, setPlaceSends] = useState(initialPlaceSends);
+  const [thanksSends, setThanksSends] = useState(initialThanksSends);
   const [releases] = useState(initialReleases);
   const [site, setSite] = useState(initialSite);
   const [privacy, setPrivacy] = useState(initialPrivacy);
@@ -721,6 +726,58 @@ export function AdminPanel({
     }
   }
 
+  async function recordThanksSend(id: string) {
+    try {
+      const res = await fetch("/api/rsvp/thanks-sent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = (await res.json()) as { log?: RsvpThanksSendLog; error?: string };
+      if (res.status === 403) return;
+      if (!res.ok || !data.log) {
+        showError(data.error || "Le suivi du remerciement n’a pas pu être mis à jour.");
+        return;
+      }
+      setThanksSends((prev) => ({ ...prev, [id]: data.log! }));
+    } catch {
+      showError("Le suivi du remerciement n’a pas pu être mis à jour.");
+    }
+  }
+
+  function canThankGuest(rsvp: Rsvp) {
+    return rsvp.status === "yes" && !rsvp.blockedAt && !releases[rsvp.id];
+  }
+
+  function thanksStatusLabel(rsvp: Rsvp) {
+    const log = thanksSends[rsvp.id];
+    if (!log || log.count < 1) return "Non";
+    return `${log.count} fois · ${formatAdminDate(log.lastAt, true)}`;
+  }
+
+  function thanksActions(rsvp: Rsvp) {
+    if (!canThankGuest(rsvp) || !can("manage_rsvp")) return null;
+    const wa = thanksWhatsAppForRsvp(rsvp);
+    if (!wa) return <span className="text-xs text-soft">Numéro manquant</span>;
+    return (
+      <>
+        <a
+          href={wa.url}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => void recordThanksSend(rsvp.id)}
+          className="text-xs tracking-[0.12em] text-champagne uppercase no-underline hover:text-mist"
+        >
+          Remercier
+        </a>
+        <CopyWhatsAppButton
+          message={wa.message}
+          className="text-xs tracking-[0.12em] text-champagne uppercase hover:text-mist"
+        />
+      </>
+    );
+  }
+
   async function unlockPlace(id: string) {
     try {
       const res = await fetch("/api/rsvp/place-unlock", {
@@ -748,6 +805,7 @@ export function AdminPanel({
       reminderPlans: site.whatsappReminders,
       reminders,
       placeSends,
+      thanksSends,
       releases,
       showGuestPii,
     };
@@ -1064,6 +1122,7 @@ export function AdminPanel({
           guestOfLabels={guestOfLabels}
           reminders={reminders}
           placeSends={placeSends}
+          thanksSends={thanksSends}
           releases={releases}
           showGuestPii={showGuestPii}
         />
@@ -1173,6 +1232,7 @@ export function AdminPanel({
                               {" · "}
                               {place}
                               {rsvp.checkedInAt ? " · Arrivé" : ""}
+                              {canThankGuest(rsvp) ? ` · Remerciement ${thanksStatusLabel(rsvp)}` : ""}
                             </span>
                           </span>
                           <span className="shrink-0 text-xs tracking-[0.12em] text-champagne uppercase">
@@ -1231,6 +1291,7 @@ export function AdminPanel({
                                   }
                                 />
                               ) : null}
+                              {thanksActions(rsvp)}
                             </>
                           ) : null}
                         </div>
@@ -1337,6 +1398,12 @@ export function AdminPanel({
                         {formatSeatingLabel(rsvp.tableLabel, rsvp.seatLabel) || "—"}
                       </dd>
                     </div>
+                    {canThankGuest(rsvp) ? (
+                      <div className="col-span-2">
+                        <dt className="tracking-[0.12em] uppercase">Remerciement</dt>
+                        <dd className="mt-0.5 text-mist">{thanksStatusLabel(rsvp)}</dd>
+                      </div>
+                    ) : null}
                     <div className="col-span-2" suppressHydrationWarning>
                       <dt className="tracking-[0.12em] uppercase">Check-in</dt>
                       <dd className="mt-0.5">
@@ -1393,6 +1460,7 @@ export function AdminPanel({
                             }
                           />
                         ) : null}
+                        {thanksActions(rsvp)}
                       </>
                     ) : null}
                     {canBlockRsvp ? (
@@ -1515,6 +1583,11 @@ export function AdminPanel({
                           ))}
                         </>
                       ) : null}
+                      {canThankGuest(rsvp) ? (
+                        <div>
+                          <span className="text-mist">Remerciement</span> · {thanksStatusLabel(rsvp)}
+                        </div>
+                      ) : null}
                       {rsvp.blockedAt ? (
                         <div className="text-red-800">
                           <span className="text-mist">Accès</span> · Bloqué
@@ -1574,6 +1647,7 @@ export function AdminPanel({
                                 }
                               />
                             ) : null}
+                            {thanksActions(rsvp)}
                           </>
                         ) : null}
                         {canBlockRsvp ? (

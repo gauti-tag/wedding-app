@@ -80,6 +80,12 @@ export type RsvpPlaceSendLog = {
   locked?: boolean;
 };
 
+/** Envois du message de remerciement WhatsApp. */
+export type RsvpThanksSendLog = {
+  count: number;
+  lastAt: string;
+};
+
 /** L’invité a libéré sa place après confirmation. Le statut SQL reste « no ». */
 export type RsvpReleaseLog = {
   releasedAt: string;

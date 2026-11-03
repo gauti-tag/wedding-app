@@ -52,6 +52,7 @@ import type {
   RsvpPlaceSendLog,
   RsvpReleaseLog,
   RsvpReminderLog,
+  RsvpThanksSendLog,
   ScheduleContent,
   SeatingPlanContent,
   SiteContent,
@@ -364,6 +365,37 @@ export async function markRsvpPlaceSend(id: string): Promise<RsvpPlaceSendLog> {
   };
   all[id] = next;
   await saveContent("rsvp_place_sends", all);
+  return next;
+}
+
+function normalizeThanksSendLog(raw: unknown): RsvpThanksSendLog | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as { count?: unknown; lastAt?: unknown };
+  const count = Number(row.count);
+  const lastAt = typeof row.lastAt === "string" ? row.lastAt.trim() : "";
+  if (!Number.isFinite(count) || count < 1 || !lastAt) return null;
+  return { count: Math.floor(count), lastAt };
+}
+
+export async function getRsvpThanksSends(): Promise<Record<string, RsvpThanksSendLog>> {
+  const raw = await getContent<Record<string, unknown>>("rsvp_thanks_sends", {});
+  if (!raw || typeof raw !== "object") return {};
+  const logs: Record<string, RsvpThanksSendLog> = {};
+  for (const [id, value] of Object.entries(raw)) {
+    const log = normalizeThanksSendLog(value);
+    if (log) logs[id] = log;
+  }
+  return logs;
+}
+
+export async function markRsvpThanksSend(id: string): Promise<RsvpThanksSendLog> {
+  const all = { ...(await getRsvpThanksSends()) };
+  const next: RsvpThanksSendLog = {
+    count: (all[id]?.count || 0) + 1,
+    lastAt: new Date().toISOString(),
+  };
+  all[id] = next;
+  await saveContent("rsvp_thanks_sends", all);
   return next;
 }
 

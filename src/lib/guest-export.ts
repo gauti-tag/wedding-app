@@ -8,7 +8,7 @@ import {
   matchesTablePresence,
   normalizeChildSeats,
 } from "@/lib/seating";
-import type { Rsvp, RsvpPlaceSendLog, RsvpReleaseLog, RsvpReminderLog, SeatingPlanContent, WhatsAppReminderPlan } from "@/lib/types";
+import type { Rsvp, RsvpPlaceSendLog, RsvpReleaseLog, RsvpReminderLog, RsvpThanksSendLog, SeatingPlanContent, WhatsAppReminderPlan } from "@/lib/types";
 import { guestStatusLabel } from "@/lib/rsvp-release";
 
 export type GuestExportContext = {
@@ -18,6 +18,7 @@ export type GuestExportContext = {
   reminderPlans: Pick<WhatsAppReminderPlan, "id" | "label">[];
   reminders: Record<string, RsvpReminderLog>;
   placeSends: Record<string, RsvpPlaceSendLog>;
+  thanksSends: Record<string, RsvpThanksSendLog>;
   releases: Record<string, RsvpReleaseLog>;
   showGuestPii: boolean;
 };
@@ -47,6 +48,8 @@ export const GUEST_EXPORT_HEADERS = [
   "Rappels WhatsApp",
   "Envois place",
   "Dernier envoi place",
+  "Envois remerciement",
+  "Dernier remerciement",
   "Carte consultée",
   "Consultations",
   "Bloqué le",
@@ -196,6 +199,8 @@ export function guestExportRow(rsvp: Rsvp, ctx: GuestExportContext): (string | n
     reminderLines(rsvp, ctx),
     ctx.placeSends[rsvp.id]?.count ?? 0,
     formatExportDate(ctx.placeSends[rsvp.id]?.lastAt),
+    ctx.thanksSends[rsvp.id]?.count ?? 0,
+    formatExportDate(ctx.thanksSends[rsvp.id]?.lastAt),
     formatExportDate(rsvp.ticketViewedAt),
     rsvp.ticketViewCount ?? 0,
     formatExportDate(rsvp.blockedAt),
@@ -226,7 +231,7 @@ export function guestExportExcelCells(row: (string | number)[]) {
 }
 
 export const GUEST_EXPORT_COLUMN_WIDTHS = [
-  28, 18, 28, 12, 22, 22, 32, 12, 12, 36, 32, 14, 12, 28, 14, 14, 20, 22, 28, 20, 20, 36, 16, 22, 20, 14,
+  28, 18, 28, 12, 22, 22, 32, 12, 12, 36, 32, 14, 12, 28, 14, 14, 20, 22, 28, 20, 20, 36, 16, 22, 18, 22, 20, 14,
   20, 38,
 ];
 

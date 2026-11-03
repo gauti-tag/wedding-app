@@ -13,6 +13,8 @@ export type ThanksPageContent = {
   letter: LocalizedText;
   closing: LocalizedText;
   showSchedule: boolean;
+  showGuestAlbum: boolean;
+  showGuestbook: boolean;
 };
 
 const MODES: ThanksMode[] = ["auto", "open", "closed"];
@@ -35,6 +37,8 @@ export function emptyThanksPage(): ThanksPageContent {
       en: "With all our affection,",
     },
     showSchedule: true,
+    showGuestAlbum: true,
+    showGuestbook: true,
   };
 }
 
@@ -61,6 +65,8 @@ export function normalizeThanksPage(raw: unknown): ThanksPageContent {
     letter: loc(row.letter, fallback.letter),
     closing: loc(row.closing, fallback.closing),
     showSchedule: row.showSchedule !== false,
+    showGuestAlbum: row.showGuestAlbum !== false,
+    showGuestbook: row.showGuestbook !== false,
   };
 }
 

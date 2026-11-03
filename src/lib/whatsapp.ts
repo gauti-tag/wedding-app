@@ -482,6 +482,37 @@ export function seatingWhatsAppForRsvp(
   };
 }
 
+/** Premier prénom : le nom stocké commence par le nom de famille. */
+function guestGivenName(raw: string) {
+  const parts = formatFullName(raw).split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] || "";
+  return parts[1];
+}
+
+/**
+ * Remerciement WhatsApp.
+ * Les cœurs sont bruns (🤎) : cacao, velours et caramel.
+ * Un SMS WhatsApp ne peut pas teinter un emoji.
+ */
+export function thanksWhatsAppForRsvp(rsvp: Pick<Rsvp, "name" | "phone">) {
+  const digits = phoneToWhatsAppDigits(rsvp.phone);
+  if (!digits) return null;
+  const prenom = guestGivenName(rsvp.name);
+  const message = joinWhatsAppLines([
+    prenom ? `Bonjour ${prenom},` : "Bonjour,",
+    "",
+    "Nous espérons que vous êtes bien rentré chez vous, et que le chemin du retour s’est fait en douceur.",
+    "",
+    "Notre bonheur a été encore plus beau grâce à toutes les marques d’affection reçues autour de notre mariage. Merci du fond du cœur pour votre présence, vos pensées, vos prières et vos délicates attentions. Chaque geste a une place particulière dans nos cœurs. 🥰",
+    "",
+    "Que Dieu vous comble de ses grâces, au centuple !",
+    "",
+    "Avec amour et gratitude,",
+    "Le couple TIEHOULE 🤎🙏🏽",
+  ]);
+  return { message, url: whatsappUrl(message, digits) };
+}
+
 /**
  * Message WhatsApp « lien direct » pour l’invitation site (QR invitation).
  * Reprend les textes de la carte (eyebrow, invitation, corps, pied),
