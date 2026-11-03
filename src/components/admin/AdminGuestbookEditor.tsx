@@ -6,6 +6,17 @@ import { AdminStickyHeader } from "@/components/admin/AdminStickyHeader";
 import type { GuestbookContent } from "@/lib/guestbook";
 import type { LocalizedText } from "@/lib/types";
 
+function submittedAtLabel(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const yyyy = date.getFullYear();
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy} · ${hh}:${min}`;
+}
+
 function LocalizedFields({
   label,
   value,
@@ -170,6 +181,9 @@ export function AdminGuestbookEditor({ initial }: { initial: GuestbookContent })
           pending.map((entry) => (
             <article key={entry.id} className="border border-line p-3">
               <p className="text-sm font-medium text-mist">{entry.name}</p>
+              <p className="mt-0.5 text-xs text-soft" suppressHydrationWarning>
+                Soumis le {submittedAtLabel(entry.createdAt)}
+              </p>
               <p className="mt-1 text-sm text-soft whitespace-pre-line">{entry.message}</p>
               <div className="mt-2 flex flex-wrap gap-3">
                 <button
@@ -209,6 +223,9 @@ export function AdminGuestbookEditor({ initial }: { initial: GuestbookContent })
             <article key={entry.id} className="flex flex-wrap items-start justify-between gap-2 border border-line p-3">
               <div>
                 <p className="text-sm font-medium text-mist">{entry.name}</p>
+                <p className="mt-0.5 text-xs text-soft" suppressHydrationWarning>
+                  Soumis le {submittedAtLabel(entry.createdAt)}
+                </p>
                 <p className="mt-1 text-sm text-soft whitespace-pre-line">{entry.message}</p>
               </div>
               <button

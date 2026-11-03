@@ -19,7 +19,7 @@ export function ThanksPage({
   preview = false,
 }: {
   content: ThanksPageContent;
-  siteContent: Pick<SiteContent, "partnerOne" | "partnerTwo" | "hero">;
+  siteContent: Pick<SiteContent, "hero">;
   locale: Locale;
   dict: Dictionary;
   schedule: ScheduleContent;
@@ -27,7 +27,7 @@ export function ThanksPage({
   guestAlbum: GuestAlbumContent;
   preview?: boolean;
 }) {
-  const names = [siteContent.partnerOne, siteContent.partnerTwo].filter(Boolean).join(" & ");
+  const coupleLabel = "Le couple TIEHOULE";
   const dateLabel =
     t(siteContent.hero.weddingDateLabel, locale) || "";
   const dayTitle = locale === "en" ? "Revisit the day" : "Revoir la journée";
@@ -39,7 +39,7 @@ export function ThanksPage({
         <h1 className="section-title mt-4 text-5xl text-mist md:text-7xl">
           {t(content.title, locale)}
         </h1>
-        {names ? <p className="mt-5 text-lg text-soft md:text-xl">{names}</p> : null}
+        <p className="mt-5 text-lg text-soft md:text-xl">{coupleLabel}</p>
         {t(content.phrase, locale) ? (
           <p className="mx-auto mt-8 max-w-xl text-xl leading-relaxed text-mist md:text-2xl">
             {t(content.phrase, locale)}
@@ -92,7 +92,7 @@ export function ThanksPage({
 
       <footer className="px-5 py-16 text-center">
         <p className="text-sm text-soft">{t(content.closing, locale)}</p>
-        {names ? <p className="mt-2 text-base text-mist">{names}</p> : null}
+        <p className="mt-2 text-base text-mist">{coupleLabel}</p>
       </footer>
     </div>
   );
