@@ -482,13 +482,6 @@ export function seatingWhatsAppForRsvp(
   };
 }
 
-/** Premier prénom : le nom stocké commence par le nom de famille. */
-function guestGivenName(raw: string) {
-  const parts = formatFullName(raw).split(/\s+/).filter(Boolean);
-  if (parts.length <= 1) return parts[0] || "";
-  return parts[1];
-}
-
 /**
  * Remerciement WhatsApp.
  * Les cœurs sont bruns (🤎) : cacao, velours et caramel.
@@ -497,11 +490,11 @@ function guestGivenName(raw: string) {
 export function thanksWhatsAppForRsvp(rsvp: Pick<Rsvp, "name" | "phone">) {
   const digits = phoneToWhatsAppDigits(rsvp.phone);
   if (!digits) return null;
-  const prenom = guestGivenName(rsvp.name);
+  const fullName = formatFullName(rsvp.name);
   const message = joinWhatsAppLines([
-    prenom ? `Bonjour ${prenom},` : "Bonjour,",
+    fullName ? `Bonjour ${fullName},` : "Bonjour,",
     "",
-    "Nous espérons que vous êtes bien rentré chez vous, et que le chemin du retour s’est fait en douceur.",
+    "Nous espérons que le retour à la maison s’est bien passé, pour vous et pour les personnes qui vous accompagnaient.",
     "",
     "Notre bonheur a été encore plus beau grâce à toutes les marques d’affection reçues autour de notre mariage. Merci du fond du cœur pour votre présence, vos pensées, vos prières et vos délicates attentions. Chaque geste a une place particulière dans nos cœurs. 🥰",
     "",
